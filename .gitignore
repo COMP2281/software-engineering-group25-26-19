@@ -1,0 +1,10 @@
+.env
+*.json
+
+
+
+
+# MISC
+
+.DS_Store
+.vscode/
