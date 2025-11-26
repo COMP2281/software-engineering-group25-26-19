@@ -38,7 +38,8 @@ def fetch_specific_course(course_id: str, academic_year_id: str = "2026"):
     return response.json()
 
 def fetch_all_ucas_courses(page_size: int = 200, per_request_timeout: int = 30, delay_between_requests: float = 1.0, max_retries: int = 5, backoff_factor: float = 1.5, hard_result_cap: int | None = 20000):
-    api_url = "https://services.ucas.com/search/api/v2/courses/search?fields=courses(id,academicYearId,applicationCode,subjects(caption),courseTitle,routingData(destination(caption),scheme(caption)),provider(id,name,logoUrl,providerSort,institutionCode),options(id,outcomeQualification(caption),duration,durationRange(min,max),studyMode,startDate,location,academicEntryRequirements(qualifications,ucasTariffPointsMin,ucasTariffPointsMax,ucasTariffPointsDisplayMin,ucasTariffPointsDisplayMax),features)),information(postcodeLookup,courseCounts(perProviderCourseCountsByDestination,totalCourseCount,totalProviderCount,ucasTeacherTrainingProvider,degreeApprenticeship,higherTechnicalQualifications,providers,schemes,subjects,startDates,studyTypes,attendanceTypes,acceleratedDegrees,qualifications,entryPoints,allFilters),paging)"
+    api_url = "https://services.ucas.com/search/api/v2/courses/search"
+    # api_url = "https://services.ucas.com/search/api/v2/courses/search?fields=courses(id,academicYearId,applicationCode,subjects(caption),courseTitle,routingData(destination(caption),scheme(caption)),provider(id,name,logoUrl,providerSort,institutionCode, ukprn),options(id,outcomeQualification(caption),duration,durationRange(min,max),studyMode,startDate,academicEntryRequirements,features)),information(postcodeLookup,courseCounts(perProviderCourseCountsByDestination,totalCourseCount,totalProviderCount,ucasTeacherTrainingProvider,degreeApprenticeship,higherTechnicalQualifications,providers,schemes,subjects,startDates,studyTypes,attendanceTypes,acceleratedDegrees,qualifications,entryPoints,allFilters),paging)"
     
     headers = {
         "Content-Type": "application/json",
@@ -53,41 +54,41 @@ def fetch_all_ucas_courses(page_size: int = 200, per_request_timeout: int = 30, 
             "academicYearId": "2026",
             "destinations": ["Undergraduate"],
             "providers": [
-                "University of Aberdeen",
-                "University of Bath",
-                "University of Birmingham",
-                "University of Bristol",
-                "University of Cambridge",
-                "Cardiff University",
+                # "University of Aberdeen",
+                # "University of Bath",
+                # "University of Birmingham",
+                # "University of Bristol",
+                # "University of Cambridge",
+                # "Cardiff University",
                 "Durham University",
-                "The University of Edinburgh",
-                "University of Exeter",
-                "University of Glasgow",
-                "Imperial College London",
-                "King's College London, University of London (KCL)",
-                "Lancaster University",
-                "University of Leeds",
-                "University of Liverpool",
-                "Loughborough University",
-                "London School of Economics and Political Science, University of London (LSE)",
-                "University of Manchester",
-                "Newcastle University",
-                "Northumbria University, Newcastle",
-                "University of Nottingham",
-                "University of Oxford",
-                "Queen Mary University of London",
-                "Queen's University Belfast",
-                "Royal Holloway, University of London",
-                "University of Sheffield",
-                "SOAS University of London",
-                "University of Southampton",
-                "University of St Andrews",
-                "University of Sunderland",
-                "University of Surrey",
-                "University of Sussex",
-                "UCL (University College London)",
-                "University of Warwick",
-                "University of York"
+                # "The University of Edinburgh",
+                # "University of Exeter",
+                # "University of Glasgow",
+                # "Imperial College London",
+                # "King's College London, University of London (KCL)",
+                # "Lancaster University",
+                # "University of Leeds",
+                # "University of Liverpool",
+                # "Loughborough University",
+                # "London School of Economics and Political Science, University of London (LSE)",
+                # "University of Manchester",
+                # "Newcastle University",
+                # "Northumbria University, Newcastle",
+                # "University of Nottingham",
+                # "University of Oxford",
+                # "Queen Mary University of London",
+                # "Queen's University Belfast",
+                # "Royal Holloway, University of London",
+                # "University of Sheffield",
+                # "SOAS University of London",
+                # "University of Southampton",
+                # "University of St Andrews",
+                # "University of Sunderland",
+                # "University of Surrey",
+                # "University of Sussex",
+                # "UCL (University College London)",
+                # "University of Warwick",
+                # "University of York"
             ],
             "schemes": [],
             "ucasTeacherTrainingProvider": False,
@@ -190,17 +191,17 @@ def save_courses_to_json(courses, filename: str = "ucas_courses.json") -> None:
 def main():
     courses = fetch_all_ucas_courses()
     # only extract IDs
-    course_ids = [course.get("id") for course in courses] if courses else []
+    # course_ids = [course.get("id") for course in courses] if courses else []
     # Save to JSON if fetch succeeded (even if empty list)
     if courses is not None:
-        save_courses_to_json(course_ids, filename="ucas_ids.json")
-
-        
+        save_courses_to_json(courses, filename="ucas_durham.json")
 
 def test():
-    data = fetch_specific_course("d323774d-237f-4237-8986-0fdbf6b12573")
-    print(data.get("academicYearsInformation"))
-    print(data.get("course").get("options")[0].get("courseFees"))
+    data = fetch_specific_course("1781410f-f860-4ab6-83e5-459320b3576f")
+    save_courses_to_json(data, filename="accounting_durham.json")
+    # print(data.get("academicYearsInformation"))
+    # print(data.get("course").get("options")[0].get("courseFees"))
 
 if __name__ == "__main__":
+    # test()
     main()

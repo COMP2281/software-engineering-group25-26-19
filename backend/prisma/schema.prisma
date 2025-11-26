@@ -1,0 +1,67 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model University {
+  id        String   @id @default(uuid())
+  name      String
+  ukprn     String?  @unique
+  address   Json?
+  website   String?
+  logoUrl   String?
+  
+  courses   Course[]
+}
+
+model Course {
+  id              String   @id @default(uuid())
+  ucasCourseId    String   @unique
+  title           String
+  applicationCode String?
+  summary         String?
+  
+  universityId    String
+  university      University @relation(fields: [universityId], references: [id])
+  
+  options         CourseOption[]
+}
+
+model CourseOption {
+  id              String   @id @default(uuid())
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id])
+  
+  year            Int
+  studyMode       String?
+  duration        String?
+  startDate       String?
+  
+  homeFee         Float?
+  internationalFee Float?
+  
+  // A-Level Requirements
+  aLevelGrade1    String?
+  aLevelSubject1  String?
+  aLevelGrade2    String?
+  aLevelSubject2  String?
+  aLevelGrade3    String?
+  aLevelSubject3  String?
+  aLevelGrade4    String?
+  aLevelSubject4  String?
+  
+  // English Language Requirements
+  englishSpeaking  String?
+  englishListening String?
+  englishReading   String?
+  englishWriting   String?
+  englishOverall   String?
+
+  outcomeQualification String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
