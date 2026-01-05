@@ -1,19 +1,21 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "demo": "ts-node src/demo.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^7.0.1",
+    "@prisma/client": "^5.22.0",
     "@types/node": "^24.10.1",
-    "prisma": "^7.0.1",
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

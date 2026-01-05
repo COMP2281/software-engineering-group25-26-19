@@ -60,8 +60,8 @@ def fetch_all_ucas_courses(page_size: int = 200, per_request_timeout: int = 30, 
                 # "University of Bristol",
                 # "University of Cambridge",
                 # "Cardiff University",
-                "Durham University",
-                # "The University of Edinburgh",
+                # "Durham University",
+                "The University of Edinburgh",
                 # "University of Exeter",
                 # "University of Glasgow",
                 # "Imperial College London",
@@ -194,7 +194,7 @@ def main():
     # course_ids = [course.get("id") for course in courses] if courses else []
     # Save to JSON if fetch succeeded (even if empty list)
     if courses is not None:
-        save_courses_to_json(courses, filename="ucas_durham.json")
+        save_courses_to_json(courses, filename="ucas_aberdeen.json")
 
 def test():
     data = fetch_specific_course("1781410f-f860-4ab6-83e5-459320b3576f")
