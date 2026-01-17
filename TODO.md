@@ -1,6 +1,6 @@
 ## Backend
 
-### Web Scraping
+### Web Scraping -- Sam & Omar
 
 #### Language Requirements
 
@@ -13,9 +13,10 @@
 
 #### Course Fees
 
-- Easier than language requirements because these would always be listed on the actual course pages
-- Just make a rule looking for the pound sign and grab the numbers that way
-- Then figure out what to do with them 
+- Easier than language requirements because these would always be listed/linked on the actual course pages (but NOT always displayed on the course page itself)
+- Just make a rule looking for the pound sign and grab the numbers that way, look for keywords (i.e: overseas, international, England, etc.), AVOID accommodation/other "trick" costs
+- If home & international fees are not found, look for "fee" links and follow, repeat the lookup logic (will have to handle .pdf links separately)
+- Gemini suggests an LLM-based fallback, which supposedly handles complex/weird layouts better (preferably, we should not need this)
 
 #### Notes
 
@@ -23,6 +24,10 @@
 - Could be helpful to automate grabbing relevant links from there maybe?? to not write exact custom rules for absolutely each course/uni/whatever
 - Use https://aistudio.google.com (1 million context tokens) to just plug in the full sitemap or html to write the rules for parsing
 - Look for libraries similar to python's BeautifulSoup in Typescript/Node.js. DO NOT write custom HTML parsing logic yourself, there are already well established libraries for this
+- UCAS API does NOT provide some information in some cases, in which an HTML scraper will be needed instead
+- Essentially, we can run the UCAS API first to scrape as much information as possible, then fill in the rest with the HTML scraper
+- The HTML scraper will never be fully robust, so we may need a confidence score or some way to tell the user that the data may not be accurate
+- For Scottish universities, there are 3 fee "bands": Scotland, UK, and International. May have to adjust the schema
 
 
 ### REST API
@@ -31,7 +36,7 @@
 - Whenever frontend pages are done, link it all up with fetch or axios on the frontend.
 
 
-## Frontend
+## Frontend -- Matteo & Callum
 
 - Have a look at figma
 - No need to go overboard with the styling
