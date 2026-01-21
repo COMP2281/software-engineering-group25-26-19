@@ -18,6 +18,14 @@
 - If home & international fees are not found, look for "fee" links and follow, repeat the lookup logic (will have to handle .pdf links separately)
 - Gemini suggests an LLM-based fallback, which supposedly handles complex/weird layouts better (preferably, we should not need this)
 
+#### Course Fees - Issues
+
+- Postgraduate taught courses need differentiating between full time and part time tuition. Currently the scraper assumes the full time tuition
+- Foundation year courses do not have an international tuition
+- Some course URLs provided by UCAS are invalid/null
+- Edinburgh Uni -- Scraper finds linked tuition fee page but does not parse successfully
+- Scraper sometimes fails to parse tables of certain formats
+
 #### Notes
 
 - Have a look at https://www..../robots.txt and https://www..../sitemap.xml (may be different on some sites). Example: https://www.durham.ac.uk/sitemap-en.xml

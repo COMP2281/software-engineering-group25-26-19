@@ -25,6 +25,7 @@ model Course {
   title           String
   applicationCode String?
   summary         String?
+  courseUrl       String?
   
   universityId    String
   university      University @relation(fields: [universityId], references: [id])
