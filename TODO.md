@@ -16,15 +16,16 @@
 - Easier than language requirements because these would always be listed/linked on the actual course pages (but NOT always displayed on the course page itself)
 - Just make a rule looking for the pound sign and grab the numbers that way, look for keywords (i.e: overseas, international, England, etc.), AVOID accommodation/other "trick" costs
 - If home & international fees are not found, look for "fee" links and follow, repeat the lookup logic (will have to handle .pdf links separately)
-- Gemini suggests an LLM-based fallback, which supposedly handles complex/weird layouts better (preferably, we should not need this)
 
 #### Course Fees - Issues
 
 - Postgraduate taught courses need differentiating between full time and part time tuition. Currently the scraper assumes the full time tuition
 - Foundation year courses do not have an international tuition
 - Some course URLs provided by UCAS are invalid/null
-- Edinburgh Uni -- Scraper finds linked tuition fee page but does not parse successfully
-- Scraper sometimes fails to parse tables of certain formats
+- Scraper still sometimes falls for "trap values" (i.e: scholarships & awards, which sometimes contain the word "tuition" in close proximity)
+- Edinburgh Uni -- Tables loaded via javascript, headless browser (puppeteer is being used for this) needed
+- Unavailable fees are *sometimes* overridden by false values instead of keeping as null (i.e: home fee unavailable, international fee available, international fee overrides home fee)
+- Cardiff Uni -- Blocks scraper bots (response code 403)
 
 #### Notes
 
