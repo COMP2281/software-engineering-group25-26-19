@@ -4,8 +4,8 @@ import { setToken } from "../api/authorToken";
 import { login } from "../api/login.author.api"
 import "./LoginPage.css";
 
-import logo from "../api/durham-logo.png";
-import campus from "../api/durham-campus.jpg";
+import logo from "../assets/durham-logo.png";
+import campus from "../assets/durham-campus.jpg";
 
 export default function LoginPage() {
   const navigate = useNavigate();
