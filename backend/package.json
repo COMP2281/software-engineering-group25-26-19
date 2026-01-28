@@ -13,10 +13,17 @@
     "@prisma/client": "^5.22.0",
     "@types/node": "^24.10.1",
     "axios": "^1.13.2",
+    "cheerio": "^1.1.2",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "pdf-parse": "^2.4.5",
     "prisma": "^5.22.0",
+    "puppeteer": "^24.36.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/pdf-parse": "^1.1.5"
   }
 }

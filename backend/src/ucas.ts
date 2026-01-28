@@ -83,7 +83,7 @@ export async function fetchAllUcasCourses(
         searchTerm: "",
         filters: {
             academicYearId: "2026",
-            destinations: ["Undergraduate"],
+            destinations: ["Undergraduate", "Postgraduate"],
             providers: providers,
             schemes: [],
             ucasTeacherTrainingProvider: false,
