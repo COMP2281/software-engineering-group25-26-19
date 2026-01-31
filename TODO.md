@@ -14,6 +14,8 @@
 
 #### Course Fees
 
+31/01/26 Omar update: remove deposity from list of words that we shouldnt scrape and make threshold 9000 instead of 1000
+
 - Easier than language requirements because these would always be listed/linked on the actual course pages (but NOT always displayed on the course page itself)
 - Just make a rule looking for the pound sign and grab the numbers that way, look for keywords (i.e: overseas, international, England, etc.), AVOID accommodation/other "trick" costs
 - If home & international fees are not found, look for "fee" links and follow, repeat the lookup logic (will have to handle .pdf links separately)
