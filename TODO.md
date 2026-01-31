@@ -10,6 +10,7 @@
 - So separate logic would have to be written for scraping the language requirements pages and linking them to the courses
 - Probably makes sense to make a `LanguageRequirement` model in the database and link it to courses via a foreign key
 - This model should hold the different grade bands and their requirements with a full breakdown per skill (reading, writing, speaking, listening)
+- We may abandon this ngl
 
 #### Course Fees
 
@@ -19,13 +20,8 @@
 
 #### Course Fees - Issues
 
-- Postgraduate taught courses need differentiating between full time and part time tuition. Currently the scraper assumes the full time tuition
-- Foundation year courses do not have an international tuition
-- Some course URLs provided by UCAS are invalid/null
-- Scraper still sometimes falls for "trap values" (i.e: scholarships & awards, which sometimes contain the word "tuition" in close proximity)
-- Edinburgh Uni -- Tables loaded via javascript, headless browser (puppeteer is being used for this) needed
-- Unavailable fees are *sometimes* overridden by false values instead of keeping as null (i.e: home fee unavailable, international fee available, international fee overrides home fee)
-- Cardiff Uni -- Blocks scraper bots (response code 403)
+- Cardiff Uni -- Cannot parse tuition fees despite successful access via puppeteer
+- Some page/table layouts cannot be read properly (i.e: https://www.imperial.ac.uk/business-school/mba/full-time-mba/ | all tables in Cardiff)
 
 #### Notes
 
