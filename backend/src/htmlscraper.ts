@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import prisma from './db';
 
-// Dynamic import for Puppeteer to avoid hard crash if not installed
+// Dynamic import for Puppeteer
 let puppeteer: any;
 try {
     puppeteer = require('puppeteer');
@@ -14,14 +14,20 @@ try {
     console.warn("Puppeteer not found. Install it with `npm install puppeteer` to enable advanced scraping.");
 }
 
-// Fix for TS2349: pdf-parse often has issues with default imports in strict TS
 const pdfParse = require('pdf-parse');
 
 // Configuration
-const TIMEOUT = 30000; // Increased for browser rendering
+const TIMEOUT = 30000;
 const DEBUG = true;
 
-// Headers to mimic a real browser for Axios
+// Expanded list of keywords to avoid
+const TRAP_KEYWORDS = [
+    'scholarship', 'bursary', 'funding', 'award', 'loan', 'grant', 'stipend', 
+    'deposit', 'accommodation', 'living', 'housing', 'residence', 'placement', 
+    'bench fee', 'additional cost', 'maintenance', 'contribution', 'discount',
+    'advance'
+];
+
 const HEADERS_BROWSER = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -60,10 +66,8 @@ export async function enrichCourseData(courseId: string) {
     console.log(`URL: ${course.courseUrl}`);
 
     try {
-        // Step 1: Try Main Page
         let data = await scrapeWithFallback(course.courseUrl);
 
-        // Step 2: Waterfall to Sub-pages if needed
         if (!hasData(data)) {
             console.log(`   > Fees not found. Scanning for sub-pages...`);
             const subPageUrl = await findFeeSubPage(course.courseUrl, data.lastHtml);
@@ -75,12 +79,18 @@ export async function enrichCourseData(courseId: string) {
             }
         }
 
+        // --- Post-Processing Sanity Checks ---
+        // 1. If Home > International, it's almost certainly a mistake (captured Intl fee as Home).
+        if (data.homeFee && data.internationalFee && data.homeFee >= data.internationalFee) {
+            debug(`Sanity Check Failed: Home (£${data.homeFee}) >= Intl (£${data.internationalFee}). Discarding Home Fee.`);
+            data.homeFee = null;
+        }
+
         if (hasData(data)) {
             console.log(`   > SUCCESS: Home (RUK): £${data.homeFee}, Intl: £${data.internationalFee} ${data.scotlandFee ? `(Scot: £${data.scotlandFee})` : ''}`);
             
             for (const option of course.options) {
                 const updateData: any = {};
-                // Only update if DB is empty to avoid overwriting good data
                 if (!option.homeFee && data.homeFee) updateData.homeFee = data.homeFee;
                 if (!option.internationalFee && data.internationalFee) updateData.internationalFee = data.internationalFee;
 
@@ -110,13 +120,10 @@ function mergeData(base: ScrapedData, newDat: ScrapedData): ScrapedData & { last
         homeFee: newDat.homeFee || base.homeFee,
         internationalFee: newDat.internationalFee || base.internationalFee,
         scotlandFee: newDat.scotlandFee || base.scotlandFee,
-        lastHtml: (newDat as any).lastHtml // Preserve HTML for debugging
+        lastHtml: (newDat as any).lastHtml
     };
 }
 
-/**
- * Orchestrates the scrape: Axios first -> Puppeteer fallback
- */
 async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml?: string }> {
     let result: ScrapedData & { lastHtml?: string } = { 
         homeFee: null, 
@@ -124,7 +131,7 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
         scotlandFee: null 
     };
 
-    // 1. Try Axios (Fast)
+    // 1. Try Axios
     try {
         debug(`Attempting Axios fetch: ${url}`);
         const response = await axios.get(url, {
@@ -134,7 +141,6 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
             validateStatus: s => s < 500
         });
 
-        // If 403 Forbidden (Cardiff), throw immediately to trigger Puppeteer
         if (response.status === 403 || response.status === 401) {
             throw new Error(`Axios blocked with status ${response.status}`);
         }
@@ -150,7 +156,7 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
         debug(`Axios failed: ${error instanceof Error ? error.message : error}`);
     }
 
-    // 2. Try Puppeteer (Slow, but handles JS/WAF)
+    // 2. Try Puppeteer
     if (puppeteer) {
         debug("Falling back to Puppeteer (Headless Browser)...");
         try {
@@ -159,21 +165,17 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
                 args: ['--no-sandbox', '--disable-setuid-sandbox'] 
             });
             const page = await browser.newPage();
-            
-            // Set User Agent to avoid detection
             await page.setUserAgent(HEADERS_BROWSER['User-Agent']);
             
             await page.goto(url, { waitUntil: 'networkidle2', timeout: TIMEOUT });
 
-            // Wait for common fee indicators to render
             try {
-                // FIXED: Pass function as a string to avoid TS2584 (Cannot find name 'document')
-                // This string is evaluated inside the browser context
+                // Wait for text or table
                 await page.waitForFunction(
                     'document.body.innerText.includes("£") || document.querySelector("table")',
                     { timeout: 5000 }
                 );
-            } catch (e) { /* ignore timeout, proceed with what we have */ }
+            } catch (e) { /* ignore timeout */ }
 
             const content = await page.content();
             await browser.close();
@@ -191,18 +193,15 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
 }
 
 async function processResponseData(url: string, data: any, contentType: string = ''): Promise<ScrapedData & { lastHtml?: string }> {
-    // PDF Handling
     if (url.toLowerCase().endsWith('.pdf') || contentType.includes('application/pdf')) {
         debug("Detected PDF content.");
         const buffer = Buffer.from(data);
         const pdfData = await pdfParse(buffer);
         const textContent = pdfData.text.replace(/\s+/g, ' ');
-        
         const fees = parseTextForFees(textContent);
         return { ...fees, lastHtml: "PDF_CONTENT" };
     }
 
-    // HTML Handling
     const html = data.toString('utf-8');
     const result = await parseHtml(html);
     return { ...result, lastHtml: html };
@@ -211,35 +210,34 @@ async function processResponseData(url: string, data: any, contentType: string =
 async function parseHtml(html: string): Promise<ScrapedData> {
     const $ = cheerio.load(html);
     
-    // Save dump for debugging
     if (DEBUG) fs.writeFileSync(path.resolve('debug_last_scrape.html'), html);
 
-    // Cleanup
     $('script, style, nav, footer, header').remove();
     
     // Remove scholarship traps
     $('*').each((_, el) => {
         const text = $(el).text().toLowerCase();
         const attrStr = ($(el).attr('class') || '') + ($(el).attr('id') || '');
-        if (/scholarship|bursary|funding|award/i.test(attrStr)) {
-            if (text.length < 500 && (text.includes('value') || text.includes('award'))) {
-                $(el).remove();
-            }
+        // Check for trap keywords in class/ID or short text content
+        if (TRAP_KEYWORDS.some(k => attrStr.includes(k))) {
+             $(el).remove();
+        } else if (text.length < 300 && TRAP_KEYWORDS.some(k => text.includes(k))) {
+             // Only remove elements if they explicitly mention traps in text and aren't main containers
+             // But be careful not to remove "Tuition fees (scholarships available)"
+             // We look for "value" or "award" specifically for removal
+             if (text.includes('value') || text.includes('award') || text.includes('up to')) {
+                 $(el).remove();
+             }
         }
     });
 
     const feeContext: FeeContext = { home: [], intl: [], scotland: [] };
 
-    // Strategy A: Tables
     parseTables($, feeContext);
-
-    // Strategy B: Div Grids (Edinburgh)
     parseDivGrids($, feeContext);
-
-    // Strategy C: Label/Value
     parseLabelValuePairs($, feeContext);
 
-    // Strategy D: Text Scan
+    // Text Scan
     const bodyText = $('body').text().replace(/\s+/g, ' ');
     const textFees = parseTextForFees(bodyText);
     
@@ -250,9 +248,9 @@ async function parseHtml(html: string): Promise<ScrapedData> {
     debug(`Candidates -> Home: [${feeContext.home.join(', ')}], Intl: [${feeContext.intl.join(', ')}], Scot: [${feeContext.scotland.join(', ')}]`);
 
     return {
-        homeFee: selectBestFee(feeContext.home),
-        internationalFee: selectBestFee(feeContext.intl),
-        scotlandFee: selectBestFee(feeContext.scotland)
+        homeFee: selectBestFee(feeContext.home, 'home'),
+        internationalFee: selectBestFee(feeContext.intl, 'intl'),
+        scotlandFee: selectBestFee(feeContext.scotland, 'scotland')
     };
 }
 
@@ -265,15 +263,15 @@ function parseTextForFees(text: string): ScrapedData {
 }
 
 function parseDivGrids($: cheerio.CheerioAPI, context: FeeContext) {
-    // Look for div structures common in responsive tables
     $('div, p').each((_, el) => {
         const text = $(el).text().toLowerCase().trim();
-        // Strict length check to avoid huge containers
         if (text.length > 20 && text.length < 300 && text.includes('£')) {
+            // Trap check
+            if (TRAP_KEYWORDS.some(k => text.includes(k))) return;
+
             const price = extractPriceFromSimpleString(text);
             if (price) {
-                // Check siblings or parent for labels if the label isn't inside
-                const labelText = text + " " + $(el).prev().text().toLowerCase() + " " + $(el).parent().prev().text().toLowerCase();
+                const labelText = text + " " + $(el).prev().text().toLowerCase();
                 
                 if (/(scotland|scottish)/.test(labelText)) context.scotland.push(price);
                 else if (/(home|uk|domestic|england|rest of uk|ruk)/.test(labelText) && !/(international|overseas)/.test(labelText)) context.home.push(price);
@@ -286,8 +284,12 @@ function parseDivGrids($: cheerio.CheerioAPI, context: FeeContext) {
 function parseTables($: cheerio.CheerioAPI, context: FeeContext) {
     $('table').each((_, table) => {
         const $table = $(table);
-        let headers: string[] = [];
+        const tableText = $table.text().toLowerCase();
         
+        // Whole table trap check
+        if (tableText.includes('scholarship') || tableText.includes('bursary')) return;
+
+        let headers: string[] = [];
         $table.find('th').each((_, th) => { headers.push($(th).text().toLowerCase().trim()); });
         if (headers.length === 0) {
             $table.find('tr').first().find('td').each((_, td) => { headers.push($(td).text().toLowerCase().trim()); });
@@ -307,9 +309,10 @@ function parseTables($: cheerio.CheerioAPI, context: FeeContext) {
                 extractAndPush(cells, scotIndices, context.scotland);
             });
         } else {
-            // Row based fallback
              rows.each((_, tr) => {
                 const rowText = $(tr).text().toLowerCase();
+                if (TRAP_KEYWORDS.some(k => rowText.includes(k))) return;
+
                 const price = extractPriceFromSimpleString(rowText);
                 if (price) {
                     if (/(scotland|scottish)/.test(rowText)) context.scotland.push(price);
@@ -323,10 +326,11 @@ function parseTables($: cheerio.CheerioAPI, context: FeeContext) {
 
 function parseLabelValuePairs($: cheerio.CheerioAPI, context: FeeContext) {
     const classifyAndPush = (label: string, valueStr: string) => {
+        const combined = (label + " " + valueStr).toLowerCase();
+        if (TRAP_KEYWORDS.some(k => combined.includes(k))) return;
+
         const price = extractPriceFromSimpleString(valueStr);
         if (!price) return;
-        const combined = (label + " " + valueStr).toLowerCase();
-        if (combined.includes('deposit') || combined.includes('scholarship')) return;
 
         if (/(international|overseas)/.test(combined)) context.intl.push(price);
         else if (/(scotland|scottish)/.test(combined)) context.scotland.push(price);
@@ -351,7 +355,9 @@ function getIndices(headers: string[], matchRegex: RegExp, excludeRegex?: RegExp
 function extractAndPush(cells: cheerio.Cheerio<any>, indices: number[], targetArray: number[]) {
     indices.forEach(index => {
         if (index < cells.length) {
-            const val = extractPriceFromSimpleString(cells.eq(index).text());
+            const text = cells.eq(index).text();
+            if (TRAP_KEYWORDS.some(k => text.toLowerCase().includes(k))) return;
+            const val = extractPriceFromSimpleString(text);
             if (val) targetArray.push(val);
         }
     });
@@ -388,7 +394,8 @@ function extractPriceFromSimpleString(text: string): number | null {
     const match = regex.exec(cleanText);
     if (match && match[1]) {
         const val = parseInt(match[1].replace(/,/g, ''), 10);
-        if (val > 1000 && val < 70000) return val;
+        // Valid range: 1000 to 80000
+        if (val > 1000 && val < 80000) return val;
     }
     return null;
 }
@@ -415,10 +422,13 @@ function extractFeeFromText(text: string, keywords: string[]): number | null {
         const price = parseInt(priceStr, 10);
         const priceIndex = match.index;
 
-        if (price < 1000 || price > 70000) continue; 
+        if (price < 1000 || price > 80000) continue; 
         
-        const context = text.substring(Math.max(0, priceIndex - 50), Math.min(text.length, priceIndex + 50)).toLowerCase();
-        if (context.includes('accommodation') || context.includes('living') || context.includes('deposit') || context.includes('scholarship')) continue;
+        // Reduced context window to 120 chars for tighter matching
+        const context = text.substring(Math.max(0, priceIndex - 60), Math.min(text.length, priceIndex + 60)).toLowerCase();
+        
+        // Strict trap check
+        if (TRAP_KEYWORDS.some(k => context.includes(k))) continue;
 
         let minDistance = Infinity;
         for (const kwIdx of keywordIndices) {
@@ -426,7 +436,7 @@ function extractFeeFromText(text: string, keywords: string[]): number | null {
             if (dist < minDistance) minDistance = dist;
         }
 
-        if (minDistance < 250) {
+        if (minDistance < 120) {
             candidates.push({ value: price, distance: minDistance });
         }
     }
@@ -435,11 +445,22 @@ function extractFeeFromText(text: string, keywords: string[]): number | null {
     return candidates.length > 0 && candidates[0] ? candidates[0].value : null;
 }
 
-function selectBestFee(candidates: number[]): number | null {
+function selectBestFee(candidates: number[], type: 'home' | 'intl' | 'scotland'): number | null {
     if (candidates.length === 0) return null;
-    const valid = candidates.filter(c => c > 1000 && c < 70000);
+    
+    // Filter sensible range
+    const minFee = type === 'scotland' ? 1000 : 4500;
+    const valid = candidates.filter(c => c >= minFee && c < 80000);
+    
     if (valid.length === 0) return null;
-    return valid.reduce((a, b) => Math.max(a, b), 0);
+
+    if (type === 'intl') {
+        // For International: Pick the HIGHEST valid fee (avoid placement years/deposits)
+        return Math.max(...valid);
+    } else {
+        // For Home/Scotland: Pick the LOWEST valid fee (avoid picking up the Intl fee by mistake)
+        return Math.min(...valid);
+    }
 }
 
 if (require.main === module) {
