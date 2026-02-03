@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import "./Dashboard_siderbar.css";
+import "./Sidebar.css";
 
 type User = {
   name: string;
