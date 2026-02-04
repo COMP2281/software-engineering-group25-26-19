@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "./Dashboard_sidebar";
+import Sidebar from "../components/Dashboard_sidebar";
 import "./Dashboard.css";
 
 import {
