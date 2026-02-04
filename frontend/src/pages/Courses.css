@@ -1,0 +1,98 @@
+.coursesTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.coursesTable th,
+.coursesTable td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.coursesTable th {
+    background: #f8f9fb;
+    font-weight: 600;
+}
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #e3e3e3;
+    border-top: 4px solid #68246d;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Zebra striping */
+.coursesTable tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.coursesTable tbody tr:nth-child(even) {
+    background-color: #f5f6f8; /* light grey */
+}
+
+/* Pagination container */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+
+    padding: 20px 0 8px;
+}
+
+/* Icon buttons */
+.pageIconBtn {
+    all: unset; /* remove default button styles */
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    color: #555;
+
+    transition:
+        color 0.3s ease,
+        transform 0.15s ease;
+}
+
+/* Icon size */
+.pageIconBtn i {
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* Hover */
+.pageIconBtn:hover:not(:disabled) {
+    color: #68246d;
+}
+
+/* Active (click) */
+.pageIconBtn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+/* Disabled */
+.pageIconBtn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    color: #999;
+}
+
+/* Page info */
+.pageInfo {
+    font-size: 16px;
+    font-weight: 500;
+    color: #555;
+}

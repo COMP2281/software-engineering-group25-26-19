@@ -1,54 +1,55 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Dashboard_sidebar";
+import Sidebar from "../components/Sidebar";
 import "./Dashboard.css";
 
 import {
-  getDashboardSummary,
-  getFeeHistogram,
-  quickScrape,
-  getExportUrl,
+    getDashboardSummary,
+    getFeeHistogram,
+    quickScrape,
+    getExportUrl,
 } from "../api/Dashboard.api";
 import type {
-  DashboardSummary,
-  FeeHistogram,
-  ScrapeStatus,
+    DashboardSummary,
+    FeeHistogram,
+    ScrapeStatus,
 } from "../api/Dashboard.types";
 
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
 } from "recharts";
 
+/** 把 lastSuccessfulScrapeAt 转成 “3 hours ago” 这种文本 + 是否过期 */
 function formatAge(lastIso: string | null) {
-  if (!lastIso) return { text: "Never", stale: true };
+    if (!lastIso) return { text: "Never", stale: true };
 
-  const last = new Date(lastIso).getTime();
-  const now = Date.now();
-  const diffMs = Math.max(0, now - last);
+    const last = new Date(lastIso).getTime();
+    const now = Date.now();
+    const diffMs = Math.max(0, now - last);
 
-  const minutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(diffMs / 3600000);
-  const days = Math.floor(diffMs / 86400000);
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMs / 3600000);
+    const days = Math.floor(diffMs / 86400000);
 
-  let text = "";
-  if (minutes < 60) text = `${minutes} min ago`;
-  else if (hours < 24) text = `${hours} hours ago`;
-  else text = `${days} days ago`;
+    let text = "";
+    if (minutes < 60) text = `${minutes} min ago`;
+    else if (hours < 24) text = `${hours} hours ago`;
+    else text = `${days} days ago`;
 
-  const STALE_DAYS = 7;
-  return { text, stale: days >= STALE_DAYS };
+    const STALE_DAYS = 7;
+    return { text, stale: days >= STALE_DAYS };
 }
 
 function statusText(s: ScrapeStatus) {
-  if (s === "idle") return "Idle";
-  if (s === "running") return "Running";
-  if (s === "success") return "Success";
-  return "Failed";
+    if (s === "idle") return "Idle";
+    if (s === "running") return "Running";
+    if (s === "success") return "Success";
+    return "Failed";
 }
 
 type ActionLoading = null | "scrape" | "export";

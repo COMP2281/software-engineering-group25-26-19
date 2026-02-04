@@ -1,41 +1,27 @@
-import { fetchAllUcasCourses } from './ucas';
-import { exportCoursesToExcel } from './excel';
+import express from "express";
+import path from "path";
+import router from "./routes";
 
-async function main() {
-    // Get arguments from command line
-    // Usage: npx ts-node src/index.ts "University Name" "output.xlsx"
-    const universityName = process.argv[2] || "Durham University";
-    const excelFilename = process.argv[3] || "courses.xlsx";
+const app = express();
+const PORT = process.env["PORT"] || 5001;
 
-    console.log(`\n=== Starting Pipeline for: ${universityName} ===\n`);
+app.use(express.json());
 
-    try {
-        // Step 1: Fetch from UCAS API and store in Database
-        console.log("--- Step 1: Fetching data from UCAS and saving to Database ---");
-        // fetchAllUcasCourses takes an array of providers
-        await fetchAllUcasCourses([universityName]);
-        console.log("Step 1 Complete.\n");
+// API Routes
+app.use("/api", router);
 
-        // Step 2: Export from Database to Excel
-        console.log(`--- Step 2: Exporting data to ${excelFilename} ---`);
-        await exportCoursesToExcel(universityName, excelFilename);
-        console.log("Step 2 Complete.\n");
+// Serve static files in production
+// The static files will come from ../frontend/dist/ relative to the backend folder structure
+if (process.env["NODE_ENV"] === "production") {
+    const staticPath = path.join(__dirname, "../../frontend/dist");
 
-        console.log("=== Pipeline Finished Successfully ===");
+    app.use(express.static(staticPath));
 
-    } catch (error) {
-        console.error("\n!!! Pipeline Failed !!!");
-        console.error(error);
-        process.exit(1);
-    }
+    app.get("*", (_, res) => {
+        res.sendFile(path.join(staticPath, "index.html"));
+    });
 }
 
-// Execute main function
-if (require.main === module) {
-    main()
-        .then(() => process.exit(0))
-        .catch(err => {
-            console.error(err);
-            process.exit(1);
-        });
-}
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});

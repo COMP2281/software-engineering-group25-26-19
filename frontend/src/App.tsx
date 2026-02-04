@@ -1,5 +1,7 @@
-import AppRouter from "../src/routes/AppRouter";
+import AppRouter from "./routes/AppRouter";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "./App.css";
 
 export default function App() {
-  return <AppRouter />;
+    return <AppRouter />;
 }

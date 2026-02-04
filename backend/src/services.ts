@@ -23,6 +23,15 @@ export async function processCourseData(data: any) {
     });
 
     // 2. Upsert Course
+    // Try root level keys (common in Search API v2)
+    let courseUrl = course.courseURL || course.deepLink;
+
+    // If not found, look inside the first option (common in Search API v3 / Details)
+    if (!courseUrl && course.options && Array.isArray(course.options) && course.options.length > 0) {
+        // Use the first option's provider URL
+        courseUrl = course.options[0].providerCourseUrl;
+    }
+
     const dbCourse = await prisma.course.upsert({
         where: { ucasCourseId: course.id },
         update: {
@@ -30,12 +39,14 @@ export async function processCourseData(data: any) {
             applicationCode: course.applicationCode,
             summary: course.summary,
             universityId: university.id,
+            courseUrl: courseUrl || null,
         },
         create: {
             ucasCourseId: course.id,
             title: course.courseTitle,
             applicationCode: course.applicationCode,
             summary: course.summary,
+            courseUrl: courseUrl || null,
             universityId: university.id,
         },
     });

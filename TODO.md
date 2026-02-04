@@ -10,13 +10,20 @@
 - So separate logic would have to be written for scraping the language requirements pages and linking them to the courses
 - Probably makes sense to make a `LanguageRequirement` model in the database and link it to courses via a foreign key
 - This model should hold the different grade bands and their requirements with a full breakdown per skill (reading, writing, speaking, listening)
+- We may abandon this ngl
 
 #### Course Fees
+
+31/01/26 Omar update: remove deposity from list of words that we shouldnt scrape and make threshold 9000 instead of 1000
 
 - Easier than language requirements because these would always be listed/linked on the actual course pages (but NOT always displayed on the course page itself)
 - Just make a rule looking for the pound sign and grab the numbers that way, look for keywords (i.e: overseas, international, England, etc.), AVOID accommodation/other "trick" costs
 - If home & international fees are not found, look for "fee" links and follow, repeat the lookup logic (will have to handle .pdf links separately)
-- Gemini suggests an LLM-based fallback, which supposedly handles complex/weird layouts better (preferably, we should not need this)
+
+#### Course Fees - Issues
+
+- Cardiff Uni -- Cannot parse tuition fees despite successful access via puppeteer
+- Some page/table layouts cannot be read properly (i.e: https://www.imperial.ac.uk/business-school/mba/full-time-mba/ | all tables in Cardiff)
 
 #### Notes
 
