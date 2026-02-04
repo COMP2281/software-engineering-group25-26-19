@@ -9,15 +9,12 @@ import ProtectedRoute from "./ProtectedRoute";
 export default function AppRouter() {
   return (
     <Routes>
-      {/* 登录页 */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* 需要登陆才能访问 */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
       </Route>
 
-      {/* 默认跳转 */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

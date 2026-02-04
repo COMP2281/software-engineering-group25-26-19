@@ -10,11 +10,27 @@ const mockUser: User = {
   name: "SPIO User",
 };
 
-export default function Sidebar() {
+type SidebarProps = {
+  onToggleHide: () => void;
+};
+
+export default function Sidebar({ onToggleHide }: SidebarProps) {
   return (
     <aside className="sidebar">
-      {/* Header */}
       <div className="sidebarHeader">
+        <button
+          className="sidebarHideBtn"
+          type="button"
+          onClick={onToggleHide}
+          aria-label="Hide sidebar"
+        >
+          <span className="hamburger" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+
         <div className="avatar">
           {mockUser.avatarUrl ? (
             <img src={mockUser.avatarUrl} alt="avatar" />
@@ -29,26 +45,21 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Menu */}
       <nav className="menu">
         <NavLink to="/dashboard" className="menuItem">
           Dashboard
         </NavLink>
-
         <NavLink to="/courses" className="menuItem">
           Courses
         </NavLink>
-
         <NavLink to="/visualisation" className="menuItem">
           Visualisation
         </NavLink>
-
         <NavLink to="/settings" className="menuItem">
           Settings
         </NavLink>
       </nav>
 
-      {/* Footer */}
       <div className="sidebarFooter">
         <NavLink to="/login" className="signOut">
           Sign out

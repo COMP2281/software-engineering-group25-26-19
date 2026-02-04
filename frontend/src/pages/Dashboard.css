@@ -11,7 +11,46 @@
 .mainContent {
   flex: 1;
   min-width: 0;
-  padding: 28px;
+  padding: 0;
+   display: block;
+
+}
+
+.mainInner {
+  width: 100%;
+  max-width: none;
+  padding: 28px;   
+}
+
+
+.sidebarFloatToggle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 999;
+
+  width: 44px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #6b2c7c;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+}
+
+.sidebarFloatToggle:hover {
+  filter: brightness(1.05);
+}
+.appShell.sidebar-hidden .mainContent {
+  display: flex;
+  justify-content: center;
+}
+
+.appShell.sidebar-hidden .mainInner {
+  max-width: 1200px;
 }
 
 
@@ -260,3 +299,5 @@
   background: #111827;
   transition: width 250ms ease;
 }
+
+
