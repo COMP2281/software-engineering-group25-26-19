@@ -1,6 +1,6 @@
-import type { Course, CoursesResponse } from "./Courses.types";
+import type { Course } from "./Courses.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // Mock data for frontend dev
 
