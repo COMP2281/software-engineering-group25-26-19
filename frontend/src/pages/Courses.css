@@ -1,7 +1,9 @@
 .coursesTable {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;   /* 🔥 Important */
 }
+
 
 .coursesTable th,
 .coursesTable td {
@@ -14,6 +16,42 @@
     background: #f8f9fb;
     font-weight: 600;
 }
+
+.coursesTable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* Column widths */
+.coursesTable th:nth-child(1),
+.coursesTable td:nth-child(1) {
+    width: 20%;
+}
+
+.coursesTable th:nth-child(2),
+.coursesTable td:nth-child(2) {
+    width: 20%;
+}
+
+.coursesTable th:nth-child(3),
+.coursesTable td:nth-child(3) {
+    width: 20%;
+}
+
+.coursesTable th:nth-child(4),
+.coursesTable td:nth-child(4) {
+    width: 50%;
+}
+
+.summaryCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
 
 .spinner {
     width: 36px;
@@ -96,3 +134,4 @@
     font-weight: 500;
     color: #555;
 }
+

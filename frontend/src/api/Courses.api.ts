@@ -4,7 +4,9 @@ const USE_MOCK = false;
 
 // Mock data for frontend dev
 
-const MOCK_COURSES: Course[] = [
+const MOCK_COURSES: Course[] = [];
+
+/*const MOCK_COURSES: Course[] = [
     {
         id: "ddb48e92-0cd3-5dd4-b4b5-8baaa5a8f21b",
         academicYear: "2026",
@@ -136,7 +138,7 @@ const MOCK_COURSES: Course[] = [
         ukTuitionFeeYear1GBP: 14000,
     },
 ];
-
+*/
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const res = await fetch(url, options);
 
@@ -191,8 +193,10 @@ export async function getCourses(
 
     const query = new URLSearchParams({
         page: String(page),
-        pageSize: String(pageSize),
+        limit: String(pageSize),
     });
+
+    console.log(`Fetching courses with query: ${query.toString()}`);
 
     return fetchJson<PagedCoursesResponse>(`/api/courses?${query}`);
 }
