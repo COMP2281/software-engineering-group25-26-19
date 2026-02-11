@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getCourses } from "../api/Courses.api";
 import type { Course } from "../api/Courses.types";
 import Sidebar from "../components/Sidebar";
@@ -13,6 +13,7 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
+  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
 
   const PAGE_SIZE = 5;
 
@@ -24,6 +25,8 @@ export default function CoursesPage() {
         page,
         pageSize: PAGE_SIZE,
       });
+
+      console.log(res.data);
 
       setCourses(res.data);
       setTotalPages(res.totalPages);
@@ -52,10 +55,11 @@ export default function CoursesPage() {
 
         {/* Table */}
         <section className="panel">
-          <div style={{ overflowX: "auto" }}>
+          <div className="tableWrapper">
             <table className="coursesTable">
               <thead>
                 <tr>
+                  <th></th>
                   <th>Title</th>
                   <th>Institution</th>
                   <th>Application Code</th>
@@ -77,17 +81,93 @@ export default function CoursesPage() {
                     </td>
                   </tr>
                 ) : (
-                  courses.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.title}</td>
+                  courses.map((c, idx) => {
+                    const isExpanded = expandedCourseId === c.id;
+                    const stripeClass = idx % 2 === 0 ? "rowEven" : "rowOdd";
 
-                      <td>{c.university?.name || "N/A"}</td>
+                    return (
+                      <React.Fragment key={c.id}>
+                        <tr className={`courseRow ${stripeClass}`} key={c.id}>
+                          <td>
+                            <div className="expandCell">
+                              <i
+                                className={`bi bi-chevron-right expandIcon ${
+                                  isExpanded ? "rotated" : ""
+                                }`}
+                                onClick={() =>
+                                  setExpandedCourseId(isExpanded ? null : c.id)
+                                }
+                              />
+                              <span className="optionCount">
+                                {c.options?.length ?? 0}
+                              </span>
+                            </div>
+                          </td>
 
-                      <td>{c.applicationCode || "N/A"}</td>
+                          <td>{c.title}</td>
+                          <td>{c.university?.name || "N/A"}</td>
+                          <td>{c.applicationCode || "N/A"}</td>
+                          <td className="summaryCell">{c.summary || "N/A"}</td>
+                        </tr>
 
-                      <td className="summaryCell">{c.summary || "N/A"}</td>
-                    </tr>
-                  ))
+                        <tr className={`expandedRow ${stripeClass}`}>
+                          <td colSpan={5}>
+                            <div
+                              className={`expandWrapper ${isExpanded ? "open" : ""}`}
+                            >
+                              <div className="expandedContent">
+                                <div className="optionsGrid">
+                                  {c.options.map((opt) => (
+                                    <div key={opt.id} className="optionCard">
+                                      <div className="optionHeader">
+                                        {opt.outcomeQualification} · {opt.studyMode || "N/A"}
+                                      </div>
+
+                                      <div className="optionMeta">
+                                        <div>
+                                          <span className="label">
+                                            Duration:
+                                          </span>
+                                          <span>{opt.duration || "N/A"}</span>
+                                        </div>
+
+                                        <div>
+                                          <span className="label">Start:</span>
+                                          <span>{opt.startDate || "N/A"}</span>
+                                        </div>
+
+                                        <div>
+                                          <span className="label">
+                                            Home Fee:
+                                          </span>
+                                          <span>
+                                            {opt.homeFee
+                                              ? `£${opt.homeFee.toLocaleString()}`
+                                              : "N/A"}
+                                          </span>
+                                        </div>
+
+                                        <div>
+                                          <span className="label">
+                                            International:
+                                          </span>
+                                          <span>
+                                            {opt.internationalFee
+                                              ? `£${opt.internationalFee.toLocaleString()}`
+                                              : "N/A"}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </tbody>
             </table>

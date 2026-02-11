@@ -196,8 +196,6 @@ export async function getCourses(
         limit: String(pageSize),
     });
 
-    console.log(`Fetching courses with query: ${query.toString()}`);
-
     return fetchJson<PagedCoursesResponse>(`/api/courses?${query}`);
 }
 
