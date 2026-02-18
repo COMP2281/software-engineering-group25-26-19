@@ -1,9 +1,21 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { isLoggedIn } from "../api/authorToken";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { getToken } from "../api/authorToken";
 
 export default function ProtectedRoute() {
-  if (!isLoggedIn()) {
-    return <Navigate to="/login" replace state={{ info: "Please log in" }} />;
+  const token = getToken();
+  const location = useLocation();
+
+  if (!token) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          message: "Please log in", from: location.pathname}}
+      />
+    );
   }
+
+  // if login return to dashboard
   return <Outlet />;
 }
