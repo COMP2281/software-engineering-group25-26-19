@@ -159,6 +159,7 @@ function sleep(ms: number) {
 type GetCoursesParams = {
     page: number;
     pageSize: number;
+    q?: string;
 };
 
 export type PagedCoursesResponse = {
@@ -171,7 +172,7 @@ export type PagedCoursesResponse = {
 export async function getCourses(
     params: GetCoursesParams,
 ): Promise<PagedCoursesResponse> {
-    const { page, pageSize } = params;
+    const { page, pageSize, q } = params;
 
     if (USE_MOCK) {
         await sleep(600);
@@ -195,6 +196,10 @@ export async function getCourses(
         page: String(page),
         limit: String(pageSize),
     });
+
+    if (q && q.trim()) {
+        query.append("q", q)
+    }
 
     return fetchJson<PagedCoursesResponse>(`/api/courses?${query}`);
 }

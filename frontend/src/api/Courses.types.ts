@@ -56,3 +56,12 @@ export type Course = {
 };
 
 export type CoursesResponse = Course[];
+
+export type CoursesFilters = {
+  q?: string;
+  universityId?: string;
+  year?: string;
+  studyMode?: string;
+  sort: string;
+  order: "asc" | "desc";
+};

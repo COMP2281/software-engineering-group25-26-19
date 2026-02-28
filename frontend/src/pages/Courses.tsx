@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getCourses } from "../api/Courses.api";
-import type { Course } from "../api/Courses.types";
+import type { Course, CoursesFilters } from "../api/Courses.types";
 import Sidebar from "../components/Sidebar";
 import "./Courses.css";
 
@@ -14,8 +14,8 @@ export default function CoursesPage() {
   const [totalPages, setTotalPages] = useState<number>(0);
   const [page, setPage] = useState<number>(1);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
-
-  const PAGE_SIZE = 5;
+  const [search, setSearch] = useState<string>("");
+  const [pageSize, setPageSize] = useState<number>(5);
 
   useEffect(() => {
     async function load() {
@@ -23,7 +23,8 @@ export default function CoursesPage() {
 
       const res = await getCourses({
         page,
-        pageSize: PAGE_SIZE,
+        pageSize: pageSize,
+        q: search || undefined,
       });
 
       console.log(res.data);
@@ -34,7 +35,16 @@ export default function CoursesPage() {
     }
 
     load();
-  }, [page]);
+  }, [page, pageSize, search]);
+
+  useEffect(() => {
+    async function loadCourse() {
+      
+    }
+
+
+
+  })
 
   return (
     <div className="appShell">
@@ -55,6 +65,27 @@ export default function CoursesPage() {
 
         {/* Table */}
         <section className="panel">
+          <div className="filterBar">
+            <input
+              type="text"
+              placeholder="Search Courses"
+              value={search}
+              onChange={(inp) => setSearch(inp.target.value)}
+              className="searchInput"
+            />
+
+            <select
+              value={pageSize}
+              onChange={(inp) => setPageSize(parseInt(inp.target.value))}
+              className="pageInput"
+            >
+              <option value={5}>5 / Page</option>
+              <option value={10}>10 / Page</option>
+              <option value={20}>20 / Page</option>
+              <option value={50}>50 / Page</option>
+            </select>
+          </div>
+
           <div className="tableWrapper">
             <table className="coursesTable">
               <thead>
@@ -120,7 +151,8 @@ export default function CoursesPage() {
                                   {c.options.map((opt) => (
                                     <div key={opt.id} className="optionCard">
                                       <div className="optionHeader">
-                                        {opt.outcomeQualification} · {opt.studyMode || "N/A"}
+                                        {opt.outcomeQualification} ·{" "}
+                                        {opt.studyMode || "N/A"}
                                       </div>
 
                                       <div className="optionMeta">
@@ -173,29 +205,35 @@ export default function CoursesPage() {
             </table>
           </div>
 
+          {!loading && courses.length === 0 && (
+            <div className="noResults">No Results Found</div>
+          )}
+
           {/* Pagination */}
 
-          <div className="pagination">
-            <button
-              className="pageIconBtn"
-              disabled={page === 1 || loading}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <i className="bi bi-arrow-left-circle" />
-            </button>
+          {courses.length > 0 && (
+            <div className="pagination">
+              <button
+                className="pageIconBtn"
+                disabled={page === 1 || loading}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <i className="bi bi-arrow-left-circle" />
+              </button>
 
-            <span className="pageInfo">
-              Page {page} of {totalPages}
-            </span>
+              <span className="pageInfo">
+                Page {page} of {totalPages}
+              </span>
 
-            <button
-              className="pageIconBtn"
-              disabled={page === totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <i className="bi bi-arrow-right-circle" />
-            </button>
-          </div>
+              <button
+                className="pageIconBtn"
+                disabled={page === totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <i className="bi bi-arrow-right-circle" />
+              </button>
+            </div>
+          )}
         </section>
       </main>
     </div>
