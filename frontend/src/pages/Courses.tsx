@@ -3,6 +3,8 @@ import { getCourses } from "../api/Courses.api";
 import type { Course, CoursesFilters } from "../api/Courses.types";
 import Sidebar from "../components/Sidebar";
 import "./Courses.css";
+import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 function Spinner() {
   return <div className="spinner" />;
@@ -12,10 +14,14 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [totalPages, setTotalPages] = useState<number>(0);
-  const [page, setPage] = useState<number>(1);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
-  const [search, setSearch] = useState<string>("");
-  const [pageSize, setPageSize] = useState<number>(5);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page") ?? 1);
+  const pageSize = Number(searchParams.get("pageSize") ?? 5);
+  const search = searchParams.get("q") ?? "";
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function load() {
@@ -36,15 +42,6 @@ export default function CoursesPage() {
 
     load();
   }, [page, pageSize, search]);
-
-  useEffect(() => {
-    async function loadCourse() {
-      
-    }
-
-
-
-  })
 
   return (
     <div className="appShell">
@@ -70,13 +67,25 @@ export default function CoursesPage() {
               type="text"
               placeholder="Search Courses"
               value={search}
-              onChange={(inp) => setSearch(inp.target.value)}
+              onChange={(e) => {
+                setSearchParams({
+                  page: "1",
+                  pageSize: String(pageSize),
+                  q: e.target.value,
+                });
+              }}
               className="searchInput"
             />
 
             <select
               value={pageSize}
-              onChange={(inp) => setPageSize(parseInt(inp.target.value))}
+              onChange={(e) => {
+                setSearchParams({
+                  page: "1",
+                  pageSize: e.target.value,
+                  q: search,
+                });
+              }}
               className="pageInput"
             >
               <option value={5}>5 / Page</option>
@@ -95,6 +104,7 @@ export default function CoursesPage() {
                   <th>Institution</th>
                   <th>Application Code</th>
                   <th>Summary</th>
+                  <th></th>
                 </tr>
               </thead>
 
@@ -102,7 +112,7 @@ export default function CoursesPage() {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       style={{
                         textAlign: "center",
                         padding: "40px",
@@ -139,10 +149,16 @@ export default function CoursesPage() {
                           <td>{c.university?.name || "N/A"}</td>
                           <td>{c.applicationCode || "N/A"}</td>
                           <td className="summaryCell">{c.summary || "N/A"}</td>
+                          <td className="actionCell">
+                            <i
+                              className="bi bi-arrows-angle-expand rowExpandIcon"
+                              onClick={() => navigate(`/courses/${c.id}`)}
+                            ></i>
+                          </td>
                         </tr>
 
                         <tr className={`expandedRow ${stripeClass}`}>
-                          <td colSpan={5}>
+                          <td colSpan={6}>
                             <div
                               className={`expandWrapper ${isExpanded ? "open" : ""}`}
                             >
@@ -216,7 +232,13 @@ export default function CoursesPage() {
               <button
                 className="pageIconBtn"
                 disabled={page === 1 || loading}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() =>
+                  setSearchParams({
+                    page: String(page - 1),
+                    pageSize: String(pageSize),
+                    q: search,
+                  })
+                }
               >
                 <i className="bi bi-arrow-left-circle" />
               </button>
@@ -228,7 +250,13 @@ export default function CoursesPage() {
               <button
                 className="pageIconBtn"
                 disabled={page === totalPages || loading}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() =>
+                  setSearchParams({
+                    page: String(page + 1),
+                    pageSize: String(pageSize),
+                    q: search,
+                  })
+                }
               >
                 <i className="bi bi-arrow-right-circle" />
               </button>

@@ -169,6 +169,10 @@ export type PagedCoursesResponse = {
     pageSize: number;
 };
 
+export type CourseDetailsResponse = {
+    data: Course;
+}
+
 export async function getCourses(
     params: GetCoursesParams,
 ): Promise<PagedCoursesResponse> {
@@ -205,12 +209,15 @@ export async function getCourses(
 }
 
 /** GET /api/courses/:id */
-export async function getCourseById(id: string): Promise<Course | null> {
+export async function getCourseById(id: string): Promise<CourseDetailsResponse> {
     if (USE_MOCK) {
         await sleep(300);
 
-        return MOCK_COURSES.find((c) => c.id === id) ?? null;
+        const found = MOCK_COURSES.find((c) => c.id === id);
+        if (!found) throw new Error("Course not found");
+
+        return { data: found };
     }
 
-    return fetchJson<Course>(`/api/courses/${id}`);
+    return fetchJson<CourseDetailsResponse>(`/api/courses/${id}`);
 }

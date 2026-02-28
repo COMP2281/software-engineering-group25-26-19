@@ -49,7 +49,12 @@
 
 .coursesTable th:nth-child(5),
 .coursesTable td:nth-child(5) {
-    width: 50%;
+    width: 47%;
+}
+
+.coursesTable th:nth-child(6),
+.coursesTable td:nth-child(6) {
+    width: 3%;
 }
 
 .summaryCell {
@@ -233,6 +238,21 @@
   padding: 12px 0;
 }
 
+/* If only 1 option → span 2 columns */
+.optionsGrid:has(.optionCard:only-child) .optionCard {
+  grid-column: span 2;
+}
+
+/* If exactly 2 options → each spans 2 */
+.optionsGrid:has(.optionCard:nth-child(2):last-child) .optionCard {
+  grid-column: span 2;
+}
+
+/* If exactly 3 options → first spans 2, rest span 1 */
+.optionsGrid:has(.optionCard:nth-child(3):last-child) .optionCard:first-child {
+  grid-column: span 2;
+}
+
 
 .optionCard {
   background: #f8f9fb;
@@ -242,6 +262,23 @@
   transition: box-shadow 0.2s ease;
   margin-right: 10px;
   margin-left: 10px;
+}
+
+.actionCell {
+  text-align: center !important;
+
+}
+
+.rowExpandIcon {
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.rowExpandIcon:hover {
+  color: #68246d;
+  transform: scale(1.15);
 }
 
 /* If the parent course/expanded row is grey, make cards white */
