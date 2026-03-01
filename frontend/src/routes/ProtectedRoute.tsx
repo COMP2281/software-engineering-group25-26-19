@@ -1,21 +1,42 @@
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { getToken } from "../api/authorToken";
+import { checkAuth } from "../api/login.author.api";
 
 export default function ProtectedRoute() {
-  const token = getToken();
-  const location = useLocation();
-
-  if (!token) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{
-          message: "Please log in", from: location.pathname}}
-      />
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(
+        null,
     );
-  }
+    const location = useLocation();
 
-  // if login return to dashboard
-  return <Outlet />;
+    useEffect(() => {
+        let mounted = true;
+        checkAuth()
+            .then((authed) => {
+                if (mounted) setIsAuthenticated(authed);
+            })
+            .catch(() => {
+                if (mounted) setIsAuthenticated(false);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    if (isAuthenticated === null) {
+        // Loading state... could be a spinner
+        return <div>Loading...</div>;
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{ message: "Please log in", from: location.pathname }}
+            />
+        );
+    }
+
+    return <Outlet />;
 }

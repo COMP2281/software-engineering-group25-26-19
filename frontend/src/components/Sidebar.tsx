@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { logout } from "../api/login.author.api";
 import "./Sidebar.css";
 
 type User = {
@@ -15,6 +16,17 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ onToggleHide }: SidebarProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   return (
     <aside className="sidebar">
       {/* Header */}
@@ -57,9 +69,22 @@ export default function Sidebar({ onToggleHide }: SidebarProps) {
           Courses
         </NavLink>
 
-        <NavLink to="/visualisation" className="menuItem">
-          Visualisation
-        </NavLink>
+        <button
+          className="signOut"
+          onClick={handleLogout}
+          style={{
+            background: "none",
+            border: "none",
+            color: "inherit",
+            cursor: "pointer",
+            font: "inherit",
+            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          Sign out
+        </button>
 
         <NavLink to="/settings" className="menuItem">
           Settings
