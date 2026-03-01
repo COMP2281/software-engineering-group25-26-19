@@ -1,7 +1,7 @@
-import { fetchAllUcasCourses } from './ucas';
-import { exportCoursesToExcel } from './excel';
-import { enrichCourseData } from './htmlscraper';
-import prisma from './db';
+import { fetchAllUcasCourses } from '../ucas';
+import { exportCoursesToExcel } from '../excel';
+import { enrichCourseData } from '../htmlscraper';
+import prisma from '../db';
 
 async function main() {
     // Get arguments from command line
