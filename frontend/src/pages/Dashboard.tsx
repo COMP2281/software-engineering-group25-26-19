@@ -5,10 +5,15 @@ import "./Dashboard.css";
 import {
     getDashboardSummary,
     getFeeHistogram,
-    quickScrape,
     getExportUrl,
     getScrapes,
 } from "../api/Dashboard.api";
+import {
+    startScraper,
+    stopScraper,
+    getScraperStatus,
+    type ScraperStatusResponse,
+} from "../api/Scraper.api";
 import type {
     DashboardSummary,
     FeeHistogram,
@@ -70,6 +75,31 @@ export default function Dashboard() {
     // ✅ control Sidebar show/hide
     const [sidebarVisible, setSidebarVisible] = useState(true);
 
+    // Scraper status tracking
+    const [scraperState, setScraperState] = useState<ScraperStatusResponse>({ status: 'idle' });
+
+    // Poll scraper status
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const status = await getScraperStatus();
+                setScraperState(prev => {
+                    // unexpected state transition running -> idle might mean it finished
+                    if (prev.status === 'running' && status.status === 'idle') {
+                        refreshDashboardData();
+                    }
+                    return status;
+                });
+            } catch (e) {
+                console.error("Scraper status poll failed", e);
+            }
+        };
+
+        checkStatus();
+        const timer = setInterval(checkStatus, 3000);
+        return () => clearInterval(timer);
+    }, []);
+
     async function refreshDashboardData() {
         // fetch summary, fees and recent scrapes in parallel
         const [s, h, scr] = await Promise.all([
@@ -84,16 +114,35 @@ export default function Dashboard() {
         console.debug("recent scrapes:", scr);
     }
 
-    /* 8.2 Quick Scrape */
-    async function handleQuickScrape() {
+    /* 8.2 Background Scraper Start */
+    async function handleStartScrape() {
         try {
             setActionLoading("scrape");
             setError(null);
 
-            await quickScrape();
-            await refreshDashboardData();
-        } catch (e: any) {
-            setError(e?.message ?? "Quick scrape failed");
+            const res = await startScraper();
+            // Immediate update to running state
+            setScraperState({ status: 'running', pid: res.pid });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Failed to start scraper";
+            setError(msg);
+        } finally {
+            setActionLoading(null);
+        }
+    }
+
+    /* Stop Scraper */
+    async function handleStopScrape() {
+        try {
+            setActionLoading("scrape"); 
+            setError(null);
+            
+            await stopScraper();
+            // Immediate update to idle state
+            setScraperState({ status: 'idle' });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Failed to stop scraper";
+            setError(msg);
         } finally {
             setActionLoading(null);
         }
@@ -106,8 +155,9 @@ export default function Dashboard() {
             setError(null);
 
             window.location.href = getExportUrl();
-        } catch (e: any) {
-            setError(e?.message ?? "Export failed");
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Export failed";
+            setError(msg);
         } finally {
             setActionLoading(null);
         }
@@ -129,8 +179,11 @@ export default function Dashboard() {
                     setHomeHist(h.home);
                     setIntlHist(h.international);
                 }
-            } catch (e: any) {
-                if (!cancelled) setError(e?.message ?? "Unknown error");
+            } catch (e: unknown) {
+                if (!cancelled) {
+                    const msg = e instanceof Error ? e.message : "Unknown error";
+                    setError(msg);
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -184,16 +237,28 @@ export default function Dashboard() {
                         </div>
 
                         <div className="headerActions">
-                            <button
-                                className="actionBtn"
-                                type="button"
-                                onClick={handleQuickScrape}
-                                disabled={loading || actionLoading !== null}
-                            >
-                                {actionLoading === "scrape"
-                                    ? "Scraping..."
-                                    : "Quick Scrape"}
-                            </button>
+                            {scraperState.status === 'running' ? (
+                                <button 
+                                    className="actionBtn"
+                                    type="button"
+                                    onClick={handleStopScrape}
+                                    style={{ backgroundColor: '#e74c3c', borderColor: '#c0392b' }}
+                                    disabled={actionLoading === 'scrape'}
+                                >
+                                    {actionLoading === 'scrape' ? 'Stopping...' : 'Stop Scraper'}
+                                </button>
+                            ) : (
+                                <button
+                                    className="actionBtn"
+                                    type="button"
+                                    onClick={handleStartScrape}
+                                    disabled={loading || actionLoading !== null}
+                                >
+                                    {actionLoading === "scrape"
+                                        ? "Starting..."
+                                        : "Start Scraper"}
+                                </button>
+                            )}
 
                             <button
                                 className="actionBtn outline"
@@ -299,11 +364,20 @@ export default function Dashboard() {
                                 ) : (
                                     <>
                                         <span
-                                            className={`statusDot status-${summary?.status ?? "idle"}`}
+                                            className={`statusDot status-${
+                                                scraperState.status === "running"
+                                                    ? "running"
+                                                    : (summary?.status ??
+                                                      "idle")
+                                            }`}
                                         />
                                         <span>
                                             {statusText(
-                                                summary?.status ?? "idle",
+                                                scraperState.status ===
+                                                    "running"
+                                                    ? "running"
+                                                    : (summary?.status ??
+                                                      "idle"),
                                             )}
                                         </span>
                                     </>
