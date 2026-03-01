@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getCourseFilters, getCourses } from "../api/Courses.api";
 import type { Course, CoursesFilters } from "../api/Courses.types";
-import Sidebar from "../components/Sidebar";
 import "./Courses.css";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";

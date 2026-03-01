@@ -71,6 +71,33 @@ export default function Dashboard() {
         "total" | "unis" | "updated" | "status" | null
     >(null);
 
+    // Scraper status tracking
+    const [scraperState, setScraperState] = useState<ScraperStatusResponse>({
+        status: "idle",
+    });
+
+    // Poll scraper status
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const status = await getScraperStatus();
+                setScraperState((prev) => {
+                    // unexpected state transition running -> idle might mean it finished
+                    if (prev.status === "running" && status.status === "idle") {
+                        refreshDashboardData();
+                    }
+                    return status;
+                });
+            } catch (e) {
+                console.error("Scraper status poll failed", e);
+            }
+        };
+
+        checkStatus();
+        const timer = setInterval(checkStatus, 3000);
+        return () => clearInterval(timer);
+    }, []);
+
     async function refreshDashboardData() {
         // fetch summary, fees and recent scrapes in parallel
         const [s, h, scr] = await Promise.all([
@@ -93,9 +120,10 @@ export default function Dashboard() {
 
             const res = await startScraper();
             // Immediate update to running state
-            setScraperState({ status: 'running', pid: res.pid });
+            setScraperState({ status: "running", pid: res.pid });
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Failed to start scraper";
+            const msg =
+                e instanceof Error ? e.message : "Failed to start scraper";
             setError(msg);
         } finally {
             setActionLoading(null);
@@ -105,14 +133,15 @@ export default function Dashboard() {
     /* Stop Scraper */
     async function handleStopScrape() {
         try {
-            setActionLoading("scrape"); 
+            setActionLoading("scrape");
             setError(null);
-            
+
             await stopScraper();
             // Immediate update to idle state
-            setScraperState({ status: 'idle' });
+            setScraperState({ status: "idle" });
         } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Failed to stop scraper";
+            const msg =
+                e instanceof Error ? e.message : "Failed to stop scraper";
             setError(msg);
         } finally {
             setActionLoading(null);
@@ -152,7 +181,8 @@ export default function Dashboard() {
                 }
             } catch (e: unknown) {
                 if (!cancelled) {
-                    const msg = e instanceof Error ? e.message : "Unknown error";
+                    const msg =
+                        e instanceof Error ? e.message : "Unknown error";
                     setError(msg);
                 }
             } finally {
@@ -172,230 +202,229 @@ export default function Dashboard() {
     );
 
     return (
+        <main className="mainContent">
+            <div className="mainInner">
+                {loading ? (
+                    <div style={{ padding: 12 }}>Loading dashboard…</div>
+                ) : null}
 
-            <main className="mainContent">
-                <div className="mainInner">
-                    {loading ? (
-                        <div style={{ padding: 12 }}>Loading dashboard…</div>
-                    ) : null}
+                <div className="pageHeader">
+                    <div>
+                        <h1 className="pageTitle">Dashboard</h1>
+                        <p className="pageSubTitle">
+                            Competitor course data overview (fees, coverage,
+                            freshness)
+                        </p>
+                    </div>
 
-                    <div className="pageHeader">
-                        <div>
-                            <h1 className="pageTitle">Dashboard</h1>
-                            <p className="pageSubTitle">
-                                Competitor course data overview (fees, coverage,
-                                freshness)
-                            </p>
-                        </div>
-
-                        <div className="headerActions">
-                            {scraperState.status === 'running' ? (
-                                <button 
-                                    className="actionBtn"
-                                    type="button"
-                                    onClick={handleStopScrape}
-                                    style={{ backgroundColor: '#e74c3c', borderColor: '#c0392b' }}
-                                    disabled={actionLoading === 'scrape'}
-                                >
-                                    {actionLoading === 'scrape' ? 'Stopping...' : 'Stop Scraper'}
-                                </button>
-                            ) : (
-                                <button
-                                    className="actionBtn"
-                                    type="button"
-                                    onClick={handleStartScrape}
-                                    disabled={loading || actionLoading !== null}
-                                >
-                                    {actionLoading === "scrape"
-                                        ? "Starting..."
-                                        : "Start Scraper"}
-                                </button>
-                            )}
-
+                    <div className="headerActions">
+                        {scraperState.status === "running" ? (
                             <button
-                                className="actionBtn outline"
+                                className="actionBtn"
                                 type="button"
-                                onClick={handleQuickExport}
+                                onClick={handleStopScrape}
+                                style={{
+                                    backgroundColor: "#e74c3c",
+                                    borderColor: "#c0392b",
+                                }}
+                                disabled={actionLoading === "scrape"}
+                            >
+                                {actionLoading === "scrape"
+                                    ? "Stopping..."
+                                    : "Stop Scraper"}
+                            </button>
+                        ) : (
+                            <button
+                                className="actionBtn"
+                                type="button"
+                                onClick={handleStartScrape}
                                 disabled={loading || actionLoading !== null}
                             >
-                                {actionLoading === "export"
-                                    ? "Exporting..."
-                                    : "Quick Export"}
+                                {actionLoading === "scrape"
+                                    ? "Starting..."
+                                    : "Start Scraper"}
                             </button>
+                        )}
+
+                        <button
+                            className="actionBtn outline"
+                            type="button"
+                            onClick={handleQuickExport}
+                            disabled={loading || actionLoading !== null}
+                        >
+                            {actionLoading === "export"
+                                ? "Exporting..."
+                                : "Quick Export"}
+                        </button>
+                    </div>
+                </div>
+
+                {error ? <div className="errorBox">{error}</div> : null}
+
+                {/* KPI cards */}
+                <section className="kpiGrid">
+                    <div
+                        className={`kpiCard clickable ${
+                            selectedCard === "total" ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedCard("total")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && setSelectedCard("total")
+                        }
+                    >
+                        <div className="kpiTitle">Total Courses</div>
+                        <div className="kpiValue">
+                            {loading
+                                ? "…"
+                                : (summary?.totalCourses.toLocaleString() ??
+                                  "—")}
+                        </div>
+                        <div className="kpiHint">
+                            Currently stored in the system
                         </div>
                     </div>
 
-                    {error ? <div className="errorBox">{error}</div> : null}
+                    <div
+                        className={`kpiCard clickable ${
+                            selectedCard === "unis" ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedCard("unis")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && setSelectedCard("unis")
+                        }
+                    >
+                        <div className="kpiTitle">Universities Covered</div>
+                        <div className="kpiValue">
+                            {loading
+                                ? "…"
+                                : (summary?.universitiesCovered ?? "—")}
+                        </div>
+                        <div className="kpiHint">Target institutions list</div>
+                    </div>
 
-                    {/* KPI cards */}
-                    <section className="kpiGrid">
+                    <div
+                        className={`kpiCard clickable ${
+                            selectedCard === "updated" ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedCard("updated")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && setSelectedCard("updated")
+                        }
+                    >
+                        <div className="kpiTitle">Last Updated</div>
+                        <div className="kpiValue">
+                            {loading ? "…" : age.text}
+                        </div>
                         <div
-                            className={`kpiCard clickable ${
-                                selectedCard === "total" ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedCard("total")}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && setSelectedCard("total")
-                            }
+                            className={`kpiHint ${age.stale ? "warnText" : ""}`}
                         >
-                            <div className="kpiTitle">Total Courses</div>
-                            <div className="kpiValue">
-                                {loading
-                                    ? "…"
-                                    : (summary?.totalCourses.toLocaleString() ??
-                                      "—")}
-                            </div>
-                            <div className="kpiHint">
-                                Currently stored in the system
+                            {age.stale
+                                ? "Stale (≥ 7 days)"
+                                : "Last successful scrape"}
+                        </div>
+                    </div>
+
+                    <div
+                        className={`kpiCard clickable ${
+                            selectedCard === "status" ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedCard("status")}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) =>
+                            e.key === "Enter" && setSelectedCard("status")
+                        }
+                    >
+                        <div className="kpiTitle">Status & Issues</div>
+                        <div className="kpiValue statusRow">
+                            {loading ? (
+                                "…"
+                            ) : (
+                                <>
+                                    <span
+                                        className={`statusDot status-${
+                                            scraperState.status === "running"
+                                                ? "running"
+                                                : (summary?.status ?? "idle")
+                                        }`}
+                                    />
+                                    <span>
+                                        {statusText(
+                                            scraperState.status === "running"
+                                                ? "running"
+                                                : (summary?.status ?? "idle"),
+                                        )}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                        <div className="kpiHint">
+                            {loading
+                                ? ""
+                                : `${summary?.issuesCount ?? 0} issue(s) detected`}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Charts */}
+                <section className="chartsStack">
+                    <section className="panel">
+                        <div className="panelHeader">
+                            <div>
+                                <h2 className="panelTitle">
+                                    Tuition Fee Distribution (home)
+                                </h2>
+                                <div className="panelSubTitle">
+                                    X: Fee range • Y: Number of courses
+                                </div>
                             </div>
                         </div>
 
-                        <div
-                            className={`kpiCard clickable ${
-                                selectedCard === "unis" ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedCard("unis")}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && setSelectedCard("unis")
-                            }
-                        >
-                            <div className="kpiTitle">Universities Covered</div>
-                            <div className="kpiValue">
-                                {loading
-                                    ? "…"
-                                    : (summary?.universitiesCovered ?? "—")}
-                            </div>
-                            <div className="kpiHint">
-                                Target institutions list
-                            </div>
-                        </div>
-
-                        <div
-                            className={`kpiCard clickable ${
-                                selectedCard === "updated" ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedCard("updated")}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && setSelectedCard("updated")
-                            }
-                        >
-                            <div className="kpiTitle">Last Updated</div>
-                            <div className="kpiValue">
-                                {loading ? "…" : age.text}
-                            </div>
-                            <div
-                                className={`kpiHint ${age.stale ? "warnText" : ""}`}
-                            >
-                                {age.stale
-                                    ? "Stale (≥ 7 days)"
-                                    : "Last successful scrape"}
-                            </div>
-                        </div>
-
-                        <div
-                            className={`kpiCard clickable ${
-                                selectedCard === "status" ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedCard("status")}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) =>
-                                e.key === "Enter" && setSelectedCard("status")
-                            }
-                        >
-                            <div className="kpiTitle">Status & Issues</div>
-                            <div className="kpiValue statusRow">
-                                {loading ? (
-                                    "…"
-                                ) : (
-                                    <>
-                                        <span
-                                            className={`statusDot status-${
-                                                scraperState.status === "running"
-                                                    ? "running"
-                                                    : (summary?.status ??
-                                                      "idle")
-                                            }`}
-                                        />
-                                        <span>
-                                            {statusText(
-                                                scraperState.status ===
-                                                    "running"
-                                                    ? "running"
-                                                    : (summary?.status ??
-                                                      "idle"),
-                                            )}
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                            <div className="kpiHint">
-                                {loading
-                                    ? ""
-                                    : `${summary?.issuesCount ?? 0} issue(s) detected`}
-                            </div>
+                        <div className="chartBox">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={homeHist?.bins ?? []}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="range" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="count" />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </section>
 
-                    {/* Charts */}
-                    <section className="chartsStack">
-                        <section className="panel">
-                            <div className="panelHeader">
-                                <div>
-                                    <h2 className="panelTitle">
-                                        Tuition Fee Distribution (home)
-                                    </h2>
-                                    <div className="panelSubTitle">
-                                        X: Fee range • Y: Number of courses
-                                    </div>
+                    <section className="panel">
+                        <div className="panelHeader">
+                            <div>
+                                <h2 className="panelTitle">
+                                    Tuition Fee Distribution (international)
+                                </h2>
+                                <div className="panelSubTitle">
+                                    X: Fee range • Y: Number of courses
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="chartBox">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={homeHist?.bins ?? []}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="range" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="count" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </section>
-
-                        <section className="panel">
-                            <div className="panelHeader">
-                                <div>
-                                    <h2 className="panelTitle">
-                                        Tuition Fee Distribution (international)
-                                    </h2>
-                                    <div className="panelSubTitle">
-                                        X: Fee range • Y: Number of courses
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="chartBox">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={intlHist?.bins ?? []}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="range" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="count" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </section>
+                        <div className="chartBox">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={intlHist?.bins ?? []}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="range" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="count" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </section>
-                </div>
-            </main>
+                </section>
+            </div>
+        </main>
     );
 }
