@@ -3,15 +3,13 @@ import prisma from "../db";
 
 const router = Router();
 
-// GET /courses? q=&universityIds=&universityId=&year=&studyMode=&minFee=&maxFee=&feeType=&level=&page=&limit=&sort=&order=
+// GET /courses? q=&universityIds=&year=&minFee=&maxFee=&feeType=&level=&page=&limit=&sort=&order=
 router.get("/", async (req, res) => {
     try {
         const {
             q,
             universityIds,
-            universityId,
             year,
-            studyMode,
             minFee,
             maxFee,
             feeType = "home",
@@ -38,10 +36,9 @@ router.get("/", async (req, res) => {
             });
         }
 
-        // Universities: allow multiple ids (comma separated) or single id fallback
+        // Universities: allow multiple ids (comma separated)
         let uniIdsArr: string[] | undefined;
         if (universityIds) uniIdsArr = universityIds.split(",").map(s => s.trim()).filter(Boolean);
-        else if (universityId) uniIdsArr = [universityId];
         if (uniIdsArr && uniIdsArr.length) {
             andConditions.push({ universityId: { in: uniIdsArr } });
         }
@@ -49,7 +46,6 @@ router.get("/", async (req, res) => {
         // Options-level filters (year, studyMode, fee range, level)
         const optionFilters: any[] = [];
         if (year) optionFilters.push({ year: parseInt(year, 10) });
-        if (studyMode) optionFilters.push({ studyMode });
 
         // Fee range filter (apply to homeFee or internationalFee depending on feeType)
         const min = (minFee !== undefined && minFee !== "") ? parseFloat(minFee as string) : undefined;
