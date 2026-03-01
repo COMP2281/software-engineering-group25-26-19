@@ -65,3 +65,22 @@ export type CoursesFilters = {
   sort: string;
   order: "asc" | "desc";
 };
+
+export interface UniversityFilterOption {
+  id: string;
+  name: string;
+}
+
+export interface CourseFiltersResponse {
+  universities: UniversityFilterOption[];
+  fees: {
+    home: {
+      min: number | null;
+      max: number | null;
+    };
+    international: {
+      min: number | null;
+      max: number | null;
+    };
+  };
+}

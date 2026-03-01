@@ -41,31 +41,22 @@ export default function CourseDetails() {
 
   if (loading) {
     return (
-      <div className="appShell">
-        <Sidebar />
-        <main className="mainContent centeredState">
-          <div className="spinner largeSpinner" />
-        </main>
-      </div>
+      <main className="mainContent centeredState">
+        <div className="spinner largeSpinner" />
+      </main>
     );
   }
 
   if (!course) {
     return (
-      <div className="appShell">
-        <Sidebar />
         <main className="mainContent centeredState">
           <h2>Course Not Found</h2>
           <p>The course you are looking for does not exist.</p>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="appShell">
-      <Sidebar />
-
       <main
         className="mainContent courseDetails"
         style={{ paddingRight: 0, paddingTop: 0 }}
@@ -165,6 +156,5 @@ export default function CourseDetails() {
           </section>
         </div>
       </main>
-    </div>
   );
 }

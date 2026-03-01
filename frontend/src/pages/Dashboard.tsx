@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import "./Dashboard.css";
 
 import {
@@ -71,34 +70,6 @@ export default function Dashboard() {
     const [selectedCard, setSelectedCard] = useState<
         "total" | "unis" | "updated" | "status" | null
     >(null);
-
-    // ✅ control Sidebar show/hide
-    const [sidebarVisible, setSidebarVisible] = useState(true);
-
-    // Scraper status tracking
-    const [scraperState, setScraperState] = useState<ScraperStatusResponse>({ status: 'idle' });
-
-    // Poll scraper status
-    useEffect(() => {
-        const checkStatus = async () => {
-            try {
-                const status = await getScraperStatus();
-                setScraperState(prev => {
-                    // unexpected state transition running -> idle might mean it finished
-                    if (prev.status === 'running' && status.status === 'idle') {
-                        refreshDashboardData();
-                    }
-                    return status;
-                });
-            } catch (e) {
-                console.error("Scraper status poll failed", e);
-            }
-        };
-
-        checkStatus();
-        const timer = setInterval(checkStatus, 3000);
-        return () => clearInterval(timer);
-    }, []);
 
     async function refreshDashboardData() {
         // fetch summary, fees and recent scrapes in parallel
@@ -201,25 +172,6 @@ export default function Dashboard() {
     );
 
     return (
-        <div className={`appShell ${sidebarVisible ? "" : "sidebar-hidden"}`}>
-            {sidebarVisible ? (
-                <Sidebar onToggleHide={() => setSidebarVisible(false)} />
-            ) : null}
-
-            {!sidebarVisible ? (
-                <button
-                    className="sidebarFloatToggle"
-                    type="button"
-                    onClick={() => setSidebarVisible(true)}
-                    aria-label="Show sidebar"
-                >
-                    <span className="hamburger" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
-                    </span>
-                </button>
-            ) : null}
 
             <main className="mainContent">
                 <div className="mainInner">
@@ -445,6 +397,5 @@ export default function Dashboard() {
                     </section>
                 </div>
             </main>
-        </div>
     );
 }

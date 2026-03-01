@@ -69,22 +69,9 @@ export default function Sidebar({ onToggleHide }: SidebarProps) {
           Courses
         </NavLink>
 
-        <button
-          className="signOut"
-          onClick={handleLogout}
-          style={{
-            background: "none",
-            border: "none",
-            color: "inherit",
-            cursor: "pointer",
-            font: "inherit",
-            textDecoration: "none",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          Sign out
-        </button>
+        <NavLink to="/visualisation" className="menuItem">
+          Visualisation
+        </NavLink>
 
         <NavLink to="/settings" className="menuItem">
           Settings
