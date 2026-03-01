@@ -4,7 +4,9 @@ const USE_MOCK = false;
 
 // Mock data for frontend dev
 
-const MOCK_COURSES: Course[] = [
+const MOCK_COURSES: Course[] = [];
+
+/*const MOCK_COURSES: Course[] = [
     {
         id: "ddb48e92-0cd3-5dd4-b4b5-8baaa5a8f21b",
         academicYear: "2026",
@@ -136,7 +138,7 @@ const MOCK_COURSES: Course[] = [
         ukTuitionFeeYear1GBP: 14000,
     },
 ];
-
+*/
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const res = await fetch(url, options);
 
@@ -157,6 +159,7 @@ function sleep(ms: number) {
 type GetCoursesParams = {
     page: number;
     pageSize: number;
+    q?: string;
 };
 
 export type PagedCoursesResponse = {
@@ -166,10 +169,14 @@ export type PagedCoursesResponse = {
     pageSize: number;
 };
 
+export type CourseDetailsResponse = {
+    data: Course;
+}
+
 export async function getCourses(
     params: GetCoursesParams,
 ): Promise<PagedCoursesResponse> {
-    const { page, pageSize } = params;
+    const { page, pageSize, q } = params;
 
     if (USE_MOCK) {
         await sleep(600);
@@ -191,19 +198,26 @@ export async function getCourses(
 
     const query = new URLSearchParams({
         page: String(page),
-        pageSize: String(pageSize),
+        limit: String(pageSize),
     });
+
+    if (q && q.trim()) {
+        query.append("q", q)
+    }
 
     return fetchJson<PagedCoursesResponse>(`/api/courses?${query}`);
 }
 
 /** GET /api/courses/:id */
-export async function getCourseById(id: string): Promise<Course | null> {
+export async function getCourseById(id: string): Promise<CourseDetailsResponse> {
     if (USE_MOCK) {
         await sleep(300);
 
-        return MOCK_COURSES.find((c) => c.id === id) ?? null;
+        const found = MOCK_COURSES.find((c) => c.id === id);
+        if (!found) throw new Error("Course not found");
+
+        return { data: found };
     }
 
-    return fetchJson<Course>(`/api/courses/${id}`);
+    return fetchJson<CourseDetailsResponse>(`/api/courses/${id}`);
 }

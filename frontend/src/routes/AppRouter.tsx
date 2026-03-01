@@ -4,6 +4,7 @@ import LoginPage from "../pages/LoginPage";
 import Dashboard from "../pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import CoursesPage from "../pages/Courses";
+import CourseDetails from "../pages/CourseDetails";
 
 
 
@@ -18,6 +19,7 @@ export default function AppRouter() {
         <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/courses/:id" element={<CourseDetails />} />
       </Route>
 
       {/* 默认跳转 */}

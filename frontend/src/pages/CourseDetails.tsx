@@ -1,0 +1,170 @@
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
+import { getCourseById } from "../api/Courses.api";
+import type { Course } from "../api/Courses.types";
+import "./CourseDetails.css";
+import { useNavigate } from "react-router-dom";
+
+export default function CourseDetails() {
+  const { id } = useParams();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function load() {
+      if (!id) {
+        setCourse(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await getCourseById(id);
+        setCourse(res.data);
+        console.log(res.data);
+      } catch (err: any) {
+        if (err.message.includes("404")) {
+          setCourse(null);
+        } else {
+          console.error(err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="appShell">
+        <Sidebar />
+        <main className="mainContent centeredState">
+          <div className="spinner largeSpinner" />
+        </main>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="appShell">
+        <Sidebar />
+        <main className="mainContent centeredState">
+          <h2>Course Not Found</h2>
+          <p>The course you are looking for does not exist.</p>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="appShell">
+      <Sidebar />
+
+      <main
+        className="mainContent courseDetails"
+        style={{ paddingRight: 0, paddingTop: 0 }}
+      >
+        <header className="courseHero">
+          <div className="heroText">
+            <button className="backButton" onClick={() => navigate(-1)}>
+              <i className="bi bi-arrow-left"></i>
+              Back to Courses
+            </button>
+
+            <h1 className="courseTitle">
+              {course.title} {course.applicationCode && "·"}{" "}
+              {course.applicationCode}
+            </h1>
+            <p className="courseSubtitle">{course.university?.name}</p>
+          </div>
+
+          {course.university?.logoUrl && (
+            <div className="heroLogoPanel">
+              <img
+                src={course.university.logoUrl}
+                alt={course.university?.name}
+                className="universityLogo"
+              />
+            </div>
+          )}
+        </header>
+
+        <div style={{ paddingRight: 28 }}>
+          <section className="contentSection summarySection overviewPanel">
+            <h2 className="sectionTitle">Overview</h2>
+
+            <div className="summaryContainer">
+              <div className="summaryText">
+                {course.summary?.split("\n").map((paragraph, i) => {
+                  if (!paragraph.trim()) return null;
+
+                  const formatted = paragraph.replace(
+                    /\*\*(.*?)\*\*/g,
+                    "<strong>$1</strong>",
+                  );
+
+                  return (
+                    <p
+                      key={i}
+                      dangerouslySetInnerHTML={{ __html: formatted }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="contentSection optionSection overviewPanel"
+            style={{ marginTop: 24 }}
+          >
+            <h2 className="sectionTitle">Available Options</h2>
+
+            <div className="optionsGrid">
+              {course.options.map((opt) => (
+                <div key={opt.id} className="optionCard">
+                  <div className="optionHeader">
+                    {opt.outcomeQualification} · {opt.studyMode}
+                  </div>
+
+                  <div className="optionMeta">
+                    <div>
+                      <span>Academic Year</span>
+                      <strong>{opt.year}</strong>
+                    </div>
+
+                    <div>
+                      <span>Duration</span>
+                      <strong>{opt.duration}</strong>
+                    </div>
+
+                    <div>
+                      <span>Start Date</span>
+                      <strong>{opt.startDate}</strong>
+                    </div>
+
+                    <div>
+                      <span>Home Fee</span>
+                      <strong>£{opt.homeFee?.toLocaleString()}</strong>
+                    </div>
+
+                    <div>
+                      <span>International Fee</span>
+                      <strong>£{opt.internationalFee?.toLocaleString()}</strong>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
