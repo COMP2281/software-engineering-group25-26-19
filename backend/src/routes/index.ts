@@ -2,6 +2,7 @@ import { Router } from "express";
 import coursesRouter from "./courses";
 import authRouter from "./auth";
 import dashboardRouter from "./dashboard";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
@@ -11,9 +12,10 @@ router.get("/health", (_req, res) => {
 });
 
 // Mount sub-routers
-router.use("/courses", coursesRouter);
+// Apply authentication middleware to all routes except public ones (health, auth login)
+router.use("/courses", requireAuth, coursesRouter);
 router.use("/auth", authRouter);
 // Dashboard
-router.use("/dashboard", dashboardRouter);
+router.use("/dashboard", requireAuth, dashboardRouter);
 
 export default router;
