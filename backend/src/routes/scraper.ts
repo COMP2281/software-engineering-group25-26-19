@@ -71,7 +71,7 @@ router.post("/start", (req: Request, res: Response): void => {
 
 // GET /api/scraper/status
 // Check if the scraper is running
-router.get("/status", (req: Request, res: Response) => {
+router.get("/status", (_req: Request, res: Response) => {
     if (scraperProcess) {
         res.json({
             status: "running",
@@ -85,7 +85,7 @@ router.get("/status", (req: Request, res: Response) => {
 
 // POST /api/scraper/stop
 // Force kill the scraper
-router.post("/stop", (req: Request, res: Response) => {
+router.post("/stop", (_req: Request, res: Response) => {
     if (!scraperProcess) {
         res.status(400).json({ message: "No scraper is currently running" });
         return;

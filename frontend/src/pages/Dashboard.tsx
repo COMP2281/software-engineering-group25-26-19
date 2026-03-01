@@ -5,9 +5,9 @@ import "./Dashboard.css";
 import {
     getDashboardSummary,
     getFeeHistogram,
-    getExportUrl,
     getScrapes,
 } from "../api/Dashboard.api";
+import { getExcelExportUrl } from "../api/Excel.api";
 import {
     startScraper,
     stopScraper,
@@ -154,7 +154,7 @@ export default function Dashboard() {
             setActionLoading("export");
             setError(null);
 
-            window.location.href = getExportUrl();
+            window.location.href = getExcelExportUrl();
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Export failed";
             setError(msg);

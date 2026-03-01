@@ -3,6 +3,7 @@ import coursesRouter from "./courses";
 import authRouter from "./auth";
 import dashboardRouter from "./dashboard";
 import scraperRouter from "./scraper";
+import excelRouter from "./excel";
 import { requireAuth } from "../middleware/auth";
 
 const router = Router();
@@ -19,5 +20,6 @@ router.use("/auth", authRouter);
 router.use("/courses", requireAuth, coursesRouter);
 router.use("/dashboard", requireAuth, dashboardRouter);
 router.use("/scraper", requireAuth, scraperRouter);
+router.use("/excel", requireAuth, excelRouter);
 
 export default router;

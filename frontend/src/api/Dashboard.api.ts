@@ -117,7 +117,3 @@ export async function quickScrape(): Promise<void> {
     await fetchJson<void>("/api/scrape/quick", { method: "POST" });
 }
 
-//8.3: quick export//
-export function getExportUrl(): string {
-    return "/api/dashboard/export";
-}
