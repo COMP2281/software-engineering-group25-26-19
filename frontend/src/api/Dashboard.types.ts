@@ -6,6 +6,7 @@ export type DashboardSummary = {
     lastSuccessfulScrapeAt: string | null;
     status: ScrapeStatus;
     issuesCount: number;
+    runningScrapeId?: string | null;
 };
 
 export type HistogramBin = {

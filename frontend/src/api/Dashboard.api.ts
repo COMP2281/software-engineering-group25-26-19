@@ -4,7 +4,7 @@ import type {
     ScrapeStatus,
 } from "./Dashboard.types";
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // Mock data (frontend dev)//
 let mockSummary: DashboardSummary = {
@@ -63,14 +63,33 @@ function sleep(ms: number) {
 /*8.1: dashboard summary GET /api/dashboard/summary*/
 export async function getDashboardSummary(): Promise<DashboardSummary> {
     if (USE_MOCK) return mockSummary;
-    return fetchJson<DashboardSummary>("/api/dashboard/summary");
+    // try /api/dashboard first, fall back to /api/dashboard/summary
+    try {
+        return await fetchJson<DashboardSummary>("/api/dashboard");
+    } catch {
+        return fetchJson<DashboardSummary>("/api/dashboard/summary");
+    }
 }
 
 /* Fee histograms (home + international)  GET /api/dashboard/fee-histogram*/
 
 export async function getFeeHistogram(): Promise<FeeHistogramResponse> {
     if (USE_MOCK) return MOCK_HIST;
-    return fetchJson<FeeHistogramResponse>("/api/dashboard/fee-histogram");
+    return fetchJson<FeeHistogramResponse>("/api/dashboard/fees");
+}
+
+export type ScrapeListItem = {
+    id: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    status: string;
+    issueCount: number;
+};
+
+export async function getScrapes(): Promise<ScrapeListItem[]> {
+    return fetchJson<{ data: ScrapeListItem[] }>("/api/dashboard/scrapes").then(
+        (r) => r.data,
+    );
 }
 
 /*8.2: quick scrape  POST /api/scrape/quick */

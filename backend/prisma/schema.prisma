@@ -68,3 +68,31 @@ model CourseOption {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+enum ScrapeStatus {
+  PENDING
+  RUNNING
+  FAILED
+  COMPLETED
+}
+
+model Scrape {
+  id         String        @id @default(uuid())
+  startedAt  DateTime
+  finishedAt DateTime?
+  status     ScrapeStatus  @default(PENDING)
+  type       String?
+  issues     ScrapeIssue[]
+  createdAt  DateTime      @default(now())
+}
+
+model ScrapeIssue {
+  id           String   @id @default(uuid())
+  scrapeId     String
+  scrape       Scrape   @relation(fields: [scrapeId], references: [id])
+  courseId     String?
+  universityId String?
+  message      String?
+  resolved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}

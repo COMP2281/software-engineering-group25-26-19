@@ -7,6 +7,7 @@ import {
     getFeeHistogram,
     quickScrape,
     getExportUrl,
+    getScrapes,
 } from "../api/Dashboard.api";
 import type {
     DashboardSummary,
@@ -23,7 +24,6 @@ import {
     CartesianGrid,
     Tooltip,
 } from "recharts";
-
 
 function formatAge(lastIso: string | null) {
     if (!lastIso) return { text: "Never", stale: true };
@@ -71,11 +71,17 @@ export default function Dashboard() {
     const [sidebarVisible, setSidebarVisible] = useState(true);
 
     async function refreshDashboardData() {
-        const s = await getDashboardSummary();
-        const h = await getFeeHistogram();
+        // fetch summary, fees and recent scrapes in parallel
+        const [s, h, scr] = await Promise.all([
+            getDashboardSummary(),
+            getFeeHistogram(),
+            getScrapes(),
+        ]);
         setSummary(s);
         setHomeHist(h.home);
         setIntlHist(h.international);
+        // store scrapes in console for now (not displayed in UI yet)
+        console.debug("recent scrapes:", scr);
     }
 
     /* 8.2 Quick Scrape */
