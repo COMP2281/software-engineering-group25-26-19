@@ -1,9 +1,9 @@
 ## Scraper
 
-- [ ] Make proper init script which can take in parameters like university/ies, specific course(s). If no parameters then it scrapes absolutely everything
+- [*] Make proper init script which can take in parameters like university/ies, specific course(s) (one or the other or none, input separated by commas). If no parameters then it scrapes absolutely everything. 
 - [ ] Add database status saving through the new `Scrape` model. This should include the status (pending, running, failed, completed), any error messages if it failed, and the time it started and finished. This will allow us to show the status of scrapes on the dashboard and also help with debugging when something goes wrong.
 - [ ] Add proper error handling (if not already there). I.e. skip a certain course/university if it is causing too many issues and fails to scrape multiple times. 
-- [ ] Add checks for whether there is already a scrape running and if so, don't start a new one.
+- [ ] Add checks for whether there is already a scrape running and if so, don't start a new one. Look in "Scrape" table, if most recent entry has status "pending" then don't start.
 
 ## Visualisation
 

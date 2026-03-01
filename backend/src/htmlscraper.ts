@@ -228,7 +228,7 @@ async function parseHtml(html: string): Promise<ScrapedData> {
         }
     });
 
-    const feeContext: FeeContext = { home: [], intl: [], scotland:[] };
+    const feeContext: FeeContext = { home: [], intl:[], scotland:[] };
 
     parseTables($, feeContext);
     parseDivGrids($, feeContext);
@@ -255,7 +255,7 @@ function parseTextForFees(text: string): ScrapedData {
     return {
         homeFee: extractFeeFromText(text,['home', 'uk', 'domestic', 'england', 'rest of uk', 'ruk']),
         internationalFee: extractFeeFromText(text,['international', 'overseas', 'eu/international']),
-        scotlandFee: extractFeeFromText(text, ['scotland', 'scottish'])
+        scotlandFee: extractFeeFromText(text,['scotland', 'scottish'])
     };
 }
 
@@ -264,7 +264,6 @@ function parseTextForFees(text: string): ScrapedData {
 /**
  * Looks up the DOM tree from a given element to find a heading (h1-h6)
  * that indicates the student type (e.g., "International Students").
- * FIXED: Removed 4-level limit to handle heavily nested tables (e.g. Cardiff).
  */
 function getContextLabel($: cheerio.CheerioAPI, element: any): FeeType | null {
     let current = $(element);
@@ -460,7 +459,7 @@ function extractPriceFromSimpleString(text: string): number | null {
 function extractFeeFromText(text: string, keywords: string[]): number | null {
     const regex = /£\s?([0-9]{1,3}(,[0-9]{3})*)/g;
     let match;
-    const candidates: { value: number, distance: number }[] = [];
+    const candidates: { value: number, distance: number }[] =[];
     const keywordIndices: number[] =[];
 
     keywords.forEach(kw => {
@@ -519,13 +518,111 @@ function selectBestFee(candidates: number[], type: FeeType): number | null {
     }
 }
 
-if (require.main === module) {
-    (async () => {
-        const args = process.argv.slice(2);
-        if (args.length > 0 && args[0]) {
-            await enrichCourseData(args[0]);
-        } else {
-            console.log("Provide a Course ID to test scraper.");
+// --- CLI EXECUTION LOGIC ---
+
+async function runScraperCLI() {
+    let unis: string[] = [];
+    let courses: string[] =[];
+
+    // Parse command line arguments safely
+    const args = process.argv.slice(2);
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (!arg) continue; // TS strict fix
+
+        if (arg.startsWith('--uni=')) {
+            unis = arg.substring(6).split(',').map(s => s.trim()).filter(Boolean);
+        } else if (arg === '--uni' && i + 1 < args.length) {
+            const nextArg = args[i + 1];
+            if (nextArg) {
+                unis = nextArg.split(',').map(s => s.trim()).filter(Boolean);
+                i++;
+            }
+        } else if (arg.startsWith('--course=')) {
+            courses = arg.substring(9).split(',').map(s => s.trim()).filter(Boolean);
+        } else if (arg === '--course' && i + 1 < args.length) {
+            const nextArg = args[i + 1];
+            if (nextArg) {
+                courses = nextArg.split(',').map(s => s.trim()).filter(Boolean);
+                i++;
+            }
         }
-    })();
+    }
+
+    // Validation: Cannot have both parameters
+    if (unis.length > 0 && courses.length > 0) {
+        console.error("\n[ERROR] You cannot specify both --uni and --course parameters at the same time.");
+        console.error("Usage Examples:");
+        console.error("  npx ts-node src/htmlscraper.ts --uni \"Durham University, Cardiff University\"");
+        console.error("  npx ts-node src/htmlscraper.ts --course \"course-id-1, course-id-2\"");
+        process.exit(1);
+    }
+
+    let courseIdsToScrape: string[] =[];
+
+    if (courses.length > 0) {
+        console.log(`Targeting specific courses: ${courses.join(', ')}`);
+        courseIdsToScrape = courses;
+    } else if (unis.length > 0) {
+        console.log(`Targeting universities: ${unis.join(', ')}`);
+        
+        // Build OR conditions for case-insensitive partial matches
+        const orConditions = unis.map(u => ({ 
+            name: { contains: u, mode: 'insensitive' as const } 
+        }));
+        
+        const dbCourses = await prisma.course.findMany({
+            where: {
+                university: { OR: orConditions },
+                options: {
+                    some: {
+                        OR: [ { homeFee: null }, { internationalFee: null } ]
+                    }
+                }
+            },
+            select: { id: true }
+        });
+        courseIdsToScrape = dbCourses.map(c => c.id);
+        console.log(`Found ${courseIdsToScrape.length} courses missing fees for the specified universities.`);
+    } else {
+        console.log(`No parameters specified. Targeting ALL courses missing fees in the database.`);
+        const dbCourses = await prisma.course.findMany({
+            where: {
+                options: {
+                    some: {
+                        OR:[ { homeFee: null }, { internationalFee: null } ]
+                    }
+                }
+            },
+            select: { id: true }
+        });
+        courseIdsToScrape = dbCourses.map(c => c.id);
+        console.log(`Found ${courseIdsToScrape.length} total courses missing fees.`);
+    }
+
+    if (courseIdsToScrape.length === 0) {
+        console.log("No courses to scrape. Exiting.");
+        process.exit(0);
+    }
+
+    // Execution Loop
+    let count = 1;
+    for (const id of courseIdsToScrape) {
+        console.log(`\n--- Progress: ${count}/${courseIdsToScrape.length} ---`);
+        await enrichCourseData(id);
+        count++;
+        // Polite delay to avoid hammering servers (1.5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    console.log("\n=== Scraping Run Complete ===");
+}
+
+if (require.main === module) {
+    runScraperCLI()
+        .then(() => process.exit(0))
+        .catch(err => {
+            console.error(err);
+            process.exit(1);
+        });
 }
