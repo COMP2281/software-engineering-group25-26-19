@@ -35,9 +35,6 @@ export default function CoursesPage() {
 
     return (
         <div className="appShell">
-            {/* Sidebar */}
-            <Sidebar />
-
             {/* Main area */}
             <main className="mainContent">
                 {/* Header */}

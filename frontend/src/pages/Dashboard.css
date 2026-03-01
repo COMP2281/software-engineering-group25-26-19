@@ -12,6 +12,9 @@
     flex: 1;
     min-width: 0;
     padding: 28px;
+
+    height: 100vh;
+    overflow-y: auto;
 }
 
 
@@ -264,7 +267,7 @@
 }
 
 .chartsStack {
-    margin-top: 18px auto 0;
+    margin: 18px auto 0;
     display: grid;
     grid-template-columns: 1fr;
 }
