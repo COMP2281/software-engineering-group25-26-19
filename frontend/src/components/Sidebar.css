@@ -12,6 +12,7 @@
 }
 
 .sidebarHeader {
+    position: relative;
     padding: 24px 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -42,7 +43,6 @@
     font-weight: 500;
 }
 
-/* 搜索框 */
 .searchBox {
     margin-top: 18px;
 }
@@ -56,7 +56,6 @@
     font-size: 13px;
 }
 
-/* ===== 菜单 ===== */
 .menu {
     padding: 14px 10px;
     flex: 1;
@@ -84,7 +83,6 @@
     opacity: 1;
 }
 
-/* ===== 底部 ===== */
 .sidebarFooter {
     padding: 14px 18px;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -99,4 +97,37 @@
 
 .signOut:hover {
     opacity: 1;
+}
+
+/*  Hide sidebar button (hamburger) */
+.sidebarHideBtn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 38px;
+    height: 34px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.sidebarHideBtn:hover {
+    background: rgba(255, 255, 255, 0.26);
+}
+
+.hamburger {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #fff;
+    border-radius: 999px;
 }

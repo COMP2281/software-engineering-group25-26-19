@@ -3,8 +3,9 @@
     flex-direction: row;
     align-items: stretch;
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
     background: #f3f4f6;
+    overflow-x: hidden;
 }
 
 .mainContent {
@@ -12,6 +13,51 @@
     min-width: 0;
     padding: 28px;
 }
+
+
+.appShell.sidebar-hidden .mainContent {
+    padding-left: calc(28px + 56px);
+}
+
+
+.sidebarFloatToggle {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+
+    width: 56px;   
+    height: 100vh; 
+
+    border: 0;
+    background: #68246d;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 8px 0 18px rgba(0, 0, 0, 0.08);
+}
+
+.sidebarFloatToggle:hover {
+    filter: brightness(1.05);
+}
+
+.sidebarFloatToggle .hamburger {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebarFloatToggle .hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #ffffff;
+    border-radius: 999px;
+}
+
 
 .pageHeader {
     display: flex;
@@ -189,7 +235,7 @@
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
-    padding: 18px; /* ✅ 与 KPI 一致 */
+    padding: 18px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 

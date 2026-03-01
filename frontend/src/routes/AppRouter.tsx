@@ -11,10 +11,8 @@ import CourseDetails from "../pages/CourseDetails";
 export default function AppRouter() {
   return (
     <Routes>
-      {/* 登录页 */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* 需要登陆才能访问 */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
 
@@ -22,7 +20,6 @@ export default function AppRouter() {
         <Route path="/courses/:id" element={<CourseDetails />} />
       </Route>
 
-      {/* 默认跳转 */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
