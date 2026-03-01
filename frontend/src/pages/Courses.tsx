@@ -142,11 +142,6 @@ export default function CoursesPage() {
   const hasSelection = selectAllMode || selectedCourseIds.size > 0;
 
   return (
-    <div className="appShell">
-      {/* Sidebar */}
-      <Sidebar onToggleHide={() => {}} />
-
-      {/* Main area */}
       <main className="mainContent">
         {/* Header */}
         <div className="pageHeader">
@@ -506,6 +501,5 @@ export default function CoursesPage() {
           )}
         </section>
       </main>
-    </div>
   );
 }

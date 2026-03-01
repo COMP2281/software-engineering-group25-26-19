@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import "./Dashboard.css";
 
 import {
@@ -66,9 +65,6 @@ export default function Dashboard() {
     const [selectedCard, setSelectedCard] = useState<
         "total" | "unis" | "updated" | "status" | null
     >(null);
-
-    // ✅ control Sidebar show/hide
-    const [sidebarVisible, setSidebarVisible] = useState(true);
 
     async function refreshDashboardData() {
         // fetch summary, fees and recent scrapes in parallel
@@ -148,25 +144,6 @@ export default function Dashboard() {
     );
 
     return (
-        <div className={`appShell ${sidebarVisible ? "" : "sidebar-hidden"}`}>
-            {sidebarVisible ? (
-                <Sidebar onToggleHide={() => setSidebarVisible(false)} />
-            ) : null}
-
-            {!sidebarVisible ? (
-                <button
-                    className="sidebarFloatToggle"
-                    type="button"
-                    onClick={() => setSidebarVisible(true)}
-                    aria-label="Show sidebar"
-                >
-                    <span className="hamburger" aria-hidden="true">
-                        <span />
-                        <span />
-                        <span />
-                    </span>
-                </button>
-            ) : null}
 
             <main className="mainContent">
                 <div className="mainInner">
@@ -371,6 +348,5 @@ export default function Dashboard() {
                     </section>
                 </div>
             </main>
-        </div>
     );
 }
