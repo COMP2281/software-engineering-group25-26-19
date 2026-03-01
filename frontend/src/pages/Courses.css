@@ -49,12 +49,36 @@
 
 .coursesTable th:nth-child(5),
 .coursesTable td:nth-child(5) {
-    width: 47%;
+    width: 44%;
 }
 
 .coursesTable th:nth-child(6),
 .coursesTable td:nth-child(6) {
     width: 3%;
+}
+
+.coursesTable th:nth-child(7),
+.coursesTable td:nth-child(7) {
+    width: 3%;
+}
+
+.coursesTable input[type="checkbox"] {
+  accent-color: #68246d;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* Slight hover pop when active */
+.rowCheckbox:not(:disabled):hover {
+  transform: scale(1.1);
+}
+
+/* Greyed-out appearance when select-all active */
+.rowCheckbox:disabled {
+  opacity: 0.7;
+  cursor: not-allowed !important;
 }
 
 .summaryCell {
@@ -314,33 +338,108 @@
 
 .filterBar {
   display: flex;
+  align-items: stretch;     /* equal height */
   justify-content: space-between;
-  align-items: stretch;
   gap: 16px;
   margin-bottom: 16px;
+  width: 100%;
+}
+
+/* All filter items equal width */
+.filterBar > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .searchInput {
-  flex: 0 0 50%;
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid #999;
+  background: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   caret-color: #68246d;
 }
 
 .searchInput:focus,
-.pageInput:focus {
+.dropdownToggle:focus {
   outline: none;
   border-color: #68246d;
-  /*box-shadow: 0 0 0 3px;*/
+  box-shadow: 0 0 0 2px rgba(104, 36, 109, 0.15);
 }
 
-.pageInput {
+
+/* Shared dropdown wrapper */
+.dropdown {
+  position: relative;
   display: flex;
-  padding: 6px 10px;
+}
+
+.checkboxDropdown {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+/* Shared toggle button */
+.dropdownToggle {
+  flex: 1;
+  padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid #999;
-  flex: 1;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  caret-color: #68246d;
+}
+
+.dropdownToggle:hover {
+  border-color: #68246d;
+}
+
+.dropdownToggle:focus {
+  outline: none;
+  border-color: #68246d;
+}
+
+/* Shared dropdown panel */
+.dropdownPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #999;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 8px;
+  z-index: 100;
+}
+
+/* Shared items */
+.dropdownItem {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dropdownItem:hover {
+  background: #f3f0f4;
+}
+
+.dropdownPanel input[type="checkbox"] {
+  accent-color: #68246d;
+  width: 14px;
+  height: 14px;
+  margin-top: 1.5px;
 }
 
 .noResults {
@@ -349,4 +448,62 @@
   font-size: 18px;
   font-weight: 500;
   color: #6b7280; /* soft grey */
+}
+/* Compact right-aligned selection row */
+.selectionRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+
+  margin: 8px 0 12px;
+  width: 100%;
+}
+
+/* Selection text */
+.selectionText {
+  font-size: 14px;
+  font-weight: 500;
+  color: #68246d;
+}
+
+/* Buttons container */
+.selectionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Shared button style */
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #68246d;
+
+  background: white;
+  color: #68246d;
+
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #68246d;
+  color: white;
+}
+
+/* Scrape variation */
+.scrapeBtn {
+  border-color: #68246d;
+}
+
+.scrapeBtn:hover {
+  background: #68246d;
+  color: white;
 }
