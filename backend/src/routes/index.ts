@@ -2,20 +2,24 @@ import { Router } from "express";
 import coursesRouter from "./courses";
 import authRouter from "./auth";
 import dashboardRouter from "./dashboard";
+import scraperRouter from "./scraper";
+import excelRouter from "./excel";
 import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-// Health
+// Health check
 router.get("/health", (_req, res) => {
     res.send({ status: "API is healthy" });
 });
 
-// Mount sub-routers
-// Apply authentication middleware to all routes except public ones (health, auth login)
-router.use("/courses", requireAuth, coursesRouter);
+// Auth routes (public)
 router.use("/auth", authRouter);
-// Dashboard
+
+// Protected routes
+router.use("/courses", requireAuth, coursesRouter);
 router.use("/dashboard", requireAuth, dashboardRouter);
+router.use("/scraper", requireAuth, scraperRouter);
+router.use("/excel", requireAuth, excelRouter);
 
 export default router;
