@@ -1,6 +1,11 @@
 .coursesTable {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;   /* 🔥 Important */
+}
+
+.coursesTable td {
+  vertical-align: middle;
 }
 
 .coursesTable th,
@@ -14,6 +19,131 @@
     background: #f8f9fb;
     font-weight: 600;
 }
+
+.coursesTable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* Column widths */
+.coursesTable th:nth-child(1),
+.coursesTable td:nth-child(1) {
+    width: 5%;
+}
+
+.coursesTable th:nth-child(2),
+.coursesTable td:nth-child(2) {
+    width: 15%;
+}
+
+.coursesTable th:nth-child(3),
+.coursesTable td:nth-child(3) {
+    width: 15%;
+}
+
+.coursesTable th:nth-child(4),
+.coursesTable td:nth-child(4) {
+    width: 15%;
+}
+
+.coursesTable th:nth-child(5),
+.coursesTable td:nth-child(5) {
+    width: 47%;
+}
+
+.coursesTable th:nth-child(6),
+.coursesTable td:nth-child(6) {
+    width: 3%;
+}
+
+.summaryCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expandCell {
+  display: inline-flex;  /* inline-flex works well in tables */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+    cursor: pointer;
+}
+
+
+.expandIcon,
+.optionCount {
+  transition: transform 0.35s ease, color 0.2s ease;
+}
+
+/* Base colours */
+.expandIcon {
+  display: block;        /* was inline-block */
+  line-height: 1;        /* kills baseline spacing */
+  padding-top: 1px;
+}
+
+
+.optionCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 18px;          /* match icon size vibe */
+  min-width: 18px;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;        /* important: removes baseline spacing */
+  color: #999;
+
+  padding-top: 2px;
+}
+
+
+/* Hover both together */
+.expandCell:hover .expandIcon,
+.expandCell:hover .optionCount {
+  color: #68246d;
+}
+
+/* Rotation */
+.expandIcon.rotated {
+  transform: rotate(90deg);
+}
+
+
+.expandWrapper {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.expandWrapper.open {
+  max-height: 300px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.expandedContent {
+  padding: 12px 0;
+}
+
+.expandedRow td {
+  padding: 0 !important;   /* 🔥 Remove vertical padding */
+  border-bottom: none;
+}
+
+.expandedContent {
+  padding: 12px 0;
+}
+
 
 .spinner {
     width: 36px;
@@ -32,13 +162,10 @@
 }
 
 /* Zebra striping */
-.coursesTable tbody tr:nth-child(odd) {
-    background-color: #ffffff;
-}
+.rowEven { background-color: #ffffff; }
+.rowOdd  { background-color: #f5f6f8; }
 
-.coursesTable tbody tr:nth-child(even) {
-    background-color: #f5f6f8; /* light grey */
-}
+
 
 /* Pagination container */
 .pagination {
@@ -95,4 +222,131 @@
     font-size: 16px;
     font-weight: 500;
     color: #555;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  overflow: hidden;            
+  background: #fff;            
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+}
+
+/* If only 1 option → span 2 columns */
+.optionsGrid:has(.optionCard:only-child) .optionCard {
+  grid-column: span 2;
+}
+
+/* If exactly 2 options → each spans 2 */
+.optionsGrid:has(.optionCard:nth-child(2):last-child) .optionCard {
+  grid-column: span 2;
+}
+
+/* If exactly 3 options → first spans 2, rest span 1 */
+.optionsGrid:has(.optionCard:nth-child(3):last-child) .optionCard:first-child {
+  grid-column: span 2;
+}
+
+
+.optionCard {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #eee;
+  transition: box-shadow 0.2s ease;
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+.actionCell {
+  text-align: center !important;
+
+}
+
+.rowExpandIcon {
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.rowExpandIcon:hover {
+  color: #68246d;
+  transform: scale(1.15);
+}
+
+/* If the parent course/expanded row is grey, make cards white */
+.rowOdd .optionCard {
+  background: #ffffff;
+}
+
+.optionCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.optionHeader {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #68246d; /* Palatine purple */
+}
+
+.optionMeta {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.optionMeta div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.label {
+  font-weight: 500;
+  color: #666;
+}
+
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.searchInput {
+  flex: 0 0 50%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #999;
+  caret-color: #68246d;
+}
+
+.searchInput:focus,
+.pageInput:focus {
+  outline: none;
+  border-color: #68246d;
+  /*box-shadow: 0 0 0 3px;*/
+}
+
+.pageInput {
+  display: flex;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #999;
+  flex: 1;
+}
+
+.noResults {
+  text-align: center;
+  padding: 40px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #6b7280; /* soft grey */
 }

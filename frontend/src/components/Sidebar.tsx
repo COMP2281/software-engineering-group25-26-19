@@ -2,58 +2,76 @@ import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
 type User = {
-    name: string;
-    avatarUrl?: string;
+  name: string;
+  avatarUrl?: string;
 };
 
 const mockUser: User = {
-    name: "SPIO User",
+  name: "SPIO User",
 };
 
-export default function Sidebar() {
-    return (
-        <aside className="sidebar">
-            {/* Header */}
-            <div className="sidebarHeader">
-                <div className="avatar">
-                    {mockUser.avatarUrl ? (
-                        <img src={mockUser.avatarUrl} alt="avatar" />
-                    ) : (
-                        <span>{mockUser.name[0]}</span>
-                    )}
-                </div>
-                <div className="userName">{mockUser.name}</div>
+type SidebarProps = {
+  onToggleHide: () => void;
+};
 
-                <div className="searchBox">
-                    <input placeholder="Search" />
-                </div>
-            </div>
+export default function Sidebar({ onToggleHide }: SidebarProps) {
+  return (
+    <aside className="sidebar">
+      {/* Header */}
+      <div className="sidebarHeader">
+        <button
+          className="sidebarHideBtn"
+          type="button"
+          onClick={onToggleHide}
+          aria-label="Hide sidebar"
+        >
+          <span className="hamburger" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
 
-            {/* Menu */}
-            <nav className="menu">
-                <NavLink to="/dashboard" className="menuItem">
-                    Dashboard
-                </NavLink>
+        <div className="avatar">
+          {mockUser.avatarUrl ? (
+            <img src={mockUser.avatarUrl} alt="avatar" />
+          ) : (
+            <span>{mockUser.name[0]}</span>
+          )}
+        </div>
 
-                <NavLink to="/courses" className="menuItem">
-                    Courses
-                </NavLink>
+        <div className="userName">{mockUser.name}</div>
 
-                <NavLink to="/visualisation" className="menuItem">
-                    Visualisation
-                </NavLink>
+        <div className="searchBox">
+          <input placeholder="Search" />
+        </div>
+      </div>
 
-                <NavLink to="/settings" className="menuItem">
-                    Settings
-                </NavLink>
-            </nav>
+      {/* Menu */}
+      <nav className="menu">
+        <NavLink to="/dashboard" className="menuItem">
+          Dashboard
+        </NavLink>
 
-            {/* Footer */}
-            <div className="sidebarFooter">
-                <NavLink to="/login" className="signOut">
-                    Sign out
-                </NavLink>
-            </div>
-        </aside>
-    );
+        <NavLink to="/courses" className="menuItem">
+          Courses
+        </NavLink>
+
+        <NavLink to="/visualisation" className="menuItem">
+          Visualisation
+        </NavLink>
+
+        <NavLink to="/settings" className="menuItem">
+          Settings
+        </NavLink>
+      </nav>
+
+      {/* Footer */}
+      <div className="sidebarFooter">
+        <NavLink to="/login" className="signOut">
+          Sign out
+        </NavLink>
+      </div>
+    </aside>
+  );
 }

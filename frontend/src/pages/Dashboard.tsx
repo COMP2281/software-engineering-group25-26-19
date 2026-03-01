@@ -24,7 +24,7 @@ import {
     Tooltip,
 } from "recharts";
 
-/** 把 lastSuccessfulScrapeAt 转成 “3 hours ago” 这种文本 + 是否过期 */
+
 function formatAge(lastIso: string | null) {
     if (!lastIso) return { text: "Never", stale: true };
 
@@ -67,7 +67,7 @@ export default function Dashboard() {
         "total" | "unis" | "updated" | "status" | null
     >(null);
 
-    // ✅ 控制 Sidebar 显示/隐藏
+    // ✅ control Sidebar show/hide
     const [sidebarVisible, setSidebarVisible] = useState(true);
 
     async function refreshDashboardData() {
