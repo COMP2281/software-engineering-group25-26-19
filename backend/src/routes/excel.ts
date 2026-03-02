@@ -8,6 +8,7 @@ router.get("/courses", async (req, res) => {
     try {
         const {
             q,
+            courseIds,
             universityIds,
             year,
             minFee,
@@ -16,7 +17,17 @@ router.get("/courses", async (req, res) => {
             level = "all",
         } = req.query as Record<string, string>;
 
+        console.log(req.query)
+
         // Parse filters similarly to courses route
+        let courseIdsArr: string[] | undefined;
+        if (courseIds) {
+            courseIdsArr = courseIds
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+        }
+
         let uniIdsArr: string[] | undefined;
         if (universityIds) {
             uniIdsArr = universityIds
@@ -38,6 +49,7 @@ router.get("/courses", async (req, res) => {
 
         console.log("Generating Excel export with filters:", {
             q,
+            courseIdsArr,
             uniIdsArr,
             yearInt,
             min,
@@ -48,6 +60,7 @@ router.get("/courses", async (req, res) => {
 
         const workbook = await exportCoursesToExcel({
             q,
+            courseIds: courseIdsArr,
             universityIds: uniIdsArr,
             year: yearInt,
             minFee: min,
