@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 
 interface CourseExportFilters {
     q?: string | undefined;
+    courseIds?: string[] | undefined;
     universityIds?: string[] | undefined;
     year?: number | undefined;
     minFee?: number | undefined;
@@ -18,6 +19,7 @@ export async function exportCoursesToExcel(
 
     const {
         q,
+        courseIds,
         universityIds,
         year,
         minFee,
@@ -36,6 +38,10 @@ export async function exportCoursesToExcel(
                 { ucasCourseId: { contains: q, mode: "insensitive" } },
             ],
         });
+    }
+
+    if (courseIds && courseIds.length > 0) {
+        andConditions.push({ id: { in: courseIds } });
     }
 
     if (universityIds && universityIds.length > 0) {

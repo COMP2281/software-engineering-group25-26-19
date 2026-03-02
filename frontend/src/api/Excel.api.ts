@@ -1,5 +1,6 @@
 export interface ExcelExportParams {
     q?: string;
+    courseIds?: string[];
     universityIds?: string[];
     year?: number;
     minFee?: number;
@@ -12,6 +13,11 @@ export function getExcelExportUrl(params?: ExcelExportParams): string {
     const searchParams = new URLSearchParams();
 
     if (params) {
+
+        if (params.courseIds && params.courseIds.length > 0) {
+            searchParams.append('courseIds', params.courseIds.join(','));
+        }
+
         if (params.q) searchParams.append('q', params.q);
         if (params.universityIds && params.universityIds.length > 0) {
             searchParams.append('universityIds', params.universityIds.join(','));
