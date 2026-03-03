@@ -159,6 +159,8 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
 
     // 2. Try Puppeteer
     if (puppeteer) {
+        // Declare browser variable
+        let browser: any = null;
         debug("Falling back to Puppeteer (Headless Browser)...");
         try {
             const browser = await puppeteer.launch({ 
@@ -187,6 +189,16 @@ async function scrapeWithFallback(url: string): Promise<ScrapedData & { lastHtml
 
         } catch (error) {
             debug(`Puppeteer failed: ${error instanceof Error ? error.message : error}`);
+        } finally {
+            // FINALLY BLOCK: This guarantees the browser closes even if goto() times out
+            if (browser) {
+                try {
+                    await browser.close();
+                    debug("Puppeteer browser closed successfully.");
+                } catch (closeError) {
+                    debug(`Failed to close Puppeteer browser: ${closeError}`);
+                }
+            }
         }
     }
 
@@ -254,7 +266,7 @@ async function parseHtml(html: string): Promise<ScrapedData> {
 function parseTextForFees(text: string): ScrapedData {
     return {
         homeFee: extractFeeFromText(text,['home', 'uk', 'domestic', 'england', 'rest of uk', 'ruk']),
-        internationalFee: extractFeeFromText(text,['international', 'overseas', 'eu/international']),
+        internationalFee: extractFeeFromText(text,['international', 'overseas', 'eu/international', 'world']),
         scotlandFee: extractFeeFromText(text,['scotland', 'scottish'])
     };
 }
