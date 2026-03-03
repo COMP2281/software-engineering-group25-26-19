@@ -6,6 +6,8 @@
 - [ ] Add checks for whether there is already a scrape running and if so, don't start a new one. Look in "Scrape" table, if most recent entry has status "pending" then don't start.
 - [*] Fix a minor memory leak with puppeteer timeouts
 - [ ] Improve overall parsing and semantics/keyword handling. List of keywords needs to be expanded, and scraper needs to handle full/part time fees independently (currently does not distinguish between the two as the standalone html scraper assumes it operates only on a singular courseoption)
+- [ ] Improve recursive page parsing, script currently only searches one additional page for fees before giving up. For some unis, the UCAS url does not redirect to the course page (but does exist as a link on the provided page). This should be changed such that the script searches a few layers deep (2 or 3 max) and searches the top candidates instead of just 1 page (very conservatively as this could drastically increase runtime). 
+- [ ] Proposal to write a standalone rule for Cambridge (and any other Uni that puts fees for all courses on a single PDF) to skip the regular pipeline and just parse the damn PDF. (I won't lie, in the worst case we may have to fallback to "each uni gets its own script with its own scraping rules", and keep the general pipeline for those that work & every other non-priority uni)
 
 ## Visualisation
 
