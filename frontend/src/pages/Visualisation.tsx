@@ -13,8 +13,26 @@ export default function Visualisation() {
             if (initial.length === 1) return [initial[0], null]; // Pad array so we always have at least two slots
             return initial;
         }
+
+        const saved = localStorage.getItem('visualisation_courses');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            } catch (e) {
+                console.error("Failed to parse saved visualisation courses", e);
+            }
+        }
+
         return [null, null];
     });
+
+    useEffect(() => {
+        localStorage.setItem('visualisation_courses', JSON.stringify(courses));
+    }, [courses]);
+
 
     const handleSelect = (index: number, course: Course) => {
         const newCourses = [...courses];
