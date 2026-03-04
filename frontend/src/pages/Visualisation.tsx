@@ -20,12 +20,14 @@ export default function Visualisation() {
                 <CourseSlot
                     label="Course A"
                     course={courseA}
+                    otherCourse={courseB}
                     onSelect={setCourseA}
                     onRemove={() => setCourseA(null)}
                 />
                 <CourseSlot
                     label="Course B"
                     course={courseB}
+                    otherCourse={courseA}
                     onSelect={setCourseB}
                     onRemove={() => setCourseB(null)}
                 />
@@ -37,13 +39,14 @@ export default function Visualisation() {
 interface CourseSlotProps {
     label: string;
     course: Course | null;
+    otherCourse?: Course | null;
     onSelect: (course: Course) => void;
     onRemove: () => void;
 }
 
-function CourseSlot({ label, course, onSelect, onRemove }: CourseSlotProps) {
+function CourseSlot({ label, course, otherCourse, onSelect, onRemove }: CourseSlotProps) {
     if (course) {
-        return <CourseDetailsCard course={course} onRemove={onRemove} />;
+        return <CourseDetailsCard course={course} otherCourse={otherCourse} onRemove={onRemove} />;
     }
 
     return <CourseSearch label={label} onSelect={onSelect} />;
@@ -155,12 +158,21 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
 
 interface CourseDetailsCardProps {
     course: Course;
+    otherCourse?: Course | null;
     onRemove: () => void;
 }
 
-function CourseDetailsCard({ course, onRemove }: CourseDetailsCardProps) {
+function CourseDetailsCard({ course, otherCourse, onRemove }: CourseDetailsCardProps) {
     // Use the first option as the default to display details
     const option = course.options && course.options.length > 0 ? course.options[0] : null;
+    const otherOption = otherCourse?.options && otherCourse.options.length > 0 ? otherCourse.options[0] : null;
+
+    const getFeeColor = (fee: number | null, otherFee: number | null | undefined) => {
+        if (!fee || !otherFee) return undefined;
+        if (fee > otherFee) return "var(--danger-color, #dc3545)";
+        if (fee < otherFee) return "var(--success-color, #198754)";
+        return undefined; // equal
+    };
 
     return (
         <div className="courseSlot">
@@ -176,15 +188,6 @@ function CourseDetailsCard({ course, onRemove }: CourseDetailsCardProps) {
                         <i className="bi bi-x-circle"></i>
                     </button>
                 </div>
-
-                {course.summary && (
-                    <div className="detailSection">
-                        <h3 className="detailSectionTitle">Summary</h3>
-                        <div className="summaryText">
-                            {course.summary.replace(/\*\*(.*?)\*\*/g, "$1")}
-                        </div>
-                    </div>
-                )}
 
                 {option && (
                     <>
@@ -212,13 +215,13 @@ function CourseDetailsCard({ course, onRemove }: CourseDetailsCardProps) {
                             <h3 className="detailSectionTitle">Fees</h3>
                             <div className="detailRow">
                                 <span className="detailLabel">Home Fee</span>
-                                <span className="detailValue">
+                                <span className="detailValue" style={{ color: getFeeColor(option.homeFee, otherOption?.homeFee), fontWeight: getFeeColor(option.homeFee, otherOption?.homeFee) ? 'bold' : 'normal' }}>
                                     {option.homeFee ? `£${option.homeFee.toLocaleString()}` : "N/A"}
                                 </span>
                             </div>
                             <div className="detailRow">
                                 <span className="detailLabel">International Fee</span>
-                                <span className="detailValue">
+                                <span className="detailValue" style={{ color: getFeeColor(option.internationalFee, otherOption?.internationalFee), fontWeight: getFeeColor(option.internationalFee, otherOption?.internationalFee) ? 'bold' : 'normal' }}>
                                     {option.internationalFee ? `£${option.internationalFee.toLocaleString()}` : "N/A"}
                                 </span>
                             </div>
@@ -226,12 +229,26 @@ function CourseDetailsCard({ course, onRemove }: CourseDetailsCardProps) {
 
                         <div className="detailSection">
                             <h3 className="detailSectionTitle">Requirements</h3>
-                            <div className="detailRow">
-                                <span className="detailLabel">A-Level</span>
-                                <span className="detailValue">
-                                    {option.aLevelGrade1 || "N/A"}
-                                </span>
-                            </div>
+                            {(!option.aLevelGrade1 && !option.aLevelGrade2 && !option.aLevelGrade3 && !option.aLevelGrade4) ? (
+                                <div className="detailRow">
+                                    <span className="detailLabel">A-Level</span>
+                                    <span className="detailValue">N/A</span>
+                                </div>
+                            ) : (
+                                [1, 2, 3, 4].map((i) => {
+                                    const grade = option[`aLevelGrade${i}` as keyof typeof option] as string | null;
+                                    const subject = option[`aLevelSubject${i}` as keyof typeof option] as string | null;
+
+                                    if (!grade) return null;
+
+                                    return (
+                                        <div className="detailRow" key={`alevel-${i}`}>
+                                            <span className="detailLabel">A-Level {subject ? `(${subject})` : ""}</span>
+                                            <span className="detailValue">{grade}</span>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </>
                 )}
@@ -239,6 +256,14 @@ function CourseDetailsCard({ course, onRemove }: CourseDetailsCardProps) {
                 {!option && (
                     <div className="detailSection" style={{ color: "var(--text-secondary)", textAlign: "center", fontStyle: "italic", marginTop: "20px" }}>
                         No specific study options or fee data available for this course.
+                    </div>
+                )}
+
+                {course.courseUrl && (
+                    <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
+                        <a href={course.courseUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'inline-block', width: '100%', textDecoration: 'none' }}>
+                            View Course Details <i className="bi bi-box-arrow-up-right" style={{ marginLeft: '8px' }}></i>
+                        </a>
                     </div>
                 )}
             </div>
