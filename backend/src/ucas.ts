@@ -68,12 +68,13 @@ export async function fetchSpecificCourse(courseId: string, academicYearId: stri
 
 // Fetch all courses based on filters
 export async function fetchAllUcasCourses(
-    providers: string[] = ["Durham University"],
+    providers: string[] =["Durham University"],
     opts: FetchOptions = {}
 ) {
     const {
-        pageSize = 200,
-        perRequestTimeout = 30000,
+        // REDUCED PAGE SIZE: 50 prevents 504 timeouts on Oxbridge collegiate courses
+        pageSize = 50, 
+        perRequestTimeout = 40000, // Increased to 40s
         delayBetweenRequests = 1000,
         maxRetries = 5,
         hardResultCap = 20000
@@ -85,22 +86,22 @@ export async function fetchAllUcasCourses(
             academicYearId: "2026",
             destinations: ["Undergraduate", "Postgraduate"],
             providers: providers,
-            schemes: [],
+            schemes:[],
             ucasTeacherTrainingProvider: false,
             degreeApprenticeship: false,
             studyTypes: [],
             subjects: [],
             qualifications: [],
-            attendanceTypes: [],
+            attendanceTypes:[],
             acceleratedDegrees: false,
             entryPoint: null,
-            regions: [],
+            regions:[],
             vacancy: "",
             startDates: [],
             higherTechnicalQualifications: false
         },
         options: {
-            sort: [],
+            sort:[],
             paging: {
                 pageNumber: 1,
                 pageSize: pageSize
@@ -110,12 +111,12 @@ export async function fetchAllUcasCourses(
         inClearing: false
     };
 
-    let allCourses: any[] = [];
+    let allCourses: any[] =[];
     let totalPages = 0;
 
     // Initial request to get total count
     try {
-        console.log("Fetching the first page to get total course count...");
+        console.log(`Fetching the first page (Size: ${pageSize}) to get total course count...`);
         const response = await axios.post(BASE_URL_V2, postBody, {
             headers: DEFAULT_HEADERS,
             timeout: perRequestTimeout
@@ -126,7 +127,7 @@ export async function fetchAllUcasCourses(
 
         if (totalCourses === 0) {
             console.log("No courses found or total course count is zero.");
-            return [];
+            return[];
         }
 
         totalPages = Math.ceil(totalCourses / pageSize);
@@ -142,7 +143,7 @@ export async function fetchAllUcasCourses(
         console.log(`Total courses found: ${totalCourses}`);
         console.log(`Total pages to fetch: ${totalPages}`);
 
-        const firstPageCourses = data.courses || [];
+        const firstPageCourses = data.courses ||[];
         allCourses.push(...firstPageCourses);
         
         // Process first page immediately
@@ -152,9 +153,12 @@ export async function fetchAllUcasCourses(
         
         console.log("Page 1 fetched and processed successfully.");
 
-    } catch (error) {
-        console.error("Error fetching first page:", error);
-        return [];
+    } catch (error: any) {
+        console.error("Error fetching first page:", error.message);
+        if (error.response?.status === 504) {
+            console.error("--> 504 Gateway Timeout: The UCAS server took too long. Try lowering the 'pageSize' parameter to 25.");
+        }
+        return[];
     }
 
     // Loop through remaining pages
