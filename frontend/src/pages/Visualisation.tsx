@@ -1,10 +1,20 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { getCourses } from "../api/Courses.api";
 import type { Course } from "../api/Courses.types";
 import "./Visualisation.css";
 
 export default function Visualisation() {
-    const [courses, setCourses] = useState<(Course | null)[]>([null, null]);
+    const location = useLocation();
+
+    const [courses, setCourses] = useState<(Course | null)[]>(() => {
+        const initial = location.state?.initialCourses as Course[] | undefined;
+        if (initial && initial.length > 0) {
+            if (initial.length === 1) return [initial[0], null]; // Pad array so we always have at least two slots
+            return initial;
+        }
+        return [null, null];
+    });
 
     const handleSelect = (index: number, course: Course) => {
         const newCourses = [...courses];

@@ -217,14 +217,14 @@ export default function CoursesPage() {
 
       if (!selectAllMode && selectedCourseIds.size > 0) {
         exportUrl = getExcelExportUrl({
-            courseIds: Array.from(selectedCourseIds),
+          courseIds: Array.from(selectedCourseIds),
         })
       }
       else {
         exportUrl = getExcelExportUrl({
-            q: search || undefined,
-            universityIds: selectedUniversityIds.length > 0 ? selectedUniversityIds : undefined,
-            level: level !== 'all' ? (level as 'undergraduate' | 'postgraduate') : undefined,
+          q: search || undefined,
+          universityIds: selectedUniversityIds.length > 0 ? selectedUniversityIds : undefined,
+          level: level !== 'all' ? (level as 'undergraduate' | 'postgraduate') : undefined,
         })
       }
 
@@ -377,6 +377,20 @@ export default function CoursesPage() {
             <div className="selectionButtons">
               <button
                 className="actionBtn exportBtn"
+                onClick={() => {
+                  const selectedObjects = selectAllMode
+                    ? courses
+                    : courses.filter(c => selectedCourseIds.has(c.id));
+
+                  navigate('/visualisation', { state: { initialCourses: selectedObjects } });
+                }}
+              >
+                <i className="bi bi-bar-chart" />{" "}
+                Visualise
+              </button>
+
+              <button
+                className="actionBtn exportBtn"
                 onClick={() => handleQuickExport()}
                 disabled={loading || actionLoading !== null}
               >
@@ -461,9 +475,8 @@ export default function CoursesPage() {
                         <td>
                           <div className="expandCell">
                             <i
-                              className={`bi bi-chevron-right expandIcon ${
-                                isExpanded ? "rotated" : ""
-                              }`}
+                              className={`bi bi-chevron-right expandIcon ${isExpanded ? "rotated" : ""
+                                }`}
                               onClick={() =>
                                 setExpandedCourseId(isExpanded ? null : c.id)
                               }
