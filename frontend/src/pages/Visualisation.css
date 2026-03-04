@@ -169,10 +169,36 @@
   margin: 0 0 8px 0;
 }
 
+.courseCardSubheader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
 .courseCardUni {
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.levelBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badgeUg {
+  background-color: var(--hover-color, #f0f4f8);
+  color: var(--primary-color, #0056b3);
+}
+
+.badgePg {
+  background-color: rgba(25, 135, 84, 0.1);
+  color: var(--success-color, #198754);
 }
 
 .removeCourseBtn {

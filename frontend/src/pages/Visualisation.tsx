@@ -224,6 +224,14 @@ function CourseDetailsCard({ course, minHomeFee, maxHomeFee, minIntlFee, maxIntl
         return undefined; // in between
     };
 
+    let degreeLevel = "Unknown";
+    let isUndergrad = false;
+
+    if (option?.outcomeQualification) {
+        isUndergrad = option.outcomeQualification.toLowerCase().startsWith('b');
+        degreeLevel = isUndergrad ? "Undergraduate" : "Postgraduate";
+    }
+
     return (
         <div className="courseSlot">
             <div className="courseDetailsCard">
@@ -232,7 +240,14 @@ function CourseDetailsCard({ course, minHomeFee, maxHomeFee, minIntlFee, maxIntl
                         <h2 className="courseCardTitle">
                             {course.title} {course.applicationCode ? `(${course.applicationCode})` : ""}
                         </h2>
-                        <p className="courseCardUni">{course.university?.name || "Unknown University"}</p>
+                        <div className="courseCardSubheader">
+                            <p className="courseCardUni">{course.university?.name || "Unknown University"}</p>
+                            {option?.outcomeQualification && (
+                                <span className={`levelBadge ${isUndergrad ? 'badgeUg' : 'badgePg'}`}>
+                                    {degreeLevel}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <button className="removeCourseBtn" onClick={onRemove} title="Remove course">
                         <i className="bi bi-x-circle"></i>
