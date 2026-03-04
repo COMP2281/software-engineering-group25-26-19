@@ -5,6 +5,7 @@ import Dashboard from "../pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import CoursesPage from "../pages/Courses";
 import CourseDetails from "../pages/CourseDetails";
+import Visualisation from "../pages/Visualisation";
 import ProtectedLayout from "../layouts/ProtectedLayout";
 
 export default function AppRouter() {
@@ -18,6 +19,8 @@ export default function AppRouter() {
 
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
+
+          <Route path="/visualisation" element={<Visualisation />} />
         </Route>
       </Route>
 
