@@ -235,19 +235,15 @@ function CourseDetailsCard({ course, otherCourse, onRemove }: CourseDetailsCardP
                                     <span className="detailValue">N/A</span>
                                 </div>
                             ) : (
-                                [1, 2, 3, 4].map((i) => {
-                                    const grade = option[`aLevelGrade${i}` as keyof typeof option] as string | null;
-                                    const subject = option[`aLevelSubject${i}` as keyof typeof option] as string | null;
-
-                                    if (!grade) return null;
-
-                                    return (
-                                        <div className="detailRow" key={`alevel-${i}`}>
-                                            <span className="detailLabel">A-Level {subject ? `(${subject})` : ""}</span>
-                                            <span className="detailValue">{grade}</span>
-                                        </div>
-                                    );
-                                })
+                                <div className="detailRow">
+                                    <span className="detailLabel">A-Levels</span>
+                                    <span className="detailValue">
+                                        {[1, 2, 3, 4]
+                                            .map((i) => option[`aLevelGrade${i}` as keyof typeof option] as string | null)
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                    </span>
+                                </div>
                             )}
                         </div>
                     </>
