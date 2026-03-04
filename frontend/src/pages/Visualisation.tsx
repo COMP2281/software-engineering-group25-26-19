@@ -26,13 +26,15 @@ export default function Visualisation() {
         setCourses([...courses, null]);
     };
 
+    const selectedCoursesCount = courses.filter(c => c !== null).length;
+
     const validHomeFees = courses.map(c => c?.options?.[0]?.homeFee).filter((f): f is number => !!f);
-    const minHomeFee = validHomeFees.length ? Math.min(...validHomeFees) : null;
-    const maxHomeFee = validHomeFees.length ? Math.max(...validHomeFees) : null;
+    const minHomeFee = selectedCoursesCount <= 2 && validHomeFees.length ? Math.min(...validHomeFees) : null;
+    const maxHomeFee = selectedCoursesCount <= 2 && validHomeFees.length ? Math.max(...validHomeFees) : null;
 
     const validIntlFees = courses.map(c => c?.options?.[0]?.internationalFee).filter((f): f is number => !!f);
-    const minIntlFee = validIntlFees.length ? Math.min(...validIntlFees) : null;
-    const maxIntlFee = validIntlFees.length ? Math.max(...validIntlFees) : null;
+    const minIntlFee = selectedCoursesCount <= 2 && validIntlFees.length ? Math.min(...validIntlFees) : null;
+    const maxIntlFee = selectedCoursesCount <= 2 && validIntlFees.length ? Math.max(...validIntlFees) : null;
 
     return (
         <main className="mainContent visualisationContainer">
