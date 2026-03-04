@@ -160,6 +160,7 @@ type GetCoursesParams = {
     page: number;
     pageSize: number;
     q?: string;
+    titleOnly?: boolean;
     universityIds?: string;
     level?: string;
 };
@@ -178,7 +179,7 @@ export type CourseDetailsResponse = {
 export async function getCourses(
     params: GetCoursesParams,
 ): Promise<PagedCoursesResponse> {
-    const { page, pageSize, q, universityIds, level } = params;
+    const { page, pageSize, q, titleOnly, universityIds, level } = params;
 
     if (USE_MOCK) {
         await sleep(600);
@@ -207,6 +208,10 @@ export async function getCourses(
         query.append("q", q)
     }
 
+    if (titleOnly) {
+        query.append("titleOnly", "true");
+    }
+
     if (universityIds && universityIds.trim()) {
         query.append("universityIds", universityIds);
     }
@@ -233,20 +238,20 @@ export async function getCourseById(id: string): Promise<CourseDetailsResponse> 
 }
 
 export async function getCourseFilters(): Promise<CourseFiltersResponse> {
-  if (USE_MOCK) {
-    await sleep(400);
+    if (USE_MOCK) {
+        await sleep(400);
 
-    return {
-      universities: [
-        { id: "1", name: "University of Oxford" },
-        { id: "2", name: "University of Cambridge" },
-      ],
-      fees: {
-        home: { min: 9000, max: 25000 },
-        international: { min: 15000, max: 45000 },
-      },
-    };
-  }
+        return {
+            universities: [
+                { id: "1", name: "University of Oxford" },
+                { id: "2", name: "University of Cambridge" },
+            ],
+            fees: {
+                home: { min: 9000, max: 25000 },
+                international: { min: 15000, max: 45000 },
+            },
+        };
+    }
 
-  return fetchJson<CourseFiltersResponse>("/api/courses/filters");
+    return fetchJson<CourseFiltersResponse>("/api/courses/filters");
 }

@@ -8,6 +8,7 @@ router.get("/", async (req, res) => {
     try {
         const {
             q,
+            titleOnly,
             universityIds,
             year,
             minFee,
@@ -27,11 +28,13 @@ router.get("/", async (req, res) => {
         const andConditions: any[] = [];
 
         if (q) {
+            const isTitleOnly = titleOnly === "true";
             andConditions.push({
                 OR: [
                     { title: { contains: q, mode: "insensitive" } },
-                    { summary: { contains: q, mode: "insensitive" } },
                     { ucasCourseId: { contains: q, mode: "insensitive" } },
+                    // Only include summary if titleOnly is not "true"
+                    ...(isTitleOnly ? [] : [{ summary: { contains: q, mode: "insensitive" } }]),
                 ],
             });
         }
@@ -62,7 +65,7 @@ router.get("/", async (req, res) => {
         if (level === "undergraduate") {
             optionFilters.push({ outcomeQualification: { startsWith: "B", mode: "insensitive" } });
         } else if (level === "postgraduate") {
-            optionFilters.push({ AND: [ { outcomeQualification: { not: null } }, { NOT: { outcomeQualification: { startsWith: "B", mode: "insensitive" } } } ] });
+            optionFilters.push({ AND: [{ outcomeQualification: { not: null } }, { NOT: { outcomeQualification: { startsWith: "B", mode: "insensitive" } } }] });
         }
 
         if (optionFilters.length) {

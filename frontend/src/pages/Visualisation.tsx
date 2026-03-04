@@ -73,8 +73,9 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
             try {
                 const res = await getCourses({
                     page: 1,
-                    pageSize: 10,
+                    pageSize: 20,
                     q: searchTerm,
+                    titleOnly: true,
                 });
                 setResults(res.data);
                 setShowDropdown(true);
