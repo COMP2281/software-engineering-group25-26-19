@@ -28,8 +28,8 @@ export default function CoursesPage() {
   >([]);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(
-    new Set(),
+  const [selectedCourseMap, setSelectedCourseMap] = useState<Map<string, Course>>(
+    new Map(),
   );
   const [selectAllMode, setSelectAllMode] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<ActionLoading>(null);
@@ -57,19 +57,19 @@ export default function CoursesPage() {
 
   const navigate = useNavigate();
 
-  function toggleSelection(id: string) {
+  function toggleSelection(course: Course) {
     if (selectAllMode) return; // disable individual toggling when select-all is active
 
-    setSelectedCourseIds((prev) => {
-      const newSet = new Set(prev);
+    setSelectedCourseMap((prev) => {
+      const newMap = new Map(prev);
 
-      if (newSet.has(id)) {
-        newSet.delete(id);
+      if (newMap.has(course.id)) {
+        newMap.delete(course.id);
       } else {
-        newSet.add(id);
+        newMap.set(course.id, course);
       }
 
-      return newSet;
+      return newMap;
     });
   }
 
@@ -121,7 +121,7 @@ export default function CoursesPage() {
 
   function updateParams(updates: Record<string, string | undefined>) {
     // Clear selection immediately when params change to avoid useEffect cascading renders
-    setSelectedCourseIds(new Set());
+    setSelectedCourseMap(new Map());
     setSelectAllMode(false);
 
     setSearchParams((prev) => {
@@ -215,9 +215,9 @@ export default function CoursesPage() {
 
       let exportUrl: string;
 
-      if (!selectAllMode && selectedCourseIds.size > 0) {
+      if (!selectAllMode && selectedCourseMap.size > 0) {
         exportUrl = getExcelExportUrl({
-          courseIds: Array.from(selectedCourseIds),
+          courseIds: Array.from(selectedCourseMap.keys()),
         })
       }
       else {
@@ -237,7 +237,7 @@ export default function CoursesPage() {
     }
   }
 
-  const hasSelection = selectAllMode || selectedCourseIds.size > 0;
+  const hasSelection = selectAllMode || selectedCourseMap.size > 0;
 
   return (
     <main className="mainContent">
@@ -371,7 +371,7 @@ export default function CoursesPage() {
             <div className="selectionText">
               {selectAllMode
                 ? "All courses selected"
-                : `${selectedCourseIds.size} ${selectedCourseIds.size == 1 ? "course" : "courses"} selected`}
+                : `${selectedCourseMap.size} ${selectedCourseMap.size == 1 ? "course" : "courses"} selected`}
             </div>
 
             <div className="selectionButtons">
@@ -380,7 +380,7 @@ export default function CoursesPage() {
                 onClick={() => {
                   const selectedObjects = selectAllMode
                     ? courses
-                    : courses.filter(c => selectedCourseIds.has(c.id));
+                    : Array.from(selectedCourseMap.values());
 
                   navigate('/visualisation', { state: { initialCourses: selectedObjects } });
                 }}
@@ -440,7 +440,7 @@ export default function CoursesPage() {
 
                       if (checked) {
                         setSelectAllMode(true);
-                        setSelectedCourseIds(new Set()); // clear specific IDs
+                        setSelectedCourseMap(new Map()); // clear specific IDs
                       } else {
                         setSelectAllMode(false);
                         // do NOT repopulate IDs — allow user to reselect manually
@@ -501,10 +501,10 @@ export default function CoursesPage() {
                           <input
                             type="checkbox"
                             checked={
-                              selectAllMode || selectedCourseIds.has(c.id)
+                              selectAllMode || selectedCourseMap.has(c.id)
                             }
                             disabled={selectAllMode}
-                            onChange={() => toggleSelection(c.id)}
+                            onChange={() => toggleSelection(c)}
                             className={`rowCheckbox ${selectAllMode ? "disabledMode" : ""}`}
                           />
                         </td>
