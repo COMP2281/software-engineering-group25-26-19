@@ -3,7 +3,7 @@
 import axios from 'axios';
 import * as stringSimilarity from 'string-similarity';
 import prisma from './db';
-import { PDFParse } from 'pdf-parse'; // Official v2 Import
+import { PDFParse } from 'pdf-parse';
 
 // Configuration
 const DEBUG = true;
@@ -22,15 +22,11 @@ function debug(msg: string) {
  * Extracts text from a PDF buffer using the pdf-parse v2 API.
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-    // Initialize the v2 parser class with the buffer data
     const parser = new PDFParse({ data: buffer });
-    
     try {
-        // Extract the text
         const result = await parser.getText();
         return result.text;
     } finally {
-        // Always destroy the parser instance to free up memory
         await parser.destroy();
     }
 }
@@ -43,7 +39,6 @@ export async function runBulkPdfScraper(universityName: string, pdfUrl: string) 
     console.log(`PDF URL: ${pdfUrl}`);
 
     try {
-        // 1. Download and Parse PDF
         debug("Downloading PDF...");
         const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
         const buffer = Buffer.from(response.data);
@@ -51,7 +46,6 @@ export async function runBulkPdfScraper(universityName: string, pdfUrl: string) 
         debug("Extracting text from PDF...");
         const text = await extractPdfText(buffer);
 
-        // 2. Extract Tabular Data
         debug("Parsing tabular data...");
         const extractedRows = extractTableData(text);
         console.log(`Extracted ${extractedRows.length} potential course rows from the PDF.`);
@@ -61,7 +55,6 @@ export async function runBulkPdfScraper(universityName: string, pdfUrl: string) 
             return;
         }
 
-        // 3. Fetch Database Courses for this University
         debug("Fetching courses from database...");
         const university = await prisma.university.findFirst({
             where: { name: { contains: universityName, mode: 'insensitive' } },
@@ -73,7 +66,6 @@ export async function runBulkPdfScraper(universityName: string, pdfUrl: string) 
             return;
         }
 
-        // 4. Fuzzy Match and Update
         debug("Starting fuzzy matching and database updates...");
         await matchAndUpdateCourses(university.courses, extractedRows);
 
@@ -89,7 +81,7 @@ export async function runBulkPdfScraper(universityName: string, pdfUrl: string) 
  * Parses the raw PDF text line-by-line to find table rows
  */
 function extractTableData(pdfText: string): ExtractedRow[] {
-    if (!pdfText) return [];
+    if (!pdfText) return[];
 
     const rows: ExtractedRow[] =[];
     const lines = pdfText.split('\n');
@@ -101,16 +93,15 @@ function extractTableData(pdfText: string): ExtractedRow[] {
         const line = lines[i]?.trim();
         if (!line) continue;
 
-        // Find all fee-like numbers in the line
         const matches = [...line.matchAll(feeRegex)];
 
-        // If a line has 2 or more fee-like numbers, it's almost certainly a table row
         if (matches.length >= 2) {
             const fees: number[] =[];
             matches.forEach(match => {
                 if (match[1]) {
                     const num = parseInt(match[1].replace(/,/g, ''), 10);
-                    // Filter out years (like 2026) and tiny numbers
+                    // Filter out years (like 2026) and tiny numbers (like Scotland's £1820 if we only want RUK/Intl)
+                    // We keep 1000+ so we can see the Scottish fee, but we filter it out of the Home fee below
                     if (num > 1000 && num < 80000 && num !== 2026 && num !== 2027) {
                         fees.push(num);
                     }
@@ -118,11 +109,10 @@ function extractTableData(pdfText: string): ExtractedRow[] {
             });
 
             if (fees.length >= 2) {
-                // Extract the text BEFORE the first number match
                 const firstMatchIndex = matches[0]?.index || 0;
                 let rawName = line.substring(0, firstMatchIndex).trim();
 
-                // Clean up common PDF artifacts (e.g., "[1]", "ARTS & SOCIAL SCIENCES")
+                // Clean up common PDF artifacts
                 rawName = rawName.replace(/\[\d+\]/g, '').trim(); 
                 
                 // Determine Home and Intl fees
@@ -142,26 +132,59 @@ function extractTableData(pdfText: string): ExtractedRow[] {
 }
 
 /**
+ * Normalizes course names by stripping faculties, degree prefixes, and punctuation.
+ * This ensures "ACCOUNTANCY ARTS & SOCIAL SCIENCES" matches "MA (Hons) Accountancy".
+ */
+function normalizeForMatch(name: string): string {
+    let n = name.toLowerCase();
+    
+    // 1. Strip Aberdeen's "Area of Study" column if it got merged at the end of the string
+    n = n.replace(/\s+(arts & social sciences|arts and social sciences|sciences|engineering|medicine & dentistry|medicine and dentistry|divinity & theology|divinity and theology|education|law|music|medicine)$/i, '');
+    
+    // 2. Strip common UCAS degree prefixes/suffixes (standalone words only)
+    n = n.replace(/\b(ba|bsc|ma|msc|meng|beng|llb|hons|bachelor|master|ug|pg|degree)\b/gi, '');
+    
+    // 3. Remove punctuation and extra whitespace
+    n = n.replace(/[(),\-&]/g, ' ');
+    n = n.replace(/\s+/g, ' ').trim();
+    
+    return n;
+}
+
+/**
  * Uses Dice's Coefficient (string-similarity) to map PDF rows to DB courses
  */
 async function matchAndUpdateCourses(dbCourses: any[], extractedRows: ExtractedRow[]) {
     let matchCount = 0;
-    const dbCourseNames = dbCourses.map(c => c.title);
+    
+    // Pre-calculate normalized names for the database courses
+    const normalizedDbCourses = dbCourses.map(c => ({
+        original: c,
+        normalized: normalizeForMatch(c.title)
+    }));
+    
+    const dbCourseNames = normalizedDbCourses.map(c => c.normalized);
 
     for (const row of extractedRows) {
-        // Find the best match in the database for the extracted PDF row name
-        const matchResult = stringSimilarity.findBestMatch(row.rawName, dbCourseNames);
+        const normalizedRawName = normalizeForMatch(row.rawName);
+        
+        if (!normalizedRawName) continue;
+
+        // Find the best match using the normalized names
+        const matchResult = stringSimilarity.findBestMatch(normalizedRawName, dbCourseNames);
         const bestMatch = matchResult.bestMatch;
 
-        // A rating of 0.55 is a good threshold for fuzzy matching course names
+        // 0.55 is a good threshold for fuzzy matching
         if (bestMatch.rating > 0.55) {
-            const targetDbCourse = dbCourses.find(c => c.title === bestMatch.target);
+            const target = normalizedDbCourses.find(c => c.normalized === bestMatch.target);
             
-            if (targetDbCourse) {
-                debug(`Matched: "${row.rawName}" -> "${targetDbCourse.title}" (Score: ${bestMatch.rating.toFixed(2)}) | Home: £${row.homeFee}, Intl: £${row.intlFee}`);
+            if (target && target.original) {
+                const dbCourse = target.original;
+                
+                debug(`Matched:[PDF] "${row.rawName}" -> [DB] "${dbCourse.title}" (Score: ${bestMatch.rating.toFixed(2)}) | Home: £${row.homeFee}, Intl: £${row.intlFee}`);
                 
                 // Update all options for this course in the database
-                for (const option of targetDbCourse.options) {
+                for (const option of dbCourse.options) {
                     await prisma.courseOption.update({
                         where: { id: option.id },
                         data: {
@@ -172,6 +195,9 @@ async function matchAndUpdateCourses(dbCourses: any[], extractedRows: ExtractedR
                 }
                 matchCount++;
             }
+        } else {
+            // Uncomment to debug poor matches
+            // debug(`Poor Match: "${normalizedRawName}" -> Best guess was "${bestMatch.target}" (Score: ${bestMatch.rating.toFixed(2)})`);
         }
     }
 
