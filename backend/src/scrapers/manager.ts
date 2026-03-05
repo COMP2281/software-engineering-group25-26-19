@@ -2,20 +2,31 @@
 
 import prisma from '../db';
 import { ScraperConfig } from './config';
-import { IScraperAdapter, ScrapedFees } from './interfaces';
+import { IScraperAdapter, ScrapedFees, UniversityScraperConfig } from './interfaces';
 import { GenericHtmlAdapter } from './adapters/GenericHtml';
 import { BulkPdfAdapter } from './adapters/BulkPdf';
+import { BathAdapter } from './adapters/Bath';
+import { BirminghamAdapter } from './adapters/Birmingham';
 
 /**
  * Factory function to instantiate the correct adapter.
+ * Takes the full config object so adapters can access custom URLs.
  */
-function getAdapter(adapterName: string): IScraperAdapter {
-    switch (adapterName) {
-        case 'BulkPdfAdapter': return new BulkPdfAdapter();
-        case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
-        // case 'CardiffAdapter': return new CardiffAdapter(); // Add custom ones here later
+function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
+    switch (config.adapterName) {
+        case 'BulkPdfAdapter': 
+            return new BulkPdfAdapter();
+        case 'BathAdapter': 
+            // Pass the centralFeeUrls object to the Bath adapter
+            return new BathAdapter(config.centralFeeUrls!);
+        case 'BirminghamAdapter':
+            return new BirminghamAdapter();
+        case 'GenericHtmlAdapter': 
+            return new GenericHtmlAdapter();
+        // case 'CardiffAdapter': 
+        //     return new CardiffAdapter(); 
         default:
-            console.warn(`[WARNING] Adapter ${adapterName} not implemented yet. Falling back to GenericHtmlAdapter.`);
+            console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
             return new GenericHtmlAdapter();
     }
 }
@@ -26,7 +37,7 @@ function getAdapter(adapterName: string): IScraperAdapter {
 async function runScrapingManager() {
     console.log("\n=== Starting Scraper Manager ===");
 
-    let unis: string[] =[];
+    let unis: string[] = [];
     let courses: string[] =[];
 
     // Parse command line arguments safely
@@ -65,13 +76,11 @@ async function runScrapingManager() {
 
     if (courses.length > 0) {
         console.log(`Targeting specific courses: ${courses.join(', ')}`);
-        // Fetch specific courses and group them by university
         const dbCourses = await prisma.course.findMany({
             where: { id: { in: courses } },
             include: { university: true, options: true }
         });
         
-        // Group by Uni ID to match the standard processing structure
         const uniMap = new Map<string, any>();
         for (const c of dbCourses) {
             if (!uniMap.has(c.universityId)) {
@@ -82,7 +91,6 @@ async function runScrapingManager() {
         universitiesData = Array.from(uniMap.values());
 
     } else {
-        // Target specific Unis or ALL Unis
         const whereClause = unis.length > 0 
             ? { OR: unis.map(u => ({ name: { contains: u, mode: 'insensitive' as const } })) }
             : {};
@@ -95,7 +103,7 @@ async function runScrapingManager() {
             include: {
                 courses: {
                     where: {
-                        options: { some: { OR:[{ homeFee: null }, { internationalFee: null }] } }
+                        options: { some: { OR: [{ homeFee: null }, { internationalFee: null }] } }
                     },
                     include: { options: true }
                 }
@@ -114,14 +122,11 @@ async function runScrapingManager() {
 
         console.log(`\n--- Processing: ${uni.name} (${uni.courses.length} target courses) ---`);
 
-        // Look up config, default to GENERIC_HTML if not found
         const config = ScraperConfig[uni.name] || {
             strategy: 'GENERIC_HTML',
             adapterName: 'GenericHtmlAdapter'
         };
 
-        // If the user requested specific courses, we force HTML mode for those courses
-        // because Bulk PDF updates the entire university, not specific courses.
         if (courses.length > 0 && config.strategy === 'BULK_PDF') {
             console.log(`[INFO] Overriding BULK_PDF strategy to GENERIC_HTML because specific courses were requested.`);
             config.strategy = 'GENERIC_HTML';
@@ -129,7 +134,7 @@ async function runScrapingManager() {
         }
 
         console.log(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
-        const adapter = getAdapter(config.adapterName);
+        const adapter = getAdapter(config);
 
         // --- STRATEGY: BULK PDF ---
         if (config.strategy === 'BULK_PDF') {
@@ -158,7 +163,7 @@ async function runScrapingManager() {
                 console.log(`[${count}/${uni.courses.length}] Scraping: ${course.title}`);
                 
                 try {
-                    const fees: ScrapedFees = await adapter.scrapeCourse(course.courseUrl);
+                    const fees: ScrapedFees = await adapter.scrapeCourse(course.courseUrl, course.title);
 
                     if (fees.homeFee || fees.internationalFee) {
                         console.log(`   > Found: Home £${fees.homeFee}, Intl £${fees.internationalFee}`);
@@ -183,7 +188,6 @@ async function runScrapingManager() {
                 }
 
                 count++;
-                // Polite delay to avoid IP bans
                 await new Promise(r => setTimeout(r, 1500));
             }
         }
@@ -192,7 +196,6 @@ async function runScrapingManager() {
     console.log("\n=== Scraper Manager Finished ===");
 }
 
-// --- CLI EXECUTION ---
 if (require.main === module) {
     runScrapingManager()
         .then(() => process.exit(0))

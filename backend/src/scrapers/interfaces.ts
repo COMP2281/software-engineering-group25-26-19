@@ -11,7 +11,7 @@ export interface IScraperAdapter {
      * Used for INDIVIDUAL_HTML or CUSTOM_HTML strategies.
      * Takes a single course URL and returns the fees.
      */
-    scrapeCourse?(courseUrl: string): Promise<ScrapedFees>;
+    scrapeCourse?(courseUrl: string, courseTitle?: string): Promise<ScrapedFees>;
 
     /**
      * Used for BULK_PDF strategies.
@@ -26,4 +26,8 @@ export interface UniversityScraperConfig {
     strategy: ScraperStrategy;
     adapterName: string;
     bulkUrl?: string; // Required if strategy is BULK_PDF
+    centralFeeUrls?: { // Optional URL for central fee page (used in some strategies)
+        ug?: string;
+        pg?: string[];
+    }
 }

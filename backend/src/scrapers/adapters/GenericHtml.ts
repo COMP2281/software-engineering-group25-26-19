@@ -49,7 +49,7 @@ function debug(msg: string) {
 
 export class GenericHtmlAdapter implements IScraperAdapter {
     
-    async scrapeCourse(courseUrl: string): Promise<ScrapedFees> {
+    async scrapeCourse(courseUrl: string, _courseTitle?: string): Promise<ScrapedFees> {
         let result: ScrapedFees & { lastHtml?: string } = { 
             homeFee: null, 
             internationalFee: null, 
