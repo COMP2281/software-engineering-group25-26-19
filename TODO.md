@@ -7,9 +7,8 @@
 - [x] Fix a minor memory leak with puppeteer timeouts
 - [ ] Improve overall parsing and semantics/keyword handling. List of keywords needs to be expanded, and scraper needs to handle full/part time fees independently (currently does not distinguish between the two as the standalone html scraper assumes it operates only on a singular courseoption)
 - [ ] Improve recursive page parsing, script currently only searches one additional page for fees before giving up. For some unis, the UCAS url does not redirect to the course page (but does exist as a link on the provided page). This should be changed such that the script searches a few layers deep (2 or 3 max) and searches the top candidates instead of just 1 page (very conservatively as this could drastically increase runtime).
-- [ ] Link PDF parsing script into main pipeline, add ability to read json file for uni names & urls to parse PDFs. May want the user to be able to edit the json (list of pdf unis). In `htmlscraper.ts`, change the deprecated pdf parsing to use the updated version, and run the standalone script when the scraper is called for a full uni or all courses. Add proper init script for PDF parser.
 - [ ] Investigate potential issue with duplicate/mismatched course options in the DB.
-- [ ] Write an "adapter"/config module to accept special configurations for universities that just don't work with the main script. Keep the generic script for most unis (any without a special config).  
+- [x] Write an "adapter"/config module to accept special configurations for universities that just don't work with the main script. Keep the generic script for most unis (any without a special config).  
 
 
 ## Visualisation
