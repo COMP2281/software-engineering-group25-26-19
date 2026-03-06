@@ -11,6 +11,8 @@ import {
   type ScraperStatusResponse,
 } from "../api/Scraper.api";
 import { getExcelExportUrl } from "../api/Excel.api";
+import Slider from "rc-slider";
+import "rc-slider/assets/index.css";
 
 type ActionLoading = null | "scrape" | "export";
 
@@ -19,6 +21,9 @@ function Spinner() {
 }
 
 export default function CoursesPage() {
+  const filterBarRef = React.useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [totalPages, setTotalPages] = useState<number>(0);
@@ -26,20 +31,30 @@ export default function CoursesPage() {
   const [universities, setUniversities] = useState<
     { id: string; name: string }[]
   >([]);
+  const [feeRanges, setFeeRanges] = useState({
+    home: { min: null as number | null, max: null as number | null },
+    international: { min: null as number | null, max: null as number | null },
+  });
+  const [sliderValue, setSliderValue] = useState<[number, number]>([0, 0]);
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(
     new Set(),
   );
   const [selectAllMode, setSelectAllMode] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<ActionLoading>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scraperState, setScraperState] = useState<ScraperStatusResponse>({
+    status: "idle",
+  });
 
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("pageSize") ?? 5);
   const search = searchParams.get("q") ?? "";
   const universityIdsParam = searchParams.get("universityIds") ?? "";
   const level = searchParams.get("level") ?? "all";
+  const feeType = searchParams.get("feeType") ?? "home";
+  const minFee = searchParams.get("minFee") ?? "";
+  const maxFee = searchParams.get("maxFee") ?? "";
 
   const selectedUniversityIds = universityIdsParam
     ? universityIdsParam.split(",").filter(Boolean)
@@ -49,16 +64,8 @@ export default function CoursesPage() {
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
   const [showPageDropdown, setShowPageDropdown] = useState(false);
 
-  const [scraperState, setScraperState] = useState<ScraperStatusResponse>({
-    status: "idle",
-  });
-
-  const filterBarRef = React.useRef<HTMLDivElement | null>(null);
-
-  const navigate = useNavigate();
-
   function toggleSelection(id: string) {
-    if (selectAllMode) return; // disable individual toggling when select-all is active
+    if (selectAllMode) return; 
 
     setSelectedCourseIds((prev) => {
       const newSet = new Set(prev);
@@ -82,6 +89,9 @@ export default function CoursesPage() {
       q: search || undefined,
       universityIds: universityIdsParam || undefined,
       level: level !== "all" ? level : undefined,
+      minFee: minFee ? Number(minFee) : undefined,
+      maxFee: maxFee ? Number(maxFee) : undefined,
+      feeType: feeType,
     });
 
     console.log(res.data);
@@ -93,12 +103,31 @@ export default function CoursesPage() {
 
   useEffect(() => {
     loadCourses();
-  }, [page, pageSize, search, universityIdsParam, level]);
+  }, [
+    page,
+    pageSize,
+    search,
+    universityIdsParam,
+    level,
+    minFee,
+    maxFee,
+    feeType,
+  ]);
 
   useEffect(() => {
     async function loadFilters() {
       const res = await getCourseFilters();
       setUniversities(res.universities);
+      setFeeRanges({
+        home: {
+          min: res.fees.home.min,
+          max: res.fees.home.max,
+        },
+        international: {
+          min: res.fees.international.min,
+          max: res.fees.international.max,
+        },
+      });
     }
     loadFilters();
   }, []);
@@ -120,7 +149,7 @@ export default function CoursesPage() {
   }, []);
 
   function updateParams(updates: Record<string, string | undefined>) {
-    // Clear selection immediately when params change to avoid useEffect cascading renders
+    
     setSelectedCourseIds(new Set());
     setSelectAllMode(false);
 
@@ -217,15 +246,20 @@ export default function CoursesPage() {
 
       if (!selectAllMode && selectedCourseIds.size > 0) {
         exportUrl = getExcelExportUrl({
-            courseIds: Array.from(selectedCourseIds),
-        })
-      }
-      else {
+          courseIds: Array.from(selectedCourseIds),
+        });
+      } else {
         exportUrl = getExcelExportUrl({
-            q: search || undefined,
-            universityIds: selectedUniversityIds.length > 0 ? selectedUniversityIds : undefined,
-            level: level !== 'all' ? (level as 'undergraduate' | 'postgraduate') : undefined,
-        })
+          q: search || undefined,
+          universityIds:
+            selectedUniversityIds.length > 0
+              ? selectedUniversityIds
+              : undefined,
+          level:
+            level !== "all"
+              ? (level as "undergraduate" | "postgraduate")
+              : undefined,
+        });
       }
 
       window.location.href = exportUrl;
@@ -239,6 +273,33 @@ export default function CoursesPage() {
 
   const hasSelection = selectAllMode || selectedCourseIds.size > 0;
 
+  const sliderMin =
+    feeType === "home" ? feeRanges.home.min : feeRanges.international.min;
+
+  const sliderMax =
+    feeType === "home" ? feeRanges.home.max : feeRanges.international.max;
+
+  const hasActiveFilters =
+    search !== "" ||
+    selectedUniversityIds.length > 0 ||
+    level !== "all" ||
+    minFee !== "" ||
+    maxFee !== "" ||
+    pageSize !== 5;
+
+  function resetFilters() {
+    setSearchParams({});
+  }
+
+  useEffect(() => {
+    if (sliderMin !== null && sliderMax !== null) {
+      setSliderValue([
+        minFee ? Number(minFee) : sliderMin,
+        maxFee ? Number(maxFee) : sliderMax,
+      ]);
+    }
+  }, [minFee, maxFee, sliderMin, sliderMax, feeType]);
+
   return (
     <main className="mainContent">
       {/* Header */}
@@ -251,7 +312,6 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {/* Table */}
       <section className="panel">
         <div className="filterBar" ref={filterBarRef}>
           <input
@@ -334,6 +394,68 @@ export default function CoursesPage() {
             )}
           </div>
 
+          <div className="feeFilter">
+            <div className="feeToggleVertical">
+              <button
+                className={feeType === "home" ? "active" : ""}
+                onClick={() =>
+                  updateParams({
+                    feeType: "home",
+                    minFee: undefined,
+                    maxFee: undefined,
+                    page: "1",
+                  })
+                }
+              >
+                Home
+              </button>
+
+              <button
+                className={feeType === "international" ? "active" : ""}
+                onClick={() =>
+                  updateParams({
+                    feeType: "international",
+                    minFee: undefined,
+                    maxFee: undefined,
+                    page: "1",
+                  })
+                }
+              >
+                Intl
+              </button>
+            </div>
+
+            {sliderMin !== null && sliderMax !== null && (
+              <div className="sliderWrapper">
+                <Slider
+                  range
+                  min={sliderMin}
+                  max={sliderMax}
+                  value={sliderValue}
+                  allowCross={false}
+                  onChange={(value) => {
+                    setSliderValue(value as [number, number]);
+                  }}
+                  onChangeComplete={(value) => {
+                    const [min, max] = value as number[];
+
+                    updateParams({
+                      minFee: min === sliderMin ? undefined : String(min),
+                      maxFee: max === sliderMax ? undefined : String(max),
+
+                      page: "1",
+                    });
+                  }}
+                />
+
+                <div className="sliderValues">
+                  £{sliderValue[0].toLocaleString()} — £
+                  {sliderValue[1].toLocaleString()}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="dropdown">
             <button
               type="button"
@@ -366,47 +488,61 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {hasSelection && (
-          <div className="selectionRow">
-            <div className="selectionText">
-              {selectAllMode
-                ? "All courses selected"
-                : `${selectedCourseIds.size} ${selectedCourseIds.size == 1 ? "course" : "courses"} selected`}
-            </div>
-
-            <div className="selectionButtons">
-              <button
-                className="actionBtn exportBtn"
-                onClick={() => handleQuickExport()}
-                disabled={loading || actionLoading !== null}
-              >
-                <i className="bi bi-download" />{" "}
-                {actionLoading == "export" ? "Exporting..." : "Export"}
-              </button>
-
-              {scraperState.status === "running" ? (
-                <button
-                  className="actionBtn scrapeBtn"
-                  onClick={() => handleStopScrape()}
-                  disabled={actionLoading === "scrape"}
-                >
-                  <i className="bi bi-cloud-arrow-down" />{" "}
-                  {actionLoading == "scrape" ? "Stopping..." : "Stop Scrape"}
+        {(hasActiveFilters || hasSelection) && (
+          <div className="filterActionRow">
+            {hasActiveFilters && (
+              <div className="filterResetRow">
+                <button className="resetFiltersBtn" onClick={resetFilters}>
+                  <i className="bi bi-arrow-counterclockwise"></i>
+                  Reset Filters
                 </button>
-              ) : (
-                <button
-                  className="actionBtn scrapeBtn"
-                  onClick={() => handleStartScrape()}
-                  disabled={loading || actionLoading !== null}
-                >
-                  <i className="bi bi-cloud-arrow-down" />{" "}
-                  {actionLoading == "scrape" ? "Scraping..." : "Scrape"}
-                </button>
-              )}
-            </div>
+              </div>
+            )}
+
+            {hasSelection && (
+              <div className="selectionRow">
+                <div className="selectionText">
+                  {selectAllMode
+                    ? "All courses selected"
+                    : `${selectedCourseIds.size} ${selectedCourseIds.size == 1 ? "course" : "courses"} selected`}
+                </div>
+
+                <div className="selectionButtons">
+                  <button
+                    className="actionBtn exportBtn"
+                    onClick={() => handleQuickExport()}
+                    disabled={loading || actionLoading !== null}
+                  >
+                    <i className="bi bi-download" />{" "}
+                    {actionLoading == "export" ? "Exporting..." : "Export"}
+                  </button>
+
+                  {scraperState.status === "running" ? (
+                    <button
+                      className="actionBtn scrapeBtn"
+                      onClick={() => handleStopScrape()}
+                      disabled={actionLoading === "scrape"}
+                    >
+                      <i className="bi bi-cloud-arrow-down" />{" "}
+                      {actionLoading == "scrape"
+                        ? "Stopping..."
+                        : "Stop Scrape"}
+                    </button>
+                  ) : (
+                    <button
+                      className="actionBtn scrapeBtn"
+                      onClick={() => handleStartScrape()}
+                      disabled={loading || actionLoading !== null}
+                    >
+                      <i className="bi bi-cloud-arrow-down" />{" "}
+                      {actionLoading == "scrape" ? "Scraping..." : "Scrape"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
-
         <div className="tableWrapper">
           <table className="coursesTable">
             <thead>
@@ -426,10 +562,10 @@ export default function CoursesPage() {
 
                       if (checked) {
                         setSelectAllMode(true);
-                        setSelectedCourseIds(new Set()); // clear specific IDs
+                        setSelectedCourseIds(new Set()); 
                       } else {
                         setSelectAllMode(false);
-                        // do NOT repopulate IDs — allow user to reselect manually
+                        
                       }
                     }}
                   />

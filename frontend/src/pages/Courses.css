@@ -1,7 +1,7 @@
 .coursesTable {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;   /* 🔥 Important */
+    table-layout: fixed;
 }
 
 .coursesTable td {
@@ -70,12 +70,10 @@
   margin-top: 4px;
 }
 
-/* Slight hover pop when active */
 .rowCheckbox:not(:disabled):hover {
   transform: scale(1.1);
 }
 
-/* Greyed-out appearance when select-all active */
 .rowCheckbox:disabled {
   opacity: 0.7;
   cursor: not-allowed !important;
@@ -88,7 +86,7 @@
 }
 
 .expandCell {
-  display: inline-flex;  /* inline-flex works well in tables */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -101,10 +99,9 @@
   transition: transform 0.35s ease, color 0.2s ease;
 }
 
-/* Base colours */
 .expandIcon {
-  display: block;        /* was inline-block */
-  line-height: 1;        /* kills baseline spacing */
+  display: block;        
+  line-height: 1;        
   padding-top: 1px;
 }
 
@@ -114,25 +111,25 @@
   align-items: center;
   justify-content: center;
 
-  height: 18px;          /* match icon size vibe */
+  height: 18px;          
   min-width: 18px;
 
   font-size: 12px;
   font-weight: 600;
-  line-height: 1;        /* important: removes baseline spacing */
+  line-height: 1;        
   color: #999;
 
   padding-top: 2px;
 }
 
 
-/* Hover both together */
+
 .expandCell:hover .expandIcon,
 .expandCell:hover .optionCount {
   color: #68246d;
 }
 
-/* Rotation */
+
 .expandIcon.rotated {
   transform: rotate(90deg);
 }
@@ -160,7 +157,7 @@
 }
 
 .expandedRow td {
-  padding: 0 !important;   /* 🔥 Remove vertical padding */
+  padding: 0 !important;  
   border-bottom: none;
 }
 
@@ -185,13 +182,13 @@
     }
 }
 
-/* Zebra striping */
+
 .rowEven { background-color: #ffffff; }
 .rowOdd  { background-color: #f5f6f8; }
 
 
 
-/* Pagination container */
+
 .pagination {
     display: flex;
     justify-content: center;
@@ -201,9 +198,9 @@
     padding: 20px 0 8px;
 }
 
-/* Icon buttons */
+
 .pageIconBtn {
-    all: unset; /* remove default button styles */
+    all: unset;
 
     display: inline-flex;
     align-items: center;
@@ -218,30 +215,30 @@
         transform 0.15s ease;
 }
 
-/* Icon size */
+
 .pageIconBtn i {
     font-size: 24px;
     line-height: 1;
 }
 
-/* Hover */
+
 .pageIconBtn:hover:not(:disabled) {
     color: #68246d;
 }
 
-/* Active (click) */
+
 .pageIconBtn:active:not(:disabled) {
     transform: scale(0.95);
 }
 
-/* Disabled */
+
 .pageIconBtn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
     color: #999;
 }
 
-/* Page info */
+
 .pageInfo {
     font-size: 16px;
     font-weight: 500;
@@ -262,17 +259,17 @@
   padding: 12px 0;
 }
 
-/* If only 1 option → span 2 columns */
+
 .optionsGrid:has(.optionCard:only-child) .optionCard {
   grid-column: span 2;
 }
 
-/* If exactly 2 options → each spans 2 */
+
 .optionsGrid:has(.optionCard:nth-child(2):last-child) .optionCard {
   grid-column: span 2;
 }
 
-/* If exactly 3 options → first spans 2, rest span 1 */
+
 .optionsGrid:has(.optionCard:nth-child(3):last-child) .optionCard:first-child {
   grid-column: span 2;
 }
@@ -305,7 +302,7 @@
   transform: scale(1.15);
 }
 
-/* If the parent course/expanded row is grey, make cards white */
+
 .rowOdd .optionCard {
   background: #ffffff;
 }
@@ -317,7 +314,7 @@
 .optionHeader {
   font-weight: 600;
   margin-bottom: 10px;
-  color: #68246d; /* Palatine purple */
+  color: #68246d; 
 }
 
 .optionMeta {
@@ -338,14 +335,14 @@
 
 .filterBar {
   display: flex;
-  align-items: stretch;     /* equal height */
+  align-items: stretch;    
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   width: 100%;
 }
 
-/* All filter items equal width */
+
 .filterBar > * {
   flex: 1;
   min-width: 0;
@@ -369,7 +366,7 @@
 }
 
 
-/* Shared dropdown wrapper */
+
 .dropdown {
   position: relative;
   display: flex;
@@ -381,7 +378,7 @@
   width: 100%;
 }
 
-/* Shared toggle button */
+
 .dropdownToggle {
   flex: 1;
   padding: 8px 12px;
@@ -405,7 +402,7 @@
   border-color: #68246d;
 }
 
-/* Shared dropdown panel */
+
 .dropdownPanel {
   position: absolute;
   top: calc(100% + 6px);
@@ -421,7 +418,7 @@
   z-index: 100;
 }
 
-/* Shared items */
+
 .dropdownItem {
   display: flex;
   gap: 8px;
@@ -447,33 +444,33 @@
   padding: 40px 0;
   font-size: 18px;
   font-weight: 500;
-  color: #6b7280; /* soft grey */
+  color: #6b7280; 
 }
-/* Compact right-aligned selection row */
+
 .selectionRow {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 16px;
 
-  margin: 8px 0 12px;
+  margin: 0;
   width: 100%;
 }
 
-/* Selection text */
+
 .selectionText {
   font-size: 14px;
   font-weight: 500;
   color: #68246d;
 }
 
-/* Buttons container */
+
 .selectionButtons {
   display: flex;
   gap: 8px;
 }
 
-/* Shared button style */
+
 .actionBtn {
   display: inline-flex;
   align-items: center;
@@ -498,7 +495,7 @@
   color: white;
 }
 
-/* Scrape variation */
+
 .scrapeBtn {
   border-color: #68246d;
 }
@@ -506,4 +503,113 @@
 .scrapeBtn:hover {
   background: #68246d;
   color: white;
+}
+
+
+.feeFilter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feeToggleVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feeToggleVertical button {
+  border: 2px solid transparent;
+  background: transparent;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 10px;
+
+  border-radius: 6px;              
+  transition: all 0.2s ease;       
+}
+
+.feeToggleVertical button:hover {
+  background: rgba(104, 36, 109, 0.1);  
+  color: #68246d;
+}
+
+.feeToggleVertical button.active {
+  border: 2px solid #68246d;
+  color: #68246d;
+}
+
+.sliderWrapper {
+  width: 100%;
+}
+
+.sliderValues {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.feeFilter .rc-slider-track {
+  background-color: #68246d !important;
+}
+
+.feeFilter .rc-slider-rail {
+  background-color: #e5e5e5 !important;
+}
+
+.feeFilter .rc-slider-handle {
+  border-color: #68246d !important;
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.feeFilter .rc-slider-handle:hover,
+.feeFilter .rc-slider-handle:active,
+.feeFilter .rc-slider-handle:focus {
+  border-color: #68246d !important;
+  box-shadow: 0 0 0 4px rgba(104, 36, 109, 0.15) !important;
+}
+
+.filterActionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  margin-top: 10px;
+  margin-bottom: 8px;
+
+  min-height: 32px;
+}
+
+.filterReset {
+  display: flex;
+}
+
+.selectionRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.resetFiltersBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  font-size: 13px;
+  color: #68246d;
+  padding: 6px 8px;
+  border-radius: 6px;
+
+  transition: background 0.2s ease;
+
+  white-space: nowrap;
+}
+
+.resetFiltersBtn:hover {
+  background: rgba(104, 36, 109, 0.1);
 }
