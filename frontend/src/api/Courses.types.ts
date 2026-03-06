@@ -88,3 +88,14 @@ export interface CourseFiltersResponse {
     };
   };
 }
+
+export interface AnalyticsCourse {
+  id: string;
+  title: string;
+  university: { name: string };
+  options: {
+    homeFee: number | null;
+    internationalFee: number | null;
+    outcomeQualification: string | null;
+  }[];
+}

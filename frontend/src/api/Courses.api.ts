@@ -1,4 +1,4 @@
-import type { Course, CourseFiltersResponse, CoursesFilters } from "./Courses.types";
+import type { Course, CourseFiltersResponse, CoursesFilters, AnalyticsCourse } from "./Courses.types";
 
 const USE_MOCK = false;
 
@@ -254,4 +254,17 @@ export async function getCourseFilters(): Promise<CourseFiltersResponse> {
     }
 
     return fetchJson<CourseFiltersResponse>("/api/courses/filters");
+}
+
+export async function getCourseAnalytics(
+    params: Omit<GetCoursesParams, "page" | "pageSize">
+): Promise<{ data: AnalyticsCourse[] }> {
+    const query = new URLSearchParams();
+
+    if (params.q && params.q.trim()) query.append("q", params.q);
+    if (params.titleOnly) query.append("titleOnly", "true");
+    if (params.universityIds && params.universityIds.trim()) query.append("universityIds", params.universityIds);
+    if (params.level && params.level !== "all") query.append("level", params.level);
+
+    return fetchJson<{ data: AnalyticsCourse[] }>(`/api/courses/analytics?${query}`);
 }

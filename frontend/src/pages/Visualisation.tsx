@@ -1,12 +1,31 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { getCourses } from "../api/Courses.api";
-import type { Course } from "../api/Courses.types";
+import { getCourses, getCourseFilters, getCourseAnalytics } from "../api/Courses.api";
+import type { Course, CourseFiltersResponse, AnalyticsCourse } from "../api/Courses.types";
+import {
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    PieChart,
+    Pie,
+    Cell,
+} from "recharts";
 import "./Visualisation.css";
 
 export default function Visualisation() {
     const location = useLocation();
 
+    // --- Analytics State ---
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsCourse[]>([]);
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [hoveredUni, setHoveredUni] = useState<{ name: string, home: number, intl: number, count: number } | null>(null);
+    const [hoveredLevel, setHoveredLevel] = useState<{ name: string, count: number } | null>(null);
+
+    // --- Comparison State ---
     const [courses, setCourses] = useState<(Course | null)[]>(() => {
         const initial = location.state?.initialCourses as Course[] | undefined;
         if (initial && initial.length > 0) {
@@ -33,7 +52,66 @@ export default function Visualisation() {
         localStorage.setItem('visualisation_courses', JSON.stringify(courses));
     }, [courses]);
 
+    // Fetch master analytics data
+    useEffect(() => {
+        let mounted = true;
+        setAnalyticsLoading(true);
+        getCourseAnalytics({})
+            .then(res => {
+                if (mounted) {
+                    setAnalyticsData(res.data);
+                    setAnalyticsLoading(false);
+                }
+            })
+            .catch(err => {
+                console.error("Analytics fetch failed", err);
+                if (mounted) setAnalyticsLoading(false);
+            });
+        return () => { mounted = false; };
+    }, []);
 
+    // 1. Group by University for Tuitions Bar Chart
+    const uniStats = useMemo(() => {
+        const map = new Map<string, { totalHome: number, totalIntl: number, countHome: number, countIntl: number, count: number }>();
+        analyticsData.forEach(c => {
+            const u = c.university.name;
+            if (!map.has(u)) map.set(u, { totalHome: 0, totalIntl: 0, countHome: 0, countIntl: 0, count: 0 });
+            const s = map.get(u)!;
+            s.count++;
+            const h = c.options[0]?.homeFee;
+            if (h) { s.totalHome += h; s.countHome++; }
+            const i = c.options[0]?.internationalFee;
+            if (i) { s.totalIntl += i; s.countIntl++; }
+        });
+
+        return Array.from(map.entries())
+            .map(([name, s]) => ({
+                name,
+                avgHome: s.countHome ? Math.round(s.totalHome / s.countHome) : 0,
+                avgIntl: s.countIntl ? Math.round(s.totalIntl / s.countIntl) : 0,
+                count: s.count
+            }))
+            .sort((a, b) => b.avgHome - a.avgHome)
+            .slice(0, 15); // Top 15 most expensive for readability
+    }, [analyticsData]);
+
+    // 2. Group by Level for Donut Chart
+    const levelStats = useMemo(() => {
+        let ug = 0;
+        let pg = 0;
+        let other = 0;
+        analyticsData.forEach(c => {
+            const q = c.options[0]?.outcomeQualification;
+            if (q?.toLowerCase().startsWith("b")) ug++;
+            else if (q) pg++;
+            else other++;
+        });
+        return [
+            { name: "Undergraduate", value: ug, color: "#3498db" },
+            { name: "Postgraduate", value: pg, color: "#2ecc71" },
+            { name: "Other / Unspecified", value: other, color: "#95a5a6" }
+        ].filter(v => v.value > 0);
+    }, [analyticsData]);
     const handleSelect = (index: number, course: Course) => {
         const newCourses = [...courses];
         newCourses[index] = course;
@@ -67,11 +145,93 @@ export default function Visualisation() {
     return (
         <main className="mainContent visualisationContainer">
             <div className="visualisationHeader">
-                <h1 className="visualisationTitle">Visualisation & Comparison</h1>
+                <h1 className="visualisationTitle">Visualisation & Analytics</h1>
                 <p className="visualisationSubtitle">
-                    Select courses below to compare their details side by side.
+                    Explore overarching patterns or select courses below to compare their details side by side.
                 </p>
             </div>
+
+            <div className="analyticsContainer">
+                <div className="analyticsCharts">
+
+                    <div className="analyticsPanel">
+                        <h3>Average Tuition Fees (Top 15 Expensive Universities)</h3>
+                        {analyticsLoading ? <p>Loading graph...</p> : (
+                            <div className="chartWrapper">
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={uniStats} onMouseMove={(e: any) => {
+                                        if (e.activePayload && e.activePayload.length) {
+                                            setHoveredUni({
+                                                name: e.activePayload[0].payload.name,
+                                                home: e.activePayload[0].payload.avgHome,
+                                                intl: e.activePayload[0].payload.avgIntl,
+                                                count: e.activePayload[0].payload.count
+                                            });
+                                        }
+                                    }} onMouseLeave={() => setHoveredUni(null)}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={60} />
+                                        <YAxis />
+                                        <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                        <Bar dataKey="avgHome" name="Avg Home Fee (£)" fill="#3498db" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="avgIntl" name="Avg Intl Fee (£)" fill="#e74c3c" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="analyticsPanel">
+                        <h3>Course Level Distribution</h3>
+                        {analyticsLoading ? <p>Loading graph...</p> : (
+                            <div className="chartWrapper">
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <PieChart onMouseMove={(e: any) => {
+                                        if (e && e.name) {
+                                            setHoveredLevel({ name: e.name, count: e.value });
+                                        }
+                                    }} onMouseLeave={() => setHoveredLevel(null)}>
+                                        <Pie data={levelStats} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
+                                            {levelStats.map((entry, index) => (
+                                                <Cell key={index} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Sidebar for context */}
+                <div className="analyticsSidebar">
+                    <h3>Insights Context</h3>
+                    {!hoveredUni && !hoveredLevel ? (
+                        <p className="sidebarHint">Hover over a chart element to see deep-dive details here.</p>
+                    ) : (
+                        <div className="sidebarContent">
+                            {hoveredUni && (
+                                <div className="detailBlock">
+                                    <h4>{hoveredUni.name}</h4>
+                                    <div className="statRow"><span>Courses Listed:</span> <strong>{hoveredUni.count}</strong></div>
+                                    <div className="statRow"><span>Avg Home Fee:</span> <strong>£{hoveredUni.home.toLocaleString()}</strong></div>
+                                    <div className="statRow"><span>Avg Intl Fee:</span> <strong>£{hoveredUni.intl.toLocaleString()}</strong></div>
+                                </div>
+                            )}
+
+                            {hoveredLevel && (
+                                <div className="detailBlock">
+                                    <h4>{hoveredLevel.name} Level</h4>
+                                    <div className="statRow"><span>Total Programs:</span> <strong>{hoveredLevel.count.toLocaleString()}</strong></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <h2 style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '20px', marginBottom: '20px', color: 'var(--text-color)' }}>Course Comparison</h2>
 
             <div className="comparisonArea">
                 {courses.map((course, index) => (
