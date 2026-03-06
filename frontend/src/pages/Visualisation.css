@@ -1,11 +1,11 @@
 .visualisationContainer {
   display: flex;
   flex-direction: column;
-  padding: 24px;
   gap: 24px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+}
+
+.visualisationContainer>* {
+  flex-shrink: 0;
 }
 
 .visualisationHeader {
