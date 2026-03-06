@@ -22,9 +22,6 @@ export default function Visualisation() {
     // --- Analytics State ---
     const [analyticsData, setAnalyticsData] = useState<AnalyticsCourse[]>([]);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
-    const [hoveredUni, setHoveredUni] = useState<{ name: string, home: number, intl: number, count: number } | null>(null);
-    const [hoveredLevel, setHoveredLevel] = useState<{ name: string, count: number } | null>(null);
-
     // --- Comparison State ---
     const [courses, setCourses] = useState<(Course | null)[]>(() => {
         const initial = location.state?.initialCourses as Course[] | undefined;
@@ -159,16 +156,7 @@ export default function Visualisation() {
                         {analyticsLoading ? <p>Loading graph...</p> : (
                             <div className="chartWrapper">
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={uniStats} onMouseMove={(e: any) => {
-                                        if (e.activePayload && e.activePayload.length) {
-                                            setHoveredUni({
-                                                name: e.activePayload[0].payload.name,
-                                                home: e.activePayload[0].payload.avgHome,
-                                                intl: e.activePayload[0].payload.avgIntl,
-                                                count: e.activePayload[0].payload.count
-                                            });
-                                        }
-                                    }} onMouseLeave={() => setHoveredUni(null)}>
+                                    <BarChart data={uniStats}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={60} />
                                         <YAxis />
@@ -186,11 +174,7 @@ export default function Visualisation() {
                         {analyticsLoading ? <p>Loading graph...</p> : (
                             <div className="chartWrapper">
                                 <ResponsiveContainer width="100%" height={250}>
-                                    <PieChart onMouseMove={(e: any) => {
-                                        if (e && e.name) {
-                                            setHoveredLevel({ name: e.name, count: e.value });
-                                        }
-                                    }} onMouseLeave={() => setHoveredLevel(null)}>
+                                    <PieChart>
                                         <Pie data={levelStats} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
                                             {levelStats.map((entry, index) => (
                                                 <Cell key={index} fill={entry.color} />
@@ -202,32 +186,6 @@ export default function Visualisation() {
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Sidebar for context */}
-                <div className="analyticsSidebar">
-                    <h3>Insights Context</h3>
-                    {!hoveredUni && !hoveredLevel ? (
-                        <p className="sidebarHint">Hover over a chart element to see deep-dive details here.</p>
-                    ) : (
-                        <div className="sidebarContent">
-                            {hoveredUni && (
-                                <div className="detailBlock">
-                                    <h4>{hoveredUni.name}</h4>
-                                    <div className="statRow"><span>Courses Listed:</span> <strong>{hoveredUni.count}</strong></div>
-                                    <div className="statRow"><span>Avg Home Fee:</span> <strong>£{hoveredUni.home.toLocaleString()}</strong></div>
-                                    <div className="statRow"><span>Avg Intl Fee:</span> <strong>£{hoveredUni.intl.toLocaleString()}</strong></div>
-                                </div>
-                            )}
-
-                            {hoveredLevel && (
-                                <div className="detailBlock">
-                                    <h4>{hoveredLevel.name} Level</h4>
-                                    <div className="statRow"><span>Total Programs:</span> <strong>{hoveredLevel.count.toLocaleString()}</strong></div>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 
