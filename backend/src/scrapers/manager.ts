@@ -7,6 +7,10 @@ import { GenericHtmlAdapter } from './adapters/GenericHtml';
 import { BulkPdfAdapter } from './adapters/BulkPdf';
 import { BathAdapter } from './adapters/Bath';
 import { BirminghamAdapter } from './adapters/Birmingham';
+import { BristolAdapter } from './adapters/Bristol';
+import { CambridgeAdapter } from './adapters/Cambridge';
+import { EdinburghAdapter } from './adapters/Edinburgh';
+import { GlasgowAdapter } from './adapters/Glasgow';
 
 /**
  * Factory function to instantiate the correct adapter.
@@ -21,6 +25,14 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
             return new BathAdapter(config.centralFeeUrls!);
         case 'BirminghamAdapter':
             return new BirminghamAdapter();
+        case 'BristolAdapter':
+            return new BristolAdapter();
+        case 'CambridgeAdapter':
+            return new CambridgeAdapter();
+        case 'EdinburghAdapter':
+            return new EdinburghAdapter();
+        case 'GlasgowAdapter':
+            return new GlasgowAdapter(config.centralFeeUrls!);
         case 'GenericHtmlAdapter': 
             return new GenericHtmlAdapter();
         // case 'CardiffAdapter': 
@@ -117,7 +129,7 @@ async function runScrapingManager() {
     }
 
     // 2. Process each university according to its configured strategy
-    for (const uni of universitiesData) {
+     for (let uni of universitiesData) {
         if (!uni.courses || uni.courses.length === 0) continue;
 
         console.log(`\n--- Processing: ${uni.name} (${uni.courses.length} target courses) ---`);
@@ -134,19 +146,37 @@ async function runScrapingManager() {
         }
 
         console.log(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
-        const adapter = getAdapter(config);
 
-        // --- STRATEGY: BULK PDF ---
-        if (config.strategy === 'BULK_PDF') {
-            if (!config.bulkUrl || !adapter.scrapeBulk) {
-                console.error(`[ERROR] Missing bulkUrl or scrapeBulk method for ${uni.name}`);
-                continue;
+        // --- PHASE 1: BULK PDF (Applies to BULK_PDF and HYBRID) ---
+        if (config.bulkUrl && (config.strategy === 'BULK_PDF' || config.strategy === 'HYBRID')) {
+            // We temporarily instantiate the BulkPdfAdapter just for this phase
+            const bulkAdapter = new BulkPdfAdapter();
+            await bulkAdapter.scrapeBulk(uni.name, config.bulkUrl);
+
+            // Re-fetch the university from the database to see which courses STILL need scraping (e.g. PG courses)
+            const updatedUni = await prisma.university.findUnique({
+                where: { id: uni.id },
+                include: {
+                    courses: {
+                        where: { options: { some: { OR: [{ homeFee: null }, { internationalFee: null }] } } },
+                        include: { options: true }
+                    }
+                }
+            });
+
+            if (!updatedUni || updatedUni.courses.length === 0) {
+                console.log(`[INFO] All fees resolved via Bulk PDF. Skipping HTML phase.`);
+                continue; // Move to the next university
+            } else {
+                console.log(`[INFO] ${updatedUni.courses.length} courses still missing fees after Bulk PDF. Proceeding to HTML phase.`);
+                uni = updatedUni; // Update the loop variable with the remaining courses
             }
-            await adapter.scrapeBulk(uni.name, config.bulkUrl);
-        } 
-        
-        // --- STRATEGY: HTML (Generic or Custom) ---
-        else {
+        }
+
+        // --- PHASE 2: HTML SCRAPING (Applies to GENERIC_HTML, CUSTOM_HTML, and HYBRID) ---
+        if (config.strategy !== 'BULK_PDF') {
+            const adapter = getAdapter(config);
+
             if (!adapter.scrapeCourse) {
                 console.error(`[ERROR] Missing scrapeCourse method for ${uni.name}`);
                 continue;

@@ -8,15 +8,15 @@ List of unis with ANY sort of error. Most are minor and I've included roughly ho
 
 - [X] University of Birmingham: Intl fees not properly located due to unique structure (dropdown menu for each country, although all Intl fees are the same). Most fees not present. Custom adapter implemented for dropdown menu, puppeteer gets blocked SOMETIMES.
 
-- [ ] University of Bristol: No fees found, probably due to html structure we've not accounted for. Most fees present in DB.
+- [X] University of Bristol: No fees found, probably due to html structure we've not accounted for. Most fees present in DB.
 
-- [ ] University of Cambridge: Postgraduate course fees are located on a subpage, that the scraper does not find due to locating an incorrect subpage (tuition fees overview page). Undergrad fees should work with PDF parser. Some fees present
+- [X] University of Cambridge: Postgraduate course fees are located on a subpage, that the scraper does not find due to locating an incorrect subpage (tuition fees overview page). Undergrad fees should work with PDF parser. Some fees present
 
-- [ ] University of Edinburgh: Should work for pretty much everything, but SOME courses have their tuition fees listed on a sub-sub-page. Most fees not present in DB (but should be after scraper runs).
+- [X] University of Edinburgh: Should work for pretty much everything, but SOME courses have their tuition fees listed on a sub-sub-page. Most fees not present in DB (but should be after scraper runs).
 
 - [ ] University of Exeter: Sometimes finds the wrong fees, should be fixed by improving semantics parsing. Overall works fine we need better differentiation between full time, part time, and international/home fees anyways. Half of fees present in DB.
 
-- [ ] University of Glasgow: Will need separate logic, course fees are listed on a separate webpage and distinguished by type of course rather than specific course. No fees present in DB.
+- [X] University of Glasgow: Will need separate logic, course fees are listed on a separate webpage and distinguished by type of course rather than specific course. No fees present in DB. Adapter needs further testing, MAY be mapping courses to the wrong fee bands.
 
 - [ ] University of Lancaster: Does not find fees on course page, likely unique HTML structure again or missing keyword(s). No fees in DB.
 
