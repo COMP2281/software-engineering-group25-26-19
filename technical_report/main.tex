@@ -117,156 +117,18 @@
 \tableofcontents
 \newpage
 
-% ==========================================
-% SECTION 1: INTRODUCTION (20%)
-% ==========================================
-\section{Introduction}
+\input{sections/introduction}
 
-\subsection{Project Summary (5\%)}
-% Present a clear summary of the project to contextualise its main motivation and goals.
+\input{sections/technical_development}
 
-\subsection{System Access and Setup (5\%)}
-% Provide usable access to the developed system (URL if online, or zip instructions).
-% Clear instructions on how to set it up and run it.
+\input{sections/use_instructions}
 
-\subsection{Behavioural Requirements Status (10\%)}
-% Requirement: Table with Code, Description, Status (Unchanged/Modified), Met/Not Met.
-
-% ==========================================
-% SECTION 2: TECHNICAL DEVELOPMENT (40%)
-% ==========================================
-\section{Technical Development}
-
-\subsection{Source Materials (5\%)}
-% Describe source materials forming the basis for conceptualisation.
-
-\subsection{Technical Description (30\%)}
-% High-level architecture, design principles, technologies, diagrams, BDD approach.
-
-\subsection{Usability and UX (5\%)}
-% How usability/UX aspects were addressed.
-
-
-% ==========================================
-% SECTION 3: USE INSTRUCTIONS (20%)
-% ==========================================
-\section{Use Instructions}
-
-\subsection{Installation (5\%)}
-% System requirements (HW/SW), step-by-step install.
-
-\subsection{Deployment (5\%)}
-\label{sec:deployment}
-% Local machine deployment, database setup, VMs/Containers/Cloud.
-
-\subsection{Launching (5\%)}
-\label{sec:launching}
-% User account creation, login, different roles, first-time setup.
-
-\subsection{Troubleshooting (5\%)}
-% Common error messages, solutions, log locations.
-
-
-% ==========================================
-% SECTION 4: MAINTENANCE & IMPLICATIONS (20%)
-% ==========================================
-\section{Maintenance and Implications}
-
-\subsection{System Maintenance (5\%)}
-% Information on how system can be maintained.
-
-\subsection{Future Development (5\%)}
-% How possible future development can be implemented.
-
-\subsection{Ethical and Societal Impacts (10\%)}
-% Assessment of current and future status.
+\input{sections/maintenance}
 
 
 % ==========================================
 % TEST REPORT
 % ==========================================
 \newpage
-\section{Test Report}
-
-\subsection{What has been tested (20\%)}
-% Identify items tested (Unit, System, UAT).
-% Discuss integration testing if applicable.
-% Identify Test Oracles.
-
-\subsection{Test Cases (50\%)}
-
-
-\subsubsection{Unit Testing}
-
-
-
-\subsubsection{System Testing}
-
-\begin{table}[h!]
-\centering
-\caption{Test Case: sys\_test-01}
-\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
-\hline
-\textbf{Test Case ID} & sys\_test-01 \\ \hline
-\textbf{Description of test} & Application processes successful authentication \\ \hline
-\textbf{Related Req. Document} & $<$BR 1.1$>$ \\ \hline
-\textbf{Pre-requisites} & System is running and the user is currently not authenticated \\ \hline
-\textbf{Test procedure} & 1. Input correct username and password \newline 2. System responds with a message \\ \hline
-\textbf{Test material used} & Pre-determined username and password \\ \hline
-\textbf{Expected result (Oracle)} & User is authenticated and redirected to the dashboard \\ \hline
-\textbf{Actual Result (Pass/Fail)} & Pass \\ \hline
-\textbf{Comments} & None \\ \hline
-\textbf{Created by} & None \\ \hline
-\textbf{Test environment} & Windows 10 \\ \hline
-\end{tabular}
-\end{table}
-
-\begin{table}[h!]
-\centering
-\caption{Test Case: sys\_test-02}
-\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
-\hline
-\textbf{Test Case ID} & sys\_test-02 \\ \hline
-\textbf{Description of test} & Application processes failed authentication \\ \hline
-\textbf{Related Req. Document} & $<$BR 1.1$>$ \\ \hline
-\textbf{Pre-requisites} & System is running and the user is currently not authenticated \\ \hline
-\textbf{Test procedure} & 1. Input incorrect username and/or password \newline 2. System responds with a message \\ \hline
-\textbf{Test material used} & Pre-determined username and password \\ \hline
-\textbf{Expected result (Oracle)} & User is not authenticated, and a failed login message is displayed to the user \\ \hline
-\textbf{Actual Result (Pass/Fail)} & Pass \\ \hline
-\textbf{Comments} & None \\ \hline
-\textbf{Created by} & None \\ \hline
-\textbf{Test environment} & Windows 10 \\ \hline
-\end{tabular}
-\end{table}
-
-% \begin{table}[h!]
-% \centering
-% \caption{Test Case: sys\_test-03}
-% \begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
-% \hline
-% \textbf{Test Case ID} & sys\_test-03 \\ \hline
-% \textbf{Description of test} & End-to-end data pipeline \\ \hline
-% \textbf{Related Req. Document} & $<$BR 1.1$>$ \\ \hline
-% \textbf{Pre-requisites} & System is running and the user is authenticated \\ \hline
-% \textbf{Test procedure} & 1. Initialise a new scrape on a fresh university (no data exists within the database) \newline 2.  \\ \hline
-% \textbf{Test material used} &  \\ \hline
-% \textbf{Expected result (Oracle)} &  \\ \hline
-% \textbf{Actual Result (Pass/Fail)} & Pass \\ \hline
-% \textbf{Comments} & None \\ \hline
-% \textbf{Created by} & None \\ \hline
-% \textbf{Test environment} & Windows 10 \\ \hline
-% \end{tabular}
-% \end{table}
-
-\subsubsection{User Acceptance Testing}
-
-
-
-\subsection{Testing Context (20\%)}
-% Specific tools, environments (browsers, OS), severity scale justification.
-
-\subsection{Summary of Testing (10\%)}
-% Writing good test cases / formatting / summary of results.
-
+\input{sections/test_report}
 \end{document}
