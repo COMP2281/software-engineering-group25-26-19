@@ -3,10 +3,9 @@
 import { UniversityScraperConfig } from './interfaces';
 
 export const ScraperConfig: Record<string, UniversityScraperConfig> = {
-    // PDF UNIS MAY NEED FURTHER ADJUSTMENTS TO HANDLE MULTIPLE PDF FILES (i.e: POSTGRAD & UNDERGRAD)
     "University of Cambridge": {
-        strategy: "BULK_PDF",
-        adapterName: "BulkPdfAdapter",
+        strategy: "HYBRID",
+        adapterName: "CambridgeAdapter",
         bulkUrl: "https://www.undergraduate.study.cam.ac.uk/sites/default/files/publications/undergraduate_tuition_fees_2026-27.pdf"
     },
     "University of Aberdeen": {
@@ -29,6 +28,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
             ]
         }
     },
+    "University of Bristol": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "BristolAdapter"
+    },
     "University of Birmingham": {
         strategy: "CUSTOM_HTML",
         adapterName: "BirminghamAdapter",
@@ -38,11 +41,19 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
         adapterName: "GenericHtmlAdapter"
     },
     "The University of Edinburgh": {
-        strategy: "GENERIC_HTML",
-        adapterName: "GenericHtmlAdapter"
+        strategy: "CUSTOM_HTML",
+        adapterName: "EdinburghAdapter"
     },
     "Durham University": {
         strategy: "GENERIC_HTML",
         adapterName: "GenericHtmlAdapter"
+    },
+    "University of Glasgow": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "GlasgowAdapter",
+        centralFeeUrls: {
+            ugRuk: "https://www.gla.ac.uk/undergraduate/fees/ukfees/",
+            ugIntl: "https://www.gla.ac.uk/undergraduate/fees/intlfees/"
+        }
     }
 };

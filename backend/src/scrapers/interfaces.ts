@@ -20,14 +20,16 @@ export interface IScraperAdapter {
     scrapeBulk?(universityName: string, bulkUrl: string): Promise<void>;
 }
 
-export type ScraperStrategy = 'GENERIC_HTML' | 'CUSTOM_HTML' | 'BULK_PDF';
+export type ScraperStrategy = 'GENERIC_HTML' | 'CUSTOM_HTML' | 'BULK_PDF' | 'HYBRID';
 
 export interface UniversityScraperConfig {
     strategy: ScraperStrategy;
     adapterName: string;
-    bulkUrl?: string; // Required if strategy is BULK_PDF
-    centralFeeUrls?: { // Optional URL for central fee page (used in some strategies)
+    bulkUrl?: string; 
+    centralFeeUrls?: {
         ug?: string;
         pg?: string[];
-    }
+        ugRuk?: string;
+        ugIntl?: string;
+    }; 
 }
