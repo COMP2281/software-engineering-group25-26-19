@@ -10,9 +10,6 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip as RechartsTooltip,
-    PieChart,
-    Pie,
-    Cell,
 } from "recharts";
 import "./Visualisation.css";
 
@@ -92,22 +89,17 @@ export default function Visualisation() {
             .slice(0, 15); // Top 15 most expensive for readability
     }, [analyticsData]);
 
-    // 2. Group by Level for Donut Chart
-    const levelStats = useMemo(() => {
-        let ug = 0;
-        let pg = 0;
-        let other = 0;
-        analyticsData.forEach(c => {
-            const q = c.options[0]?.outcomeQualification;
-            if (q?.toLowerCase().startsWith("b")) ug++;
-            else if (q) pg++;
-            else other++;
-        });
-        return [
-            { name: "Undergraduate", value: ug, color: "#3498db" },
-            { name: "Postgraduate", value: pg, color: "#2ecc71" },
-            { name: "Other / Unspecified", value: other, color: "#95a5a6" }
-        ].filter(v => v.value > 0);
+    // 2. Top 15 Most Expensive Courses
+    const courseStats = useMemo(() => {
+        return [...analyticsData]
+            .map(c => ({
+                name: c.title,
+                home: c.options[0]?.homeFee ?? 0,
+                intl: c.options[0]?.internationalFee ?? 0,
+            }))
+            .filter(c => c.home > 0 || c.intl > 0)
+            .sort((a, b) => b.home - a.home)
+            .slice(0, 15);
     }, [analyticsData]);
     const handleSelect = (index: number, course: Course) => {
         const newCourses = [...courses];
@@ -152,7 +144,7 @@ export default function Visualisation() {
                 <div className="analyticsCharts">
 
                     <div className="analyticsPanel">
-                        <h3>Average Tuition Fees (Top 15 Expensive Universities)</h3>
+                        <h3>Most Expensive Universities</h3>
                         {analyticsLoading ? <p>Loading graph...</p> : (
                             <div className="chartWrapper">
                                 <ResponsiveContainer width="100%" height={300}>
@@ -170,18 +162,18 @@ export default function Visualisation() {
                     </div>
 
                     <div className="analyticsPanel">
-                        <h3>Course Level Distribution</h3>
+                        <h3>Most Expensive Courses</h3>
                         {analyticsLoading ? <p>Loading graph...</p> : (
                             <div className="chartWrapper">
-                                <ResponsiveContainer width="100%" height={250}>
-                                    <PieChart>
-                                        <Pie data={levelStats} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
-                                            {levelStats.map((entry, index) => (
-                                                <Cell key={index} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <RechartsTooltip />
-                                    </PieChart>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={courseStats}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={60} />
+                                        <YAxis />
+                                        <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                        <Bar dataKey="home" name="Home Fee (£)" fill="#3498db" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="intl" name="Intl Fee (£)" fill="#e74c3c" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         )}
