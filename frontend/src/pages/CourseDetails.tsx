@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import { getCourseById } from "../api/Courses.api";
 import type { Course } from "../api/Courses.types";
 import "./CourseDetails.css";
@@ -25,8 +24,8 @@ export default function CourseDetails() {
         const res = await getCourseById(id);
         setCourse(res.data);
         console.log(res.data);
-      } catch (err: any) {
-        if (err.message.includes("404")) {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message.includes("404")) {
           setCourse(null);
         } else {
           console.error(err);

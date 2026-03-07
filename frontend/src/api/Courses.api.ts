@@ -1,4 +1,4 @@
-import type { Course, CourseFiltersResponse, CoursesFilters } from "./Courses.types";
+import type { Course, CourseFiltersResponse } from "./Courses.types";
 
 const USE_MOCK = false;
 

@@ -35,6 +35,10 @@ export default function CoursesPage() {
   const [actionLoading, setActionLoading] = useState<ActionLoading>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    console.log(error);
+  }, [error]);
+
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("pageSize") ?? 5);
   const search = searchParams.get("q") ?? "";
