@@ -10,7 +10,13 @@ import { BirminghamAdapter } from './adapters/Birmingham';
 import { BristolAdapter } from './adapters/Bristol';
 import { CambridgeAdapter } from './adapters/Cambridge';
 import { EdinburghAdapter } from './adapters/Edinburgh';
+import { ExeterAdapter } from './adapters/Exeter';
 import { GlasgowAdapter } from './adapters/Glasgow';
+import { LancasterAdapter } from './adapters/Lancaster';
+import { LiverpoolAdapter } from './adapters/Liverpool';
+import { LoughboroughAdapter } from './adapters/Loughborough';
+import { ManchesterAdapter } from './adapters/Manchester';
+import { NewcastleAdapter } from './adapters/Newcastle';
 
 /**
  * Factory function to instantiate the correct adapter.
@@ -31,8 +37,20 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
             return new CambridgeAdapter();
         case 'EdinburghAdapter':
             return new EdinburghAdapter();
+        case 'ExeterAdapter':
+            return new ExeterAdapter();
         case 'GlasgowAdapter':
             return new GlasgowAdapter(config.centralFeeUrls!);
+        case 'LancasterAdapter':
+            return new LancasterAdapter();
+        case 'LiverpoolAdapter':
+            return new LiverpoolAdapter();
+        case 'LoughboroughAdapter':
+            return new LoughboroughAdapter();
+        case 'ManchesterAdapter':
+            return new ManchesterAdapter();
+        case 'NewcastleAdapter':
+            return new NewcastleAdapter();
         case 'GenericHtmlAdapter': 
             return new GenericHtmlAdapter();
         // case 'CardiffAdapter': 

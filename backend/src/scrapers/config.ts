@@ -44,6 +44,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
         strategy: "CUSTOM_HTML",
         adapterName: "EdinburghAdapter"
     },
+    "University of Exeter": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "ExeterAdapter"
+    },
     "Durham University": {
         strategy: "GENERIC_HTML",
         adapterName: "GenericHtmlAdapter"
@@ -55,5 +59,25 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
             ugRuk: "https://www.gla.ac.uk/undergraduate/fees/ukfees/",
             ugIntl: "https://www.gla.ac.uk/undergraduate/fees/intlfees/"
         }
+    },
+    "Lancaster University": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "LancasterAdapter"
+    },
+    "University of Liverpool": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "LiverpoolAdapter"
+    },
+    "Loughborough University": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "LoughboroughAdapter"
+    },
+    "University of Manchester": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "ManchesterAdapter"
+    },
+    "Newcastle University": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "NewcastleAdapter"
     }
 };

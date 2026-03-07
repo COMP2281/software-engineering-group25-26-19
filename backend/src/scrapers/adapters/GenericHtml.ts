@@ -136,7 +136,7 @@ export class GenericHtmlAdapter implements IScraperAdapter {
         return { ...result, lastHtml: html };
     }
 
-    private async parseHtml(html: string): Promise<ScrapedFees> {
+    protected async parseHtml(html: string): Promise<ScrapedFees> {
         const $ = cheerio.load(html);
         $('script, style, nav, footer, header').remove();
         
