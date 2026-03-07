@@ -162,6 +162,9 @@ type GetCoursesParams = {
     q?: string;
     universityIds?: string;
     level?: string;
+    minFee?: number;
+    maxFee?: number;
+    feeType?: string;
 };
 
 export type PagedCoursesResponse = {
@@ -178,7 +181,7 @@ export type CourseDetailsResponse = {
 export async function getCourses(
     params: GetCoursesParams,
 ): Promise<PagedCoursesResponse> {
-    const { page, pageSize, q, universityIds, level } = params;
+    const { page, pageSize, q, universityIds, level, minFee, maxFee, feeType } = params;
 
     if (USE_MOCK) {
         await sleep(600);
@@ -214,6 +217,19 @@ export async function getCourses(
     if (level && level !== "all") {
         query.append("level", level);
     }
+
+    if (feeType) {
+        query.append("feeType", feeType);
+    }
+
+    if (minFee) {
+        query.append("minFee", String(minFee));
+    }
+
+    if (maxFee) {
+        query.append("maxFee", String(maxFee));
+    }
+
 
     return fetchJson<PagedCoursesResponse>(`/api/courses?${query}`);
 }
