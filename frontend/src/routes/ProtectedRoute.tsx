@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { checkAuth } from "../api/login.author.api";
+import { checkAuth } from "../api/Login.api";
 
 export default function ProtectedRoute() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(

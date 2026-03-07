@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { login } from "../api/login.author.api";
+import { login } from "../api/Login.api";
 import "./LoginPage.css";
 
 import logo from "../assets/durham-logo.png";

@@ -89,6 +89,11 @@
 }
 
 .signOut {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
     color: #ffffff;
     text-decoration: none;
     font-size: 13px;
