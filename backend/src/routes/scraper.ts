@@ -18,15 +18,18 @@ router.post("/start", (req: Request, res: Response): void => {
         return;
     }
 
-    const { courseId } = req.body;
+    const { unis, courses } = req.body;
 
     // Determine the script path
-    const scriptPath = path.resolve(__dirname, "../../src/htmlscraper.ts");
+    const scriptPath = path.resolve(__dirname, "../../src/scrapers/manager.ts");
 
     // Prepare arguments (mock interface for now as requested)
     const args = [];
-    if (courseId) {
-        args.push(courseId);
+    if (unis) {
+        args.push("--uni=" + unis.join(","));
+    }
+    if (courses) {
+        args.push("--course=" + courses.join(","));
     }
 
     // Spawn the detached process
