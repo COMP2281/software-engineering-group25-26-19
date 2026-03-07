@@ -34,12 +34,11 @@ model Course {
 }
 
 model CourseOption {
-  id              String   @id @default(uuid())
   courseId        String
   course          Course   @relation(fields: [courseId], references: [id])
   
   year            Int
-  studyMode       String?
+  studyMode       String   @default("Full-time") // e.g., full-time, part-time, distance learning
   duration        String?
   startDate       String?
   
@@ -67,6 +66,8 @@ model CourseOption {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@id([courseId, year, studyMode])
 }
 
 enum ScrapeStatus {
