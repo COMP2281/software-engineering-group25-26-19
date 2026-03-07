@@ -29,3 +29,11 @@ List of unis with ANY sort of error. Most are minor and I've included roughly ho
 - [ ] Newcastle Uni: Course page fees once again not found, may have unique keywords/html structure again. Some home fees simply unavailable. No fees in DB.
 
 - [ ] Northumbria Uni: UCAS sometimes gives invalid URLs (i.e: accounting extended degree UCAS url is literally the homepage of northumbria uni). Otherwise works fine. No fees in DB.
+
+- [ ] University of Nottingham: Doesn't work for foundation courses
+
+- [ ] University of Oxford: Doesn't work for all graduate courses as you must click on a button to end up landing on the required page
+
+- [ ] Queen Mary University of London: completely incorrect scrapes, both home and intl fees are either null or misfigured completely, requires spearate script that is highly specialised to fix this issue!
+
+- [ ] Queen's University Belfast: different tuition fees classifications based on NI, ROI, GB so must double check that scottish fees are quoted correctly, mostly PG courses that are problematic
