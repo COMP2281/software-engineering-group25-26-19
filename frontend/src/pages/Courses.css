@@ -613,3 +613,44 @@
 .resetFiltersBtn:hover {
   background: rgba(104, 36, 109, 0.1);
 }
+
+.errorToast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.errorToast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.errorToastContent {
+  color: #68246d;
+  background-color: white;
+  padding: 14px 18px;
+  border-radius: 12px;
+  min-width: 260px;
+  max-width: 420px;
+
+  border: 2px solid #68246d;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.errorToastContent button {
+  border: none;
+  background: transparent;
+  color: #68246d;
+  font-size: 18px;
+  cursor: pointer;
+}

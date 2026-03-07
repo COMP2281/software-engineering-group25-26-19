@@ -69,7 +69,7 @@ export default function CoursesPage() {
   const [showPageDropdown, setShowPageDropdown] = useState(false);
 
   function toggleSelection(id: string) {
-    if (selectAllMode) return; 
+    if (selectAllMode) return;
 
     setSelectedCourseIds((prev) => {
       const newSet = new Set(prev);
@@ -153,7 +153,6 @@ export default function CoursesPage() {
   }, []);
 
   function updateParams(updates: Record<string, string | undefined>) {
-    
     setSelectedCourseIds(new Set());
     setSelectAllMode(false);
 
@@ -304,8 +303,41 @@ export default function CoursesPage() {
     }
   }, [minFee, maxFee, sliderMin, sliderMax, feeType]);
 
+  const [toastVisible, setToastVisible] = useState(false);
+
+  useEffect(() => {
+    if (error) {
+      setToastVisible(true);
+    }
+  }, [error]);
+
+  function closeToast() {
+    setToastVisible(false);
+
+    setTimeout(() => {
+      setError(null);
+    }, 300);
+  }
+
+  useEffect(() => {
+    if (!error) return;
+
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [error]);
+
   return (
     <main className="mainContent">
+      <div className={`errorToast ${toastVisible ? "show" : ""}`}>
+        <div className="errorToastContent">
+          <span>Error: {error}</span>
+          <button onClick={closeToast}>✕</button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="pageHeader">
         <div>
@@ -565,11 +597,11 @@ export default function CoursesPage() {
                       const checked = e.target.checked;
 
                       if (checked) {
+                        setError("TEST");
                         setSelectAllMode(true);
-                        setSelectedCourseIds(new Set()); 
+                        setSelectedCourseIds(new Set());
                       } else {
                         setSelectAllMode(false);
-                        
                       }
                     }}
                   />
