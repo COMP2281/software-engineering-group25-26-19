@@ -1,5 +1,9 @@
 # run_all.ps1
 
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$BackendDir = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
+Set-Location $BackendDir
+
 $universities = @(
     #"University of Aberdeen",
     #"University of Bath",
