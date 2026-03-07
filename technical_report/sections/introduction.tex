@@ -14,7 +14,7 @@ The primary challenge faced by the department is its reliance on a commercial th
 
 \subsubsection{Project Objective}
 To overcome these constraints, the project proposes a bespoke automated competitor data collection and analysis system. Controlling the data collection pipeline provides control over the frequency, scope, structure, and granularity of the data. The platform will support comparisons across institutions, also providing the capability to export filtered datasets for further analysis, in addition to an insight dashboard for graphical visualisations. While the current implementation prioritises data processing and core analytical tools for the users, advanced predictive modelling and integration with internal university systems falls outside the scope due to the aims and scale set by the stakeholder. 
-The success of the solution will be evaluated against a set of project objectives defined later through metrics representative of the stakeholder aims and objectives, linked to the system features and behavioural requirements.
+The success of the solution will be evaluated against a set of project objectives defined later through metrics representative of the stakeholder aims, linked to the system features and behavioural requirements.
 
 \subsubsection{Proposed Solution}
 To meet these objectives, the proposed system will collect, process and present competitor courses from UCAS and a selection of institution websites, made available through a web-based application. Data cleansing and normalisation will provide consistent, structured formatting across the different sources. The web-based UI will fetch from a local PostgreSQL relational database for efficient querying and filtering of the competitor data. Additional capabilities, such as scraping process management, searching, filtering, exporting and visualisation will also be available to the SPIO users.  
@@ -26,3 +26,115 @@ To meet these objectives, the proposed system will collect, process and present 
 
 \subsection{Behavioural Requirements Status (10\%)}
 % Requirement: Table with Code, Description, Status (Unchanged/Modified), Met/Not Met.
+
+\subsubsection{Overview of System Behaviour}
+
+The behavioural requirements set out in the requirements documentation describe the functionality available to the SPIO users to support their required analysis. The system focuses on allowing users to collect, explore and analyse competitor programme information through a set of core features. These features ensure stakeholders can carry out the required operations identified during the requirements phase. 
+
+\subsubsection{Implemented Behavioural Features}
+\setlength{\tabcolsep}{6pt}
+\begin{xltabular}{\textwidth}{@{} l p{2cm} p{2.5cm} @{\hspace{\tabcolsep}\hspace{14pt}} p{3.5cm} X @{}}
+\caption{Status of Behavioural Requirements} \\
+\toprule
+\textbf{Code} & \textbf{Feature} &\textbf{Description} & \textbf{Change} & \textbf{Met/Justification} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Code} & \textbf{Feature} &\textbf{Description} & \textbf{Change} & \textbf{Met/Justification} \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+
+BR 1.1 & Login & Successful login with valid credentials & \textbf{Unchanged} & \textbf{Met --} Users with valid credentials are authenticated, provided access to protected routes and redirected to the page specified in URL, default dashboard page. \\
+BR 1.2 & Login & Failed login with incorrect password & \textbf{Unchanged} & \textbf{Met --} Incorrect credentials trigger an authentication error message and prevent access to protected routes. \\
+BR 1.3 & Login & Unauthenticated access attempt & \textbf{Unchanged} & \textbf{Met --} Attempts to access protected routes without authentication are redirected to login page, showing an informational message. \\
+
+\midrule
+
+BR 2.1 & Fetch Data & Successful initiation of new fetch & \textbf{Unchanged} & \textbf{Met --} The user can initiate the data fetch process from both the dashboard and course list page, allowing optional filtering before data collection starts. \\
+BR 2.2 & Fetch Data & Attempted initiation whilst fetch in progress & \textbf{Unchanged} & \textbf{Met --} If the user attempts to initiate a new fetch while already in progress, the request is blocked and a message is displayed. \\
+
+\midrule
+
+BR 3.1 & Export Data & Successful export to excel & \textbf{Modified --} Users can export from the dashboard (quick export all) or from the courses page, with specific course sets. & \textbf{Met --} Excel file generated containing specified dataset and download is initiated. \\
+BR 3.2 & Export Data & Exporting empty dataset & \textbf{Modified --} On courses page, export is disabled when no course data is available for export. & \textbf{Met --} When no course data is available, export option either returns an error message (dashboard page), or export functionality is unavailable to the user (courses page). \\
+
+\midrule
+
+BR 4.1 & Data Visualisation & Visualised fetched data & test & test \\
+
+\midrule
+
+BR 5.1 & Search Data & Search returns matching courses & \textbf{Unchanged} & \textbf{Met --} When a search term is entered, courses whose title or description matches the specified term. \\
+BR 5.2 & Search Data & Search returns partial matches & \textbf{Unchanged} & \textbf{Met --} The search functionality allows users to retrieve courses with the keyword as a substring rather than an exact match. \\
+BR 5.3 & Search Data & Search returns no results & \textbf{Unchanged} & \textbf{Met --} When a search query does not match any record, the results table remains empty, with an informational message indicating that no courses match the specific criteria. \\
+
+\midrule
+
+BR 6.1 & Filter Data & Filter by Institution & \textbf{Modified --} Users can filter by selecting one or multiple institutions, rather than only one. & \textbf{Met --} Users can select one or more institutions simultaneously, returning courses offered by the selected institutions. \\
+BR 6.2 & Filter Data & Combined filters & \textbf{Unchanged} & \textbf{Met --} Users can utilise a combination of filters, returning courses that meet all criteria, showing an informational message if no courses match the criteria. \\
+
+\midrule
+
+BR 7.1 & Historical Data & Tuition fee history & \textbf{Unchanged} & \textbf{Not Met --} The system requires historical tuition fee records to generate a trend graph. As historical data was not provided by the stakeholder after the requirements elicitation, and was unavailable from trusted data sources, this functionality could not be implemented. \\
+BR 7.2 & Historical Data & Historical course comparison & \textbf{Unchanged} & \textbf{Not Met --} This feature requires multiple historical version of identical courses to compare data such as tuition fees and entry requirements. \\
+
+\midrule
+
+BR 8.1 & Dashboard Overview & Display key information & \textbf{Unchanged} & \textbf{Met --} The dashboard shows a summary of the current stored competitor course data, highlighting metrics such as total courses and last updated to provide users with a high-level overview. \\
+BR 8.2 & Dashboard Overview & Quick Fetch & \textbf{Unchanged} & \textbf{Met --} Selecting the scraper button initiates the data collection process using the default configuration, which is a subset of selected institutions, with process status displayed. \\
+BR 8.3 & Dashboard Overview & Quick Export & \textbf{Unchanged} &\textbf{Met --} Selecting the export button creates an Excel file containing the current system dataset used on the dashboard and initialises the file download. \\
+
+\midrule
+
+BR 9.1 & Course Comparison & Add courses for comparison & \textbf{Modified --} Course selection for comparison is performed by selecting checkboxes in the course list rather than displaying a comparison bar. & \textbf{Met --} Users can select multiple courses using the checkboxes in the course list across multiple pages, then passed into the comparison page. \\
+BR 9.2 & Course Comparison & View course comparison & \textbf{Modified --} Courses can be selected on the dedicated courses page, or from the courses list page rather than a comparison bar. & \textbf{Met --} A dedicated comparison page allows users to select courses to compare side-by-side, displaying key attributes such as tuition fees, entry requirements, qualification level and course duration. \\
+
+\midrule
+
+BR 10.1 & Fee Modelling & Predict Fee & \textbf{Unchanged} & \textbf{Not Met --} This feature was identified as a 'Won't Have', due to the required multiple year history to create an effective machine learning algorithm, which was not provided by the stakeholder. \\
+BR 10.2 & Fee Modelling & Insufficient History & \textbf{Unchanged} & \textbf{Not Met --} As the prediction functionality was not implemented, handling cases with insufficient historical data was also not developed. \\
+BR 10.3 & Fee Modelling & Historical Visualisation & \textbf{Unchanged} & \textbf{Not Met --} Visualisation of fees and confidence intervals requires the predictive modelling component, which was not developed. \\
+
+\bottomrule
+\end{xltabular}
+
+\subsubsection{Project Objectives}
+
+These objectives represent the stakeholder requirements and provide a framework for evaluating how the implemented features support the operational needs of the SPIO department. 
+
+\paragraph{Objective 1 - Improve Data Freshness}
+The capability to generate updated competitor programme information allows the department to monitor changes throughout the year and redices reliance on a third-party outdate dataset.
+
+\paragraph{Objective 2 - Control Data Coverage}
+Data is collected from sources such as UCAS and specific institutional websites, allowing in-depth programme data to be collected for targeted universities. 
+
+\paragraph{Objective 3 - Improve Analytical Capability}
+Tools such as searching, filtering and exporting to enable users to quickly locate programmes relevant to their research and prepare datasets for further analysis. 
+
+\paragraph{Objective 4 - Competitor Analysis}
+Comparison of competitor programmes and visualisation of course information to help identify patterns and difference between institutions through dashboard and comparison views. 
+
+\subsubsection{Feature Mapping}
+
+This table maps the implemented behavioural features to the project objectives, demonstrating how the system functionality achieves the stakeholder goals and requirements. 
+
+\begin{table}[h]
+\centering
+\begin{xltabular}{\textwidth}{@{} l X l} 
+\caption{Mapping behavioural features to project objectives} \\
+\toprule
+\textbf{Feature} & \textbf{Description} & \textbf{Objectives} \\
+\midrule
+Login & Secure authentication to allow authorised staff to access the system & -- \\
+Data Fetching & Collection of course data from UCAS and institution websites & O1, O2 \\
+Exporting Data & Export filtered datasets to Excel for external analysis & O3 \\
+Data Visualisation & -- & -- \\
+Searching Data & Keyword search for finding courses & O3 \\
+Filtering Data & Filter course list based on institution and other course attributes & O3 \\
+Dashboard Overview & Display key competitor comparison metrics & O4 \\
+Course Comparison & Side-by-side comparison of multiple selected courses & O4 \\
+\bottomrule
+\end{xltabular}
+\end{table}
