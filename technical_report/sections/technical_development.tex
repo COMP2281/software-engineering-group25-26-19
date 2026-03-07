@@ -4,10 +4,74 @@
 \section{Technical Development}
 
 \subsection{Source Materials (5\%)}
-% Describe source materials forming the basis for conceptualisation.
+The conceptualisation and development of the Competitor Benchmarking System were grounded in three primary categories of source materials:
+
+\begin{enumerate}
+    \item \textbf{Stakeholder Requirements \& Domain Knowledge:} The primary source was the initial consultation with the Strategic Planning and Insight Office (SPIO). Key artifacts included the client's existing manual Excel workflows and the "S-Squared" commercial dataset examples. These established the baseline for data schema (e.g., distinguishing between 'Home' and 'International' fees) and defined the "Must-Have" features for the MVP.
+    \item \textbf{Target Web Specifications:} To develop the scraping engine, we analysed the document object models (DOM) of the 35 target university websites. This source material dictated the need for a polymorphic scraping architecture, as some sites yielded data via static HTML (suitable for lightweight parsing) while others required dynamic rendering (requiring headless browser intervention).
+    \item \textbf{API Documentation:} The UCAS Open Data API formed the basis for the core data ingestion pipeline. This provided the authoritative source for course titles and entry requirements, reducing the load on the custom web scrapers.
+\end{enumerate}
 
 \subsection{Technical Description (30\%)}
-% High-level architecture, design principles, technologies, diagrams, BDD approach.
 
-\subsection{Usability and UX (5\%)}
-% How usability/UX aspects were addressed.
+\subsubsection{System Architecture Overview}
+The system follows a classic \textbf{Three-Tier Client-Server Architecture}, ensuring a clean separation of concerns between data presentation, business logic, and data storage.
+
+\begin{itemize}
+    \item \textbf{Presentation Layer (Frontend):} A Single Page Application (SPA) built with React. It communicates with the backend exclusively via a RESTful API. It is responsible for rendering the dashboard, visualising course information, and triggering scrape jobs.
+    \item \textbf{Application Layer (Backend):} A Node.js runtime environment using the Express.js framework. This layer acts as the orchestrator; it handles authentication, manages the API endpoints, and hosts the "Scraping Engine"—a dedicated module responsible for fetching and parsing external data.
+    \item \textbf{Data Layer (Database):} A PostgreSQL relational database. We utilised a normalised schema to store University, Course, and Fee data, ensuring data integrity and enabling complex historical queries.
+\end{itemize}
+
+% REPLACE THIS WITH YOUR ARCHITECTURE DIAGRAM FROM THE PREVIOUS REPORT
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{architecture_diagram.png} 
+    \caption{High-Level System Architecture illustrating the data flow from External Sources (UCAS/Web) all the way to the client.}
+    \label{fig:arch}
+\end{figure}
+
+\subsubsection{Design Principles and Patterns}
+To ensure maintainability and scalability, the development adhered to several key software engineering principles:
+
+\begin{itemize}
+    \item \textbf{Strategy Pattern (Scraping Engine):} Given the diversity of target websites, we implemented a Strategy pattern for the scraping logic. A complete separate script with the scraping logic has been created. It firstly starts off with fetching from UCAS API. Then fills in the missing data for all the universities using the html and headless browser scrapers. The system dynamically selects what type of scraping to use depending on the success of each method. Although, this approach may be a bit slower (trying every single method) than pre-determined rule sets for each university, it is a lot more maintainable. This allows the system to select the correct scraping strategy at runtime without altering the core engine code.
+    \item \textbf{Controller-Service-Repository Pattern:} The backend code structure separates the HTTP handling from the business logic and the database interactions. This decoupling facilitates easier unit testing and future database migrations.
+    \item \textbf{Singleton Pattern:} Used for the Database Connection Pool to ensure efficient resource management across concurrent API requests.
+\end{itemize}
+
+\subsubsection{Technologies and Platforms}
+The project utilised a strictly typed JavaScript ecosystem to reduce runtime errors and improve developer tooling:
+
+\begin{itemize}
+    \item \textbf{Language:} \textbf{TypeScript} was used across both Frontend and Backend. Shared interfaces (DTOs) ensured that the data structure expected by the frontend matched exactly what the backend delivered.
+    \item \textbf{Backend:} \textbf{Node.js} with \textbf{Express}. For scraping, we utilised \textbf{Cheerio} for high-speed static HTML parsing and \textbf{Puppeteer} for sites requiring JavaScript execution.
+    \item \textbf{Frontend:} \textbf{React} (v18) using Functional Components and Hooks. State management was handled via React Context for global user states (authentication).
+    \item \textbf{Database:} \textbf{PostgreSQL}, interacting via prisma ORM (Object-Relational Mapper) to prevent SQL injection attacks and manage schema migrations programmatically.
+\end{itemize}
+
+\subsubsection{Software Development Process}
+As outlined in the Project Management plan, we utilised a \textbf{Hybrid Development Model}. 
+\begin{itemize}
+    \item \textbf{Phase 1 (Waterfall):} Requirements gathering, database schema design, and API specification were completed upfront. This rigid start was necessary to ensure the complex data relationships matched SPIO's reporting standards.
+    \item \textbf{Phase 2 (Iterative/Agile):} The development of the different university scrapers followed an iterative approach. Due to the high uncertainty of web scraping (e.g., website structure changes), scrapers were built in 1-week sprints, prioritising "Must-Have" universities first.
+\end{itemize}
+
+\subsubsection{Role of Behaviour-Driven Development (BDD)}
+The BDD approach bridged the gap between SPIO's requirements and our implementation. The Gherkin features defined in the Requirements Documentation (e.g., \texttt{Feature: Fetching Data}) served as the blueprint for our Integration Tests. 
+
+For example, the requirement \textit{"Given I am a logged-in user... When I click Fetch Data..."} directly influenced the logic in our Scrape Controller. We ensured that the code explicitly handled the `Given` (Auth Middleware check) and `Then` (Job Queue initiation) states defined in the scenarios.
+
+% Need to add actual code to this
+\begin{lstlisting}[language=Gherkin, caption={Code Snippet: Generic Scraper Interface Implementation}, label={lst:code_example}]
+// code code code
+\end{lstlisting}
+
+\subsection{Usability and User Experience (5\%)}
+Since the system replaces a manual workflow, the UX focused on \textbf{feedback} and \textbf{efficiency} rather than visual flair:
+
+\begin{enumerate}
+    \item \textbf{Asynchronous Feedback Loops:} Data scraping is a time-consuming process. To prevent the user from thinking the system had frozen, we implemented HTTP-polling for progress. This provides real-time updates about the status of the scraper and if any issues have been encountered, directly addressing the "System Visibility" heuristic.
+    \item \textbf{Error Resilience:} If a specific university scrape fails (common in web scraping), the system does not crash. Instead, it completes the batch and highlights the specific failure in the dashboard, allowing the user to retry just that item.
+    \item \textbf{Familiarity:} The data grid was designed to mimic Excel functionalities (sorting, filtering) as this is the tool SPIO staff are most comfortable with.
+\end{enumerate}
