@@ -4,7 +4,8 @@ set -u
 
 # Run from backend directory even if invoked elsewhere.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+BACKEND_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$BACKEND_DIR"
 
 universities=(
   # "University of Aberdeen"
