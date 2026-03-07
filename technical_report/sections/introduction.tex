@@ -6,6 +6,20 @@
 \subsection{Project Summary (5\%)}
 % Present a clear summary of the project to contextualise its main motivation and goals.
 
+\subsubsection{Project Context}
+At Durham University, the Strategic Planning and Insight Office (SPIO) ensure Durham's course offerings remain attractive to prospective students by monitoring competitor programmes. Analysis of competitor data, including pricing and program structure, ensures the courses are strategically positioned to appeal to the prospective students' needs. 
+
+\subsubsection{Problem Statement}
+The primary challenge faced by the department is its reliance on a commercial third-party dataset for higher education competitor data. Whilst more reasonable than manually collecting this data, several limitations are introduced. Only one dataset is provided each year, meaning the department is working with a snapshot of the data within a changing field. Furthermore, the scope and structure of the data regarding universities, programmes and course options is fixed, providing no flexibility or control over detail of the data. As a result, flexibility and depth of the market research conducted is limited, also making it difficult to respond to changes in the market. 
+
+\subsubsection{Project Objective}
+To overcome these constraints, the project proposes a bespoke automated competitor data collection and analysis system. Controlling the data collection pipeline provides control over the frequency, scope, structure, and granularity of the data. The platform will support comparisons across institutions, also providing the capability to export filtered datasets for further analysis, in addition to an insight dashboard for graphical visualisations. While the current implementation prioritises data processing and core analytical tools for the users, advanced predictive modelling and integration with internal university systems falls outside the scope due to the aims and scale set by the stakeholder. 
+The success of the solution will be evaluated against a set of project objectives defined later through metrics representative of the stakeholder aims and objectives, linked to the system features and behavioural requirements.
+
+\subsubsection{Proposed Solution}
+To meet these objectives, the proposed system will collect, process and present competitor courses from UCAS and a selection of institution websites, made available through a web-based application. Data cleansing and normalisation will provide consistent, structured formatting across the different sources. The web-based UI will fetch from a local PostgreSQL relational database for efficient querying and filtering of the competitor data. Additional capabilities, such as scraping process management, searching, filtering, exporting and visualisation will also be available to the SPIO users.  
+
+
 \subsection{System Access and Setup (5\%)}
 % Provide usable access to the developed system (URL if online, or zip instructions).
 % Clear instructions on how to set it up and run it.
