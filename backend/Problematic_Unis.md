@@ -14,18 +14,18 @@ List of unis with ANY sort of error. Most are minor and I've included roughly ho
 
 - [X] University of Edinburgh: Should work for pretty much everything, but SOME courses have their tuition fees listed on a sub-sub-page. Most fees not present in DB (but should be after scraper runs).
 
-- [ ] University of Exeter: Sometimes finds the wrong fees, should be fixed by improving semantics parsing. Overall works fine we need better differentiation between full time, part time, and international/home fees anyways. Half of fees present in DB.
+- [X] University of Exeter: Sometimes finds the wrong fees, should be fixed by improving semantics parsing. Overall works fine we need better differentiation between full time, part time, and international/home fees anyways. Half of fees present in DB. Doesn't work for apprenticeships/weird degrees/programs
 
 - [X] University of Glasgow: Will need separate logic, course fees are listed on a separate webpage and distinguished by type of course rather than specific course. No fees present in DB. Adapter needs further testing, MAY be mapping courses to the wrong fee bands.
 
-- [ ] University of Lancaster: Does not find fees on course page, likely unique HTML structure again or missing keyword(s). No fees in DB.
+- [X] University of Lancaster: Does not find fees on course page, likely unique HTML structure again or missing keyword(s). No fees in DB.
 
-- [ ] University of Liverpool: Needs further testing, combined courses failed (to be expected as the UCAS url links to the selection page and I don't think we need to cover combined courses anyways). No fees in DB.
+- [X] University of Liverpool: Needs further testing, combined courses failed (to be expected as the UCAS url links to the selection page and I don't think we need to cover combined courses anyways). No fees in DB.
 
-- [ ] Loughborough Uni: Does not find fees on course page, likely unique HTML/keywords again. Undergrad foundation years correctly process however intl fees are not listed (not manually located yet). Some fees present in DB.
+- [X] Loughborough Uni: Does not find fees on course page, likely unique HTML/keywords again. Undergrad foundation years correctly process however intl fees are not listed (not manually located yet). Some fees present in DB.
 
-- [ ] Manchester Uni: Fees stated as pure text on course page, AI should be able to fix this quickly. No fees present in DB.
+- [X] Manchester Uni: Fees stated as pure text on course page, AI should be able to fix this quickly. No fees present in DB.
 
-- [ ] Newcastle Uni: Course page fees once again not found, may have unique keywords/html structure again. Some home fees simply unavailable. No fees in DB.
+- [X] Newcastle Uni: Course page fees once again not found, may have unique keywords/html structure again. Some home fees simply unavailable. No fees in DB. This uni still hasn't released their home fees for a lot of courses, but I'm not fixing for that it'll work when they release the fees (probably just 9790)
 
-- [ ] Northumbria Uni: UCAS sometimes gives invalid URLs (i.e: accounting extended degree UCAS url is literally the homepage of northumbria uni). Otherwise works fine. No fees in DB.
+- [ ] Northumbria Uni: UCAS sometimes gives invalid URLs (i.e: accounting extended degree UCAS url is literally the homepage of northumbria uni). Otherwise works fine. No fees in DB. Low priority, only breaks when UCAS gives an invalid URL.
