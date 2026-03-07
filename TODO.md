@@ -1,15 +1,11 @@
 ## Scraper
 
-- [x] Make proper init script which can take in parameters like university/ies, specific course(s) (one or the other or none, input separated by commas). If no parameters then it scrapes absolutely everything. 
 - [ ] Add database status saving through the new `Scrape` model. This should include the status (pending, running, failed, completed), any error messages if it failed, and the time it started and finished. This will allow us to show the status of scrapes on the dashboard and also help with debugging when something goes wrong.
 - [ ] Add proper error handling (if not already there). I.e. skip a certain course/university if it is causing too many issues and fails to scrape multiple times. (Keep count of # of failed scrapes on each courseoption in the DB, do not scrape if count exceeds a certain threshold)
 - [ ] Add checks for whether there is already a scrape running and if so, don't start a new one. Look in "Scrape" table, if most recent entry has status "pending" then don't start.
-- [x] Fix a minor memory leak with puppeteer timeouts
-- [ ] Improve overall parsing and semantics/keyword handling. List of keywords needs to be expanded, and scraper needs to handle full/part time fees independently (currently does not distinguish between the two as the standalone html scraper assumes it operates only on a singular courseoption)
-- [ ] Improve recursive page parsing, script currently only searches one additional page for fees before giving up. For some unis, the UCAS url does not redirect to the course page (but does exist as a link on the provided page). This should be changed such that the script searches a few layers deep (2 or 3 max) and searches the top candidates instead of just 1 page (very conservatively as this could drastically increase runtime).
-- [ ] Investigate potential issue with duplicate/mismatched course options in the DB.
-- [x] Write an "adapter"/config module to accept special configurations for universities that just don't work with the main script. Keep the generic script for most unis (any without a special config).  
 
+- [ ] Apply filters from routes/courses.ts to scraper/manager.ts as parameters that control scraping
+- [ ] Make proper study mode distinguishing. Schema: make study mode mandatory and default to full time, may need to do so for duration too
 
 ## Visualisation
 

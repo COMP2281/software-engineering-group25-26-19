@@ -6,17 +6,27 @@ export interface ScrapedFees {
     scotlandFee?: number | null;
 }
 
+// NEW: Context object to tell the scraper exactly what option it's looking for
+export interface ScrapeContext {
+    optionId: string;
+    courseTitle: string;
+    studyMode: string | null; // e.g., "Full-time", "Part-time"
+    year: number;             // e.g., 2026
+    duration: string | null;  // e.g., "3 Years", "4 Years"
+}
+
+// NEW: Links the scraped fees back to the specific option ID
+export interface OptionScrapeResult extends ScrapedFees {
+    optionId: string;
+}
+
 export interface IScraperAdapter {
     /**
-     * Used for INDIVIDUAL_HTML or CUSTOM_HTML strategies.
-     * Takes a single course URL and returns the fees.
+     * Takes a single course URL and an array of options (contexts) to scrape.
+     * The adapter should load the URL once, and parse the HTML differently for each context.
      */
-    scrapeCourse?(courseUrl: string, courseTitle?: string): Promise<ScrapedFees>;
+    scrapeCourse?(courseUrl: string, contexts: ScrapeContext[]): Promise<OptionScrapeResult[]>;
 
-    /**
-     * Used for BULK_PDF strategies.
-     * Takes the university name and the bulk PDF URL, and updates the DB internally.
-     */
     scrapeBulk?(universityName: string, bulkUrl: string): Promise<void>;
 }
 
@@ -31,5 +41,6 @@ export interface UniversityScraperConfig {
         pg?: string[];
         ugRuk?: string;
         ugIntl?: string;
+        [key: string]: any;
     }; 
 }
