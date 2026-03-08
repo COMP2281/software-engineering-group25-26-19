@@ -4,7 +4,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { Cheerio, CheerioAPI } from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
-import { IScraperAdapter, ScrapedFees } from '../interfaces';
+import { IScraperAdapter, OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
 
 let puppeteer: any;
 try {
@@ -20,11 +20,10 @@ const DEBUG = true;
 const MIN_FEE = 4500;
 const MAX_FEE = 80000;
 
-const TRAP_KEYWORDS =[
+const TRAP_KEYWORDS = [
     'scholarship', 'bursary', 'funding', 'award', 'loan', 'grant', 'stipend', 
-    'accommodation', 'living', 'housing', 'residence', 'placement', 
-    'bench fee', 'additional cost', 'maintenance', 'contribution', 'discount',
-    'advance'
+    'accommodation', 'living', 'housing', 'residence', 'bench fee', 
+    'additional cost', 'maintenance', 'contribution', 'discount', 'advance'
 ];
 
 const HEADERS_BROWSER = {
@@ -49,13 +48,11 @@ function debug(msg: string) {
 
 export class GenericHtmlAdapter implements IScraperAdapter {
     
-    async scrapeCourse(courseUrl: string, _courseTitle?: string): Promise<ScrapedFees> {
-        let result: ScrapedFees & { lastHtml?: string } = { 
-            homeFee: null, 
-            internationalFee: null, 
-            scotlandFee: null 
-        };
+    async scrapeCourse(courseUrl: string, contexts: ScrapeContext[]): Promise<OptionScrapeResult[]> {
+        let rawHtml: string | null = null;
+        let isPdf = false;
 
+        // 1. Fetch Content
         try {
             debug(`Attempting Axios fetch: ${courseUrl}`);
             const response = await axios.get(courseUrl, {
@@ -69,19 +66,29 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 throw new Error(`Axios blocked with status ${response.status}`);
             }
 
-            result = await this.processResponseData(courseUrl, response.data, response.headers['content-type']);
-
-            if (result.homeFee || result.internationalFee) {
-                return result;
+            const contentType = response.headers['content-type'] || '';
+            
+            if (courseUrl.toLowerCase().endsWith('.pdf') || contentType.includes('application/pdf')) {
+                const buffer = Buffer.from(response.data);
+                const pdfData = await pdfParse(buffer);
+                rawHtml = pdfData.text.replace(/\s+/g, ' ');
+                isPdf = true;
+            } else {
+                rawHtml = response.data.toString('utf-8');
+                const $ = cheerio.load(rawHtml!);
+                const bodyText = $('body').text().trim();
+                if (bodyText.length < 500 && !rawHtml!.includes('£')) {
+                    rawHtml = null;
+                    debug("Axios returned empty shell. Switching to Puppeteer...");
+                }
             }
-            debug("Axios returned no fee data. Checking for empty shell...");
 
         } catch (error) {
             debug(`Axios failed: ${error instanceof Error ? error.message : error}`);
         }
 
         // Puppeteer Fallback
-        if (puppeteer) {
+        if (!rawHtml && !isPdf && puppeteer) {
             debug("Falling back to Puppeteer (Headless Browser)...");
             let browser: any = null;
             try {
@@ -101,9 +108,8 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                     );
                 } catch (e) { /* ignore timeout */ }
 
-                const content = await page.content();
+                rawHtml = await page.content();
                 debug("Puppeteer render complete.");
-                result = await this.parseHtml(content);
 
             } catch (error) {
                 debug(`Puppeteer failed: ${error instanceof Error ? error.message : error}`);
@@ -114,52 +120,82 @@ export class GenericHtmlAdapter implements IScraperAdapter {
             }
         }
 
-        // Sanity Check
-        if (result.homeFee && result.internationalFee && result.homeFee >= result.internationalFee) {
-            debug(`Sanity Check Failed: Home (£${result.homeFee}) >= Intl (£${result.internationalFee}). Discarding Home Fee.`);
-            result.homeFee = null;
+        if (!rawHtml) {
+            return [];
         }
 
-        return result;
-    }
+        // 2. Parse for each Context
+        const results: OptionScrapeResult[] = [];
 
-    private async processResponseData(url: string, data: any, contentType: string = ''): Promise<ScrapedFees & { lastHtml?: string }> {
-        if (url.toLowerCase().endsWith('.pdf') || contentType.includes('application/pdf')) {
-            const buffer = Buffer.from(data);
-            const pdfData = await pdfParse(buffer);
-            const textContent = pdfData.text.replace(/\s+/g, ' ');
-            return { ...this.parseTextForFees(textContent), lastHtml: "PDF_CONTENT" };
+        for (const context of contexts) {
+            const modeSanitizedHtml = this.sanitizeForStudyMode(rawHtml, context.studyMode || '');
+            
+            // UPDATED: Pass context to parseHtml
+            const fees = await this.parseHtml(modeSanitizedHtml, context, isPdf);
+            
+            results.push({
+                optionId: context.optionId,
+                ...fees
+            });
         }
 
-        const html = data.toString('utf-8');
-        const result = await this.parseHtml(html);
-        return { ...result, lastHtml: html };
+        return results;
     }
 
-    protected async parseHtml(html: string): Promise<ScrapedFees> {
-        const $ = cheerio.load(html);
-        $('script, style, nav, footer, header').remove();
-        
-        $('*').each((_idx: number, el: AnyNode) => {
-            const $el = $(el);
-            const text = $el.text().toLowerCase();
-            const attrStr = ($el.attr('class') || '') + ($el.attr('id') || '');
-            if (TRAP_KEYWORDS.some(k => attrStr.includes(k))) {
-                 $el.remove();
-            } else if (text.length < 300 && TRAP_KEYWORDS.some(k => text.includes(k))) {
-                 if (text.includes('value') || text.includes('award') || text.includes('up to')) {
+    protected sanitizeForStudyMode(html: string, studyMode: string): string {
+        let clean = html;
+        const mode = studyMode.toLowerCase();
+
+        const partTimeRegex = /part-?time[^£]{0,80}£\s?[0-9,]+/gi;
+        const fullTimeRegex = /full-?time[^£]{0,80}£\s?[0-9,]+/gi;
+        const placementRegex = /(placement|sandwich|year in industry|study abroad)[^£]{0,80}£\s?[0-9,]+/gi;
+
+        if (mode.includes('sandwich') || mode.includes('placement')) {
+            clean = clean.replace(partTimeRegex, '');
+        } 
+        else if (mode.includes('part')) {
+            clean = clean.replace(fullTimeRegex, '').replace(placementRegex, '');
+        } 
+        else {
+            clean = clean.replace(partTimeRegex, '').replace(placementRegex, '');
+        }
+
+        return clean;
+    }
+
+    // UPDATED SIGNATURE: Added context parameter
+    protected async parseHtml(html: string, _context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
+        let cleanHtml = html;
+
+        if (!isPdf) {
+            const $ = cheerio.load(cleanHtml);
+            $('script, style, nav, footer, header').remove();
+            
+            $('*').each((_idx: number, el: AnyNode) => {
+                const $el = $(el);
+                const text = $el.text().toLowerCase();
+                const attrStr = ($el.attr('class') || '') + ($el.attr('id') || '');
+                
+                if (TRAP_KEYWORDS.some(k => attrStr.includes(k))) {
                      $el.remove();
-                 }
-            }
-        });
+                } else if (text.length < 300 && TRAP_KEYWORDS.some(k => text.includes(k))) {
+                     if (text.includes('value') || text.includes('award') || text.includes('up to')) {
+                         $el.remove();
+                     }
+                }
+            });
+            cleanHtml = $.html();
+        }
 
         const feeContext: FeeContext = { home: [], intl: [], scotland:[] };
+        const $ = cheerio.load(cleanHtml);
+        const body = $('body');
 
-        this.parseTables($, $('body') as CheerioAny, feeContext);
-        this.parseDivGrids($, $('body') as CheerioAny, feeContext);
-        this.parseLabelValuePairs($, $('body') as CheerioAny, feeContext);
+        this.parseTables($, body, feeContext);
+        this.parseDivGrids($, body, feeContext);
+        this.parseLabelValuePairs($, body, feeContext);
 
-        const bodyText = $('body').text().replace(/\s+/g, ' ');
+        const bodyText = body.text().replace(/\s+/g, ' ');
         const textFees = this.parseTextForFees(bodyText);
         
         if (textFees.homeFee) feeContext.home.push(textFees.homeFee);
@@ -173,6 +209,7 @@ export class GenericHtmlAdapter implements IScraperAdapter {
         };
     }
 
+    // ... (Rest of methods: parseTextForFees, parseTables, parseDivGrids, parseLabelValuePairs, getContextLabel, getIndices, extractAndPush, extractPriceFromSimpleString, extractFeeFromText, selectBestFee - NO CHANGES NEEDED)
     private parseTextForFees(text: string): ScrapedFees {
         return {
             homeFee: this.extractFeeFromText(text,['home', 'uk', 'domestic', 'england', 'rest of uk', 'ruk']),

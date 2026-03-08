@@ -2,7 +2,7 @@
 
 import prisma from '../db';
 import { ScraperConfig } from './config';
-import { IScraperAdapter, ScrapedFees, UniversityScraperConfig } from './interfaces';
+import { IScraperAdapter, ScrapeContext, OptionScrapeResult, UniversityScraperConfig } from './interfaces';
 import { GenericHtmlAdapter } from './adapters/GenericHtml';
 import { BulkPdfAdapter } from './adapters/BulkPdf';
 import { BathAdapter } from './adapters/Bath';
@@ -17,44 +17,41 @@ import { LiverpoolAdapter } from './adapters/Liverpool';
 import { LoughboroughAdapter } from './adapters/Loughborough';
 import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
+import { OxfordAdapter } from './adapters/Oxford';
+import { QueenMaryAdapter } from './adapters/QueenMary';
+import { SheffieldAdapter } from './adapters/Sheffield';
+import { SouthamptonAdapter } from './adapters/Southampton';
+import { StAndrewsAdapter } from './adapters/StAndrews';
+import { SunderlandAdapter } from './adapters/Sunderland';
+import { UCLAdapter } from './adapters/UCL';
+import { SoasAdapter } from './adapters/Soas';
+import { WarwickAdapter } from './adapters/Warwick';
 
-/**
- * Factory function to instantiate the correct adapter.
- * Takes the full config object so adapters can access custom URLs.
- */
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
-        case 'BulkPdfAdapter': 
-            return new BulkPdfAdapter();
-        case 'BathAdapter': 
-            // Pass the centralFeeUrls object to the Bath adapter
-            return new BathAdapter(config.centralFeeUrls!);
-        case 'BirminghamAdapter':
-            return new BirminghamAdapter();
-        case 'BristolAdapter':
-            return new BristolAdapter();
-        case 'CambridgeAdapter':
-            return new CambridgeAdapter();
-        case 'EdinburghAdapter':
-            return new EdinburghAdapter();
-        case 'ExeterAdapter':
-            return new ExeterAdapter();
-        case 'GlasgowAdapter':
-            return new GlasgowAdapter(config.centralFeeUrls!);
-        case 'LancasterAdapter':
-            return new LancasterAdapter();
-        case 'LiverpoolAdapter':
-            return new LiverpoolAdapter();
-        case 'LoughboroughAdapter':
-            return new LoughboroughAdapter();
-        case 'ManchesterAdapter':
-            return new ManchesterAdapter();
-        case 'NewcastleAdapter':
-            return new NewcastleAdapter();
-        case 'GenericHtmlAdapter': 
-            return new GenericHtmlAdapter();
-        // case 'CardiffAdapter': 
-        //     return new CardiffAdapter(); 
+        case 'BulkPdfAdapter': return new BulkPdfAdapter();
+        case 'BathAdapter': return new BathAdapter(config.centralFeeUrls!);
+        case 'BirminghamAdapter': return new BirminghamAdapter();
+        case 'BristolAdapter': return new BristolAdapter();
+        case 'CambridgeAdapter': return new CambridgeAdapter();
+        case 'EdinburghAdapter': return new EdinburghAdapter();
+        case 'ExeterAdapter': return new ExeterAdapter();
+        case 'GlasgowAdapter': return new GlasgowAdapter(config.centralFeeUrls!);
+        case 'LancasterAdapter': return new LancasterAdapter();
+        case 'LiverpoolAdapter': return new LiverpoolAdapter();
+        case 'LoughboroughAdapter': return new LoughboroughAdapter();
+        case 'ManchesterAdapter': return new ManchesterAdapter();
+        case 'NewcastleAdapter': return new NewcastleAdapter();
+        case 'OxfordAdapter': return new OxfordAdapter();
+        case 'QueenMaryAdapter': return new QueenMaryAdapter();
+        case 'SheffieldAdapter': return new SheffieldAdapter();
+        case 'SouthamptonAdapter': return new SouthamptonAdapter();
+        case 'StAndrewsAdapter': return new StAndrewsAdapter();
+        case 'SunderlandAdapter': return new SunderlandAdapter();
+        case 'UCLAdapter': return new UCLAdapter();
+        case 'SoasAdapter': return new SoasAdapter();
+        case 'WarwickAdapter': return new WarwickAdapter();
+        case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
             return new GenericHtmlAdapter();
@@ -62,174 +59,222 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
 }
 
 /**
- * Main Orchestrator Function
+ * Helper to find the correct configuration even if the names don't match exactly.
+ * e.g. Matches "The University of Manchester" (DB) to "University of Manchester" (Config)
  */
+function getConfigForUniversity(dbName: string): UniversityScraperConfig {
+    // 1. Try Exact Match
+    if (ScraperConfig[dbName]) {
+        return ScraperConfig[dbName];
+    }
+
+    // 2. Try Partial/Fuzzy Match
+    // We check if the DB name contains the Config Key, or vice versa.
+    const lowerDbName = dbName.toLowerCase();
+    const configKey = Object.keys(ScraperConfig).find(key => {
+        const lowerKey = key.toLowerCase();
+        return lowerDbName.includes(lowerKey) || lowerKey.includes(lowerDbName);
+    });
+
+    if (configKey) {
+        // console.log(`[DEBUG] Fuzzy matched config: "${dbName}" -> "${configKey}"`);
+        return ScraperConfig[configKey]!;
+    }
+
+    // 3. Fallback to Generic
+    return {
+        strategy: 'GENERIC_HTML',
+        adapterName: 'GenericHtmlAdapter'
+    };
+}
+
 async function runScrapingManager() {
     console.log("\n=== Starting Scraper Manager ===");
 
-    let unis: string[] = [];
-    let courses: string[] =[];
+    // --- 1. CLI ARGUMENT PARSING ---
+    const filters: any = {
+        q: null,
+        universityIds: [],
+        year: null,
+        minFee: null,
+        maxFee: null,
+        feeType: "home",
+        level: "all"
+    };
 
-    // Parse command line arguments safely
     const args = process.argv.slice(2);
-    for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
-        if (!arg) continue;
-
-        if (arg.startsWith('--uni=')) {
-            unis = arg.substring(6).split(',').map(s => s.trim()).filter(Boolean);
-        } else if (arg === '--uni' && i + 1 < args.length) {
-            const nextArg = args[i + 1];
-            if (nextArg) {
-                unis = nextArg.split(',').map(s => s.trim()).filter(Boolean);
-                i++;
-            }
-        } else if (arg.startsWith('--course=')) {
-            courses = arg.substring(9).split(',').map(s => s.trim()).filter(Boolean);
-        } else if (arg === '--course' && i + 1 < args.length) {
-            const nextArg = args[i + 1];
-            if (nextArg) {
-                courses = nextArg.split(',').map(s => s.trim()).filter(Boolean);
-                i++;
-            }
+    for (const arg of args) {
+        if (arg.startsWith('--q=')) filters.q = arg.split('=')[1];
+        else if (arg.startsWith('--universityIds=')) {
+            const value = arg.split('=')[1];
+            if (value) filters.universityIds = value.split(',');
         }
+        else if (arg.startsWith('--year=')) filters.year = parseInt(arg.split('=')[1] ?? '0', 10);
+        else if (arg.startsWith('--minFee=')) filters.minFee = parseFloat(arg.split('=')[1] ?? '0');
+        else if (arg.startsWith('--maxFee=')) filters.maxFee = parseFloat(arg.split('=')[1] ?? '0');
+        else if (arg.startsWith('--feeType=')) filters.feeType = (arg.split('=')[1] ?? 'home').toLowerCase();
+        else if (arg.startsWith('--level=')) filters.level = arg.split('=')[1];
     }
 
-    // Validation
-    if (unis.length > 0 && courses.length > 0) {
-        console.error("\n[ERROR] You cannot specify both --uni and --course parameters at the same time.");
-        process.exit(1);
+    // --- 2. BUILD PRISMA QUERY ---
+    let whereClause: any = {};
+
+    if (filters.level && filters.level.toLowerCase() !== 'all') {
+        whereClause.studyMode = { contains: filters.level, mode: 'insensitive' };
     }
 
-    // 1. Fetch Target Data from DB
-    let universitiesData: any[] =[];
+    if (filters.year) {
+        whereClause.year = filters.year;
+    }
 
-    if (courses.length > 0) {
-        console.log(`Targeting specific courses: ${courses.join(', ')}`);
-        const dbCourses = await prisma.course.findMany({
-            where: { id: { in: courses } },
-            include: { university: true, options: true }
-        });
-        
-        const uniMap = new Map<string, any>();
-        for (const c of dbCourses) {
-            if (!uniMap.has(c.universityId)) {
-                uniMap.set(c.universityId, { ...c.university, courses:[] });
-            }
-            uniMap.get(c.universityId).courses.push(c);
-        }
-        universitiesData = Array.from(uniMap.values());
-
+    if (filters.minFee || filters.maxFee) {
+        const feeField = filters.feeType === 'international' ? 'internationalFee' : 'homeFee';
+        whereClause[feeField] = {};
+        if (filters.minFee) whereClause[feeField].gte = filters.minFee;
+        if (filters.maxFee) whereClause[feeField].lte = filters.maxFee;
     } else {
-        const whereClause = unis.length > 0 
-            ? { OR: unis.map(u => ({ name: { contains: u, mode: 'insensitive' as const } })) }
-            : {};
-
-        if (unis.length > 0) console.log(`Targeting universities: ${unis.join(', ')}`);
-        else console.log(`Targeting ALL universities with missing fees.`);
-
-        universitiesData = await prisma.university.findMany({
-            where: whereClause,
-            include: {
-                courses: {
-                    where: {
-                        options: { some: { OR: [{ homeFee: null }, { internationalFee: null }] } }
-                    },
-                    include: { options: true }
-                }
-            }
-        });
+        whereClause.OR = [{ homeFee: null }, { internationalFee: null }];
     }
 
-    if (universitiesData.length === 0) {
-        console.log("No targets found in the database requiring scraping. Exiting.");
+    let courseWhere: any = {};
+    if (filters.q) {
+        courseWhere.OR = [
+            { title: { contains: filters.q, mode: "insensitive" } },
+            { summary: { contains: filters.q, mode: "insensitive" } },
+            { ucasCourseId: { contains: filters.q, mode: "insensitive" } },
+        ];
+    }
+    if (filters.universityIds.length > 0) {
+        courseWhere.universityId = { in: filters.universityIds };
+    }
+    if (Object.keys(courseWhere).length > 0) {
+        whereClause.course = courseWhere;
+    }
+
+    console.log(`Querying DB with filters:`, filters);
+
+    // --- 3. FETCH AND GROUP DATA ---
+    const targetOptions = await prisma.courseOption.findMany({
+        where: whereClause,
+        include: {
+            course: {
+                include: { university: true }
+            }
+        }
+    });
+
+    if (targetOptions.length === 0) {
+        console.log("No course options found matching the criteria. Exiting.");
         return;
     }
 
-    // 2. Process each university according to its configured strategy
-     for (let uni of universitiesData) {
-        if (!uni.courses || uni.courses.length === 0) continue;
+    console.log(`Found ${targetOptions.length} course options to scrape.`);
 
-        console.log(`\n--- Processing: ${uni.name} (${uni.courses.length} target courses) ---`);
+    const uniMap = new Map<string, any>();
 
-        const config = ScraperConfig[uni.name] || {
-            strategy: 'GENERIC_HTML',
-            adapterName: 'GenericHtmlAdapter'
-        };
+    for (const option of targetOptions) {
+        const uniId = option.course.universityId;
+        const courseId = option.courseId;
 
-        if (courses.length > 0 && config.strategy === 'BULK_PDF') {
-            console.log(`[INFO] Overriding BULK_PDF strategy to GENERIC_HTML because specific courses were requested.`);
-            config.strategy = 'GENERIC_HTML';
-            config.adapterName = 'GenericHtmlAdapter';
+        if (!uniMap.has(uniId)) {
+            uniMap.set(uniId, { 
+                university: option.course.university, 
+                courses: new Map<string, any>() 
+            });
         }
 
-        console.log(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
+        const uniObj = uniMap.get(uniId);
+        if (!uniObj.courses.has(courseId)) {
+            uniObj.courses.set(courseId, {
+                course: option.course,
+                options: []
+            });
+        }
 
-        // --- PHASE 1: BULK PDF (Applies to BULK_PDF and HYBRID) ---
+        uniObj.courses.get(courseId).options.push(option);
+    }
+
+    // --- 4. EXECUTE SCRAPING ---
+    for (const [uniId, uniData] of uniMap.entries()) {
+        const uni = uniData.university;
+        const coursesMap = uniData.courses;
+
+        console.log(`\n--- Processing: ${uni.name} ${uniId} (${coursesMap.size} unique courses) ---`);
+
+        // UPDATED: Use the helper function to find the config
+        const config = getConfigForUniversity(uni.name);
+        
+        console.log(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
+        
+        const adapter = getAdapter(config);
+
+        // BULK PDF Phase
         if (config.bulkUrl && (config.strategy === 'BULK_PDF' || config.strategy === 'HYBRID')) {
-            // We temporarily instantiate the BulkPdfAdapter just for this phase
             const bulkAdapter = new BulkPdfAdapter();
             await bulkAdapter.scrapeBulk(uni.name, config.bulkUrl);
-
-            // Re-fetch the university from the database to see which courses STILL need scraping (e.g. PG courses)
-            const updatedUni = await prisma.university.findUnique({
-                where: { id: uni.id },
-                include: {
-                    courses: {
-                        where: { options: { some: { OR: [{ homeFee: null }, { internationalFee: null }] } } },
-                        include: { options: true }
-                    }
-                }
-            });
-
-            if (!updatedUni || updatedUni.courses.length === 0) {
-                console.log(`[INFO] All fees resolved via Bulk PDF. Skipping HTML phase.`);
-                continue; // Move to the next university
-            } else {
-                console.log(`[INFO] ${updatedUni.courses.length} courses still missing fees after Bulk PDF. Proceeding to HTML phase.`);
-                uni = updatedUni; // Update the loop variable with the remaining courses
-            }
         }
 
-        // --- PHASE 2: HTML SCRAPING (Applies to GENERIC_HTML, CUSTOM_HTML, and HYBRID) ---
+        // HTML Phase
         if (config.strategy !== 'BULK_PDF') {
-            const adapter = getAdapter(config);
-
-            if (!adapter.scrapeCourse) {
-                console.error(`[ERROR] Missing scrapeCourse method for ${uni.name}`);
-                continue;
-            }
+            if (!adapter.scrapeCourse) continue;
 
             let count = 1;
-            for (const course of uni.courses) {
-                if (!course.courseUrl) {
-                    console.log(`[${count}/${uni.courses.length}] Skipping ${course.title}: No URL`);
+            for (const [courseId, courseData] of coursesMap.entries()) {
+                const course = courseData.course;
+                const options = courseData.options;
+                const canResolveMissingUrl =
+                    config.adapterName === 'QueenMaryAdapter' ||
+                    config.adapterName === 'SheffieldAdapter' ||
+                    config.adapterName === 'SouthamptonAdapter' ||
+                    config.adapterName === 'StAndrewsAdapter' ||
+                    config.adapterName === 'SunderlandAdapter' ||
+                    config.adapterName === 'SoasAdapter' ||
+                    config.adapterName === 'WarwickAdapter';
+
+                if (!course.courseUrl && !canResolveMissingUrl) {
+                    console.log(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
                     count++;
                     continue;
                 }
 
-                console.log(`[${count}/${uni.courses.length}] Scraping: ${course.title}`);
-                
+                if (!course.courseUrl && canResolveMissingUrl) {
+                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options) [No URL in DB, attempting adapter resolution]`);
+                } else {
+                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options)`);
+                }
+
+                const targetUrl = course.courseUrl ?? '';
+
+                const contexts: ScrapeContext[] = options.map((opt: any) => ({
+                    optionId: opt.id,
+                    courseTitle: course.title,
+                    studyMode: opt.studyMode,
+                    year: opt.year,
+                    duration: opt.duration,
+                    outcomeQualification: opt.outcomeQualification
+                }));
+
                 try {
-                    const fees: ScrapedFees = await adapter.scrapeCourse(course.courseUrl, course.title);
+                    const results: OptionScrapeResult[] = await adapter.scrapeCourse(targetUrl, contexts);
 
-                    if (fees.homeFee || fees.internationalFee) {
-                        console.log(`   > Found: Home £${fees.homeFee}, Intl £${fees.internationalFee}`);
-                        
-                        for (const option of course.options) {
+                    for (const res of results) {
+                        const hasHomeFee = res.homeFee !== null && res.homeFee !== undefined;
+                        const hasIntlFee = res.internationalFee !== null && res.internationalFee !== undefined;
+
+                        if (hasHomeFee || hasIntlFee) {
+                            console.log(`   > Option [${res.optionId}]: Home £${res.homeFee}, Intl £${res.internationalFee}`);
+                            
                             const updateData: any = {};
-                            if (!option.homeFee && fees.homeFee) updateData.homeFee = fees.homeFee;
-                            if (!option.internationalFee && fees.internationalFee) updateData.internationalFee = fees.internationalFee;
+                            if (hasHomeFee) updateData.homeFee = res.homeFee;
+                            if (hasIntlFee) updateData.internationalFee = res.internationalFee;
 
-                            if (Object.keys(updateData).length > 0) {
-                                await prisma.courseOption.update({
-                                    where: { id: option.id },
-                                    data: updateData
-                                });
-                            }
+                            await prisma.courseOption.update({
+                                where: { id: res.optionId },
+                                data: updateData
+                            });
+                        } else {
+                            console.log(`   > Option [${res.optionId}]: No fees found.`);
                         }
-                    } else {
-                        console.log(`   > No fees found.`);
                     }
                 } catch (err) {
                     console.error(`   > Error scraping ${course.title}:`, err);

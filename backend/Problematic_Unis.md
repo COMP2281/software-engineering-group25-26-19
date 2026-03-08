@@ -32,7 +32,7 @@ List of unis with ANY sort of error. Most are minor and I've included roughly ho
 
 - [ ] University of Nottingham: Doesn't work for foundation courses
 
-- [ ] University of Oxford: Doesn't work for all graduate courses as you must click on a button to end up landing on the required page
+- [ ] University of Oxford: Doesn't work for all graduate courses as you must click on a button to end up landing on the required page. Foundation Years should be free of charge (oxford only!), and must manage redirects to actual course page!
 
 - [ ] Queen Mary University of London: completely incorrect scrapes, both home and intl fees are either null or misfigured completely, requires spearate script that is highly specialised to fix this issue!
 

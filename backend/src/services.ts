@@ -31,6 +31,9 @@ export async function processCourseData(data: any) {
         // Use the first option's provider URL
         courseUrl = course.options[0].providerCourseUrl;
     }
+    if (typeof courseUrl === "string") {
+        courseUrl = courseUrl.trim();
+    }
 
     const dbCourse = await prisma.course.upsert({
         where: { ucasCourseId: course.id },

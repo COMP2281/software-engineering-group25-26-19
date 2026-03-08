@@ -3,7 +3,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as stringSimilarity from 'string-similarity';
-import { IScraperAdapter, ScrapedFees } from '../interfaces';
+import { IScraperAdapter, OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
 
 let puppeteer: any;
 try { puppeteer = require('puppeteer'); } catch (e) {}
@@ -43,22 +43,40 @@ export class BathAdapter implements IScraperAdapter {
         this.urls = centralFeeUrls;
     }
 
-    // UPDATED: Now accepts dbCourseTitle
-    async scrapeCourse(courseUrl: string, dbCourseTitle: string = ''): Promise<ScrapedFees> {
+    async scrapeCourse(courseUrl: string, contexts: ScrapeContext[]): Promise<OptionScrapeResult[]> {
         const level: StudyLevel = courseUrl.toLowerCase().includes('postgraduate') ? 'pg' : 'ug';
+        const results: OptionScrapeResult[] = [];
 
-        const html = await this.fetchHtml(courseUrl);
-        if (!html) return { homeFee: null, internationalFee: null };
+        // We only need to fetch the page/bands ONCE per course, not per option.
+        // We use the title from the first context to determine the band/match.
+        const courseTitle = contexts[0]?.courseTitle || '';
 
-        const $ = cheerio.load(html);
-        const pageText = $('body').text().toLowerCase().replace(/\s+/g, ' ');
-        const h1Text = $('h1').first().text().toLowerCase().trim();
+        let fees: ScrapedFees = { homeFee: null, internationalFee: null };
 
         if (level === 'ug') {
-            return await this.handleUndergraduate(dbCourseTitle, pageText, h1Text);
+            // Fetch page content for UG banding logic
+            const html = await this.fetchHtml(courseUrl);
+            if (html) {
+                const $ = cheerio.load(html);
+                const pageText = $('body').text().toLowerCase().replace(/\s+/g, ' ');
+                const h1Text = $('h1').first().text().toLowerCase().trim();
+                fees = await this.handleUndergraduate(courseTitle, pageText, h1Text);
+            }
         } else {
-            return await this.handlePostgraduate(dbCourseTitle);
+            // PG logic uses cached dictionary, no page fetch needed usually
+            fees = await this.handlePostgraduate(courseTitle);
         }
+
+        // Map the found fees to ALL options provided in the context
+        for (const context of contexts) {
+            results.push({
+                optionId: context.optionId,
+                homeFee: fees.homeFee,
+                internationalFee: fees.internationalFee
+            });
+        }
+
+        return results;
     }
 
     // ==========================================
@@ -71,7 +89,6 @@ export class BathAdapter implements IScraperAdapter {
         let targetBand: BathBand | null = null;
         const title = dbCourseTitle.toLowerCase();
         
-        // Context string combines the DB title, the H1, and the first 2000 chars of the page
         const context = `${title} ${h1Text} ${pageText.substring(0, 2000)}`;
 
         // Band 2: Management & Economics
@@ -105,7 +122,6 @@ export class BathAdapter implements IScraperAdapter {
         const text = cheerio.load(html)('body').text().replace(/\s+/g, ' ');
 
         this.ugBands = {
-            // Try the exact table row text first, fallback to the section header
             home: this.extractPriceAfterKeyword(text, 'full-time campus-based', 9000) || 
                   this.extractPriceAfterKeyword(text, 'home students', 9000),
             band1: this.extractPriceAfterKeyword(text, 'band 1', 15000),
@@ -121,7 +137,6 @@ export class BathAdapter implements IScraperAdapter {
         if (!this.pgCache) await this.loadPgCentralFees();
         if (!this.pgCache || this.pgCache.length === 0) return { homeFee: null, internationalFee: null };
 
-        // Normalize DB title for better matching
         const normalizedTitle = dbCourseTitle.toLowerCase().replace(/\b(msc|ma|mba|mres|pgdip|pgcert)\b/gi, '').replace(/[(),\-&]/g, ' ').replace(/\s+/g, ' ').trim();
 
         const cacheNames = this.pgCache.map(c => c.rawName);
@@ -147,7 +162,7 @@ export class BathAdapter implements IScraperAdapter {
         if (!this.urls.pg || this.urls.pg.length === 0) return;
         if (DEBUG) console.log(`[DEBUG] Lazy-loading PG central fees from ${this.urls.pg.length} pages...`);
         
-        this.pgCache =[];
+        this.pgCache = [];
 
         for (const url of this.urls.pg) {
             const html = await this.fetchHtml(url);
@@ -161,7 +176,7 @@ export class BathAdapter implements IScraperAdapter {
                     if (cells.length >= 2) {
                         const rawName = $(cells[0]).text().toLowerCase().replace(/\b(msc|ma|mba|mres|pgdip|pgcert)\b/gi, '').replace(/[(),\-&]/g, ' ').replace(/\s+/g, ' ').trim();
                         
-                        const fees: number[] =[];
+                        const fees: number[] = [];
                         cells.each((i, td) => {
                             if (i === 0) return; 
                             const price = this.extractPriceFromSimpleString($(td).text());
@@ -186,8 +201,6 @@ export class BathAdapter implements IScraperAdapter {
     // UTILS
     // ==========================================
     private extractPriceAfterKeyword(text: string, keyword: string, minExpected: number): number | null {
-        // INCREASED LOOKAHEAD: Changed {0,100} to {0,800} to bridge the gap 
-        // across long paragraphs of text between headings and tables.
         const regex = new RegExp(`${keyword}[^£]{0,800}£\\s?([0-9]{1,3}(,[0-9]{3})*)`, 'i');
         const match = text.match(regex);
         if (match && match[1]) {
