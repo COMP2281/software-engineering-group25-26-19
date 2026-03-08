@@ -17,6 +17,7 @@ import { LiverpoolAdapter } from './adapters/Liverpool';
 import { LoughboroughAdapter } from './adapters/Loughborough';
 import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
+import { NottsAdapter } from './adapters/Notts';
 import { OxfordAdapter } from './adapters/Oxford';
 import { QueenMaryAdapter } from './adapters/QueenMary';
 import { SheffieldAdapter } from './adapters/Sheffield';
@@ -42,6 +43,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'LoughboroughAdapter': return new LoughboroughAdapter();
         case 'ManchesterAdapter': return new ManchesterAdapter();
         case 'NewcastleAdapter': return new NewcastleAdapter();
+        case 'NottsAdapter': return new NottsAdapter();
         case 'OxfordAdapter': return new OxfordAdapter();
         case 'QueenMaryAdapter': return new QueenMaryAdapter();
         case 'SheffieldAdapter': return new SheffieldAdapter();
@@ -223,6 +225,7 @@ async function runScrapingManager() {
                 const course = courseData.course;
                 const options = courseData.options;
                 const canResolveMissingUrl =
+                    config.adapterName === 'NottsAdapter' ||
                     config.adapterName === 'QueenMaryAdapter' ||
                     config.adapterName === 'SheffieldAdapter' ||
                     config.adapterName === 'SouthamptonAdapter' ||
