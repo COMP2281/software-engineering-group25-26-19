@@ -1,30 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import {
-    getCourses,
-    getCourseAnalytics,
-} from "../api/Courses.api";
-import type {
-    Course,
-    AnalyticsCourse,
-} from "../api/Courses.types";
-import {
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip as RechartsTooltip,
-} from "recharts";
+import { getCourses } from "../api/Courses.api";
+import type { Course } from "../api/Courses.types";
 import "./Comparison.css";
 
 export default function Comparison() {
     const location = useLocation();
 
-    // --- Analytics State ---
-    const [analyticsData, setAnalyticsData] = useState<AnalyticsCourse[]>([]);
-    const [analyticsLoading, setAnalyticsLoading] = useState(true);
     // --- Comparison State ---
     const [courses, setCourses] = useState<(Course | null)[]>(() => {
         const initial = location.state?.initialCourses as Course[] | undefined;
@@ -52,88 +34,6 @@ export default function Comparison() {
         localStorage.setItem("comparison_courses", JSON.stringify(courses));
     }, [courses]);
 
-    // Fetch master analytics data
-    useEffect(() => {
-        let mounted = true;
-        getCourseAnalytics({})
-            .then((res) => {
-                if (mounted) {
-                    setAnalyticsData(res.data);
-                    setAnalyticsLoading(false);
-                }
-            })
-            .catch((err) => {
-                console.error("Analytics fetch failed", err);
-                if (mounted) setAnalyticsLoading(false);
-            });
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    // 1. Group by University for Tuitions Bar Chart
-    const uniStats = useMemo(() => {
-        const map = new Map<
-            string,
-            {
-                totalHome: number;
-                totalIntl: number;
-                countHome: number;
-                countIntl: number;
-                count: number;
-            }
-        >();
-        analyticsData.forEach((c) => {
-            const u = c.university.name;
-            if (!map.has(u))
-                map.set(u, {
-                    totalHome: 0,
-                    totalIntl: 0,
-                    countHome: 0,
-                    countIntl: 0,
-                    count: 0,
-                });
-            const s = map.get(u)!;
-            s.count++;
-            const h = c.options[0]?.homeFee;
-            if (h) {
-                s.totalHome += h;
-                s.countHome++;
-            }
-            const i = c.options[0]?.internationalFee;
-            if (i) {
-                s.totalIntl += i;
-                s.countIntl++;
-            }
-        });
-
-        return Array.from(map.entries())
-            .map(([name, s]) => ({
-                name,
-                avgHome: s.countHome
-                    ? Math.round(s.totalHome / s.countHome)
-                    : 0,
-                avgIntl: s.countIntl
-                    ? Math.round(s.totalIntl / s.countIntl)
-                    : 0,
-                count: s.count,
-            }))
-            .sort((a, b) => b.avgHome - a.avgHome)
-            .slice(0, 15); // Top 15 most expensive for readability
-    }, [analyticsData]);
-
-    // 2. Top 15 Most Expensive Courses
-    const courseStats = useMemo(() => {
-        return [...analyticsData]
-            .map((c) => ({
-                name: c.title,
-                home: c.options[0]?.homeFee ?? 0,
-                intl: c.options[0]?.internationalFee ?? 0,
-            }))
-            .filter((c) => c.home > 0 || c.intl > 0)
-            .sort((a, b) => b.home - a.home)
-            .slice(0, 15);
-    }, [analyticsData]);
     const handleSelect = (index: number, course: Course) => {
         const newCourses = [...courses];
         newCourses[index] = course;
@@ -183,116 +83,11 @@ export default function Comparison() {
     return (
         <main className="mainContent comparisonContainer">
             <div className="comparisonHeader">
-                <h1 className="comparisonTitle">Comparison & Analytics</h1>
+                <h1 className="comparisonTitle">Course Comparison</h1>
                 <p className="comparisonSubtitle">
-                    Explore overarching patterns or select courses below to
-                    compare their details side by side.
+                    Select courses below to compare their details side by side.
                 </p>
             </div>
-
-            <div className="analyticsContainer">
-                <div className="analyticsCharts">
-                    <div className="analyticsPanel">
-                        <h3>Most Expensive Universities</h3>
-                        {analyticsLoading ? (
-                            <p>Loading graph...</p>
-                        ) : (
-                            <div className="chartWrapper">
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={uniStats}>
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            vertical={false}
-                                        />
-                                        <XAxis
-                                            dataKey="name"
-                                            tick={{ fontSize: 10 }}
-                                            interval={0}
-                                            angle={-30}
-                                            textAnchor="end"
-                                            height={60}
-                                        />
-                                        <YAxis />
-                                        <RechartsTooltip
-                                            cursor={{
-                                                fill: "rgba(0,0,0,0.05)",
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="avgHome"
-                                            name="Avg Home Fee (£)"
-                                            fill="#3498db"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="avgIntl"
-                                            name="Avg Intl Fee (£)"
-                                            fill="#e74c3c"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="analyticsPanel">
-                        <h3>Most Expensive Courses</h3>
-                        {analyticsLoading ? (
-                            <p>Loading graph...</p>
-                        ) : (
-                            <div className="chartWrapper">
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={courseStats}>
-                                        <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            vertical={false}
-                                        />
-                                        <XAxis
-                                            dataKey="name"
-                                            tick={{ fontSize: 10 }}
-                                            interval={0}
-                                            angle={-30}
-                                            textAnchor="end"
-                                            height={60}
-                                        />
-                                        <YAxis />
-                                        <RechartsTooltip
-                                            cursor={{
-                                                fill: "rgba(0,0,0,0.05)",
-                                            }}
-                                        />
-                                        <Bar
-                                            dataKey="home"
-                                            name="Home Fee (£)"
-                                            fill="#3498db"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                        <Bar
-                                            dataKey="intl"
-                                            name="Intl Fee (£)"
-                                            fill="#e74c3c"
-                                            radius={[4, 4, 0, 0]}
-                                        />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <h2
-                style={{
-                    borderTop: "1px solid var(--border-color)",
-                    paddingTop: "20px",
-                    marginTop: "20px",
-                    marginBottom: "20px",
-                    color: "var(--text-color)",
-                }}
-            >
-                Course Comparison
-            </h2>
 
             <div className="comparisonArea">
                 {courses.map((course, index) => (
