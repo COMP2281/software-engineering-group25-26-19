@@ -19,6 +19,7 @@ import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
 import { OxfordAdapter } from './adapters/Oxford';
 import { QueenMaryAdapter } from './adapters/QueenMary';
+import { QueensBelfastAdapter } from './adapters/QueensBelfast';
 import { SheffieldAdapter } from './adapters/Sheffield';
 import { SouthamptonAdapter } from './adapters/Southampton';
 import { StAndrewsAdapter } from './adapters/StAndrews';
@@ -44,6 +45,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'NewcastleAdapter': return new NewcastleAdapter();
         case 'OxfordAdapter': return new OxfordAdapter();
         case 'QueenMaryAdapter': return new QueenMaryAdapter();
+        case 'QueensBelfastAdapter': return new QueensBelfastAdapter();
         case 'SheffieldAdapter': return new SheffieldAdapter();
         case 'SouthamptonAdapter': return new SouthamptonAdapter();
         case 'StAndrewsAdapter': return new StAndrewsAdapter();

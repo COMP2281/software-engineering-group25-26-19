@@ -68,7 +68,7 @@ export async function fetchSpecificCourse(courseId: string, academicYearId: stri
 
 // Fetch all courses based on filters
 export async function fetchAllUcasCourses(
-    providers: string[] =["University of Cambridge"],
+    providers: string[] =["Durham University"],
     opts: FetchOptions = {}
 ) {
     const {
