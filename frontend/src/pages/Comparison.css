@@ -1,27 +1,27 @@
-.visualisationContainer {
+.comparisonContainer {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.visualisationContainer>* {
+.comparisonContainer>* {
   flex-shrink: 0;
 }
 
-.visualisationHeader {
+.comparisonHeader {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.visualisationTitle {
+.comparisonTitle {
   font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
 }
 
-.visualisationSubtitle {
+.comparisonSubtitle {
   font-size: 14px;
   color: var(--text-secondary);
   margin: 0;

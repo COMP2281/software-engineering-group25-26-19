@@ -69,8 +69,8 @@ export default function Sidebar({ onToggleHide }: SidebarProps) {
           Courses
         </NavLink>
 
-        <NavLink to="/visualisation" className="menuItem">
-          Visualisation
+        <NavLink to="/comparison" className="menuItem">
+          Comparison
         </NavLink>
 
         <NavLink to="/settings" className="menuItem">

@@ -382,11 +382,11 @@ export default function CoursesPage() {
                     ? courses
                     : Array.from(selectedCourseMap.values());
 
-                  navigate('/visualisation', { state: { initialCourses: selectedObjects } });
+                  navigate('/comparison', { state: { initialCourses: selectedObjects } });
                 }}
               >
                 <i className="bi bi-bar-chart" />{" "}
-                Visualise
+                Compare
               </button>
 
               <button

@@ -11,9 +11,9 @@ import {
     CartesianGrid,
     Tooltip as RechartsTooltip,
 } from "recharts";
-import "./Visualisation.css";
+import "./Comparison.css";
 
-export default function Visualisation() {
+export default function Comparison() {
     const location = useLocation();
 
     // --- Analytics State ---
@@ -27,7 +27,7 @@ export default function Visualisation() {
             return initial;
         }
 
-        const saved = localStorage.getItem('visualisation_courses');
+        const saved = localStorage.getItem('comparison_courses');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
@@ -35,7 +35,7 @@ export default function Visualisation() {
                     return parsed;
                 }
             } catch (e) {
-                console.error("Failed to parse saved visualisation courses", e);
+                console.error("Failed to parse saved comparison courses", e);
             }
         }
 
@@ -43,7 +43,7 @@ export default function Visualisation() {
     });
 
     useEffect(() => {
-        localStorage.setItem('visualisation_courses', JSON.stringify(courses));
+        localStorage.setItem('comparison_courses', JSON.stringify(courses));
     }, [courses]);
 
     // Fetch master analytics data
@@ -132,10 +132,10 @@ export default function Visualisation() {
     const maxIntlFee = selectedCoursesCount <= 2 && validIntlFees.length ? Math.max(...validIntlFees) : null;
 
     return (
-        <main className="mainContent visualisationContainer">
-            <div className="visualisationHeader">
-                <h1 className="visualisationTitle">Visualisation & Analytics</h1>
-                <p className="visualisationSubtitle">
+        <main className="mainContent comparisonContainer">
+            <div className="comparisonHeader">
+                <h1 className="comparisonTitle">Comparison & Analytics</h1>
+                <p className="comparisonSubtitle">
                     Explore overarching patterns or select courses below to compare their details side by side.
                 </p>
             </div>
