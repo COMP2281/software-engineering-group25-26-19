@@ -34,7 +34,7 @@ model Course {
 }
 
 model CourseOption {
-  id              String   @default(uuid())
+  id              String   @default(uuid()) @unique
   courseId        String
   course          Course   @relation(fields: [courseId], references: [id])
   
