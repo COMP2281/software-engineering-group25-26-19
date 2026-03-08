@@ -212,7 +212,16 @@ export default function CoursesPage() {
       setActionLoading("scrape");
       setError(null);
 
-      const res = await startScraper();
+      // Pass current filters to scraper
+      const res = await startScraper({
+          q: search || undefined,
+          unis: selectedUniversityIds,
+          year: undefined, // Not in UI yet?
+          minFee: minFee ? Number(minFee) : undefined,
+          maxFee: maxFee ? Number(maxFee) : undefined,
+          feeType: feeType || undefined,
+          level: level !== "all" ? level : undefined
+      });
       // Immediate update to running state
       setScraperState({ status: "running", pid: res.pid });
     } catch (e: unknown) {

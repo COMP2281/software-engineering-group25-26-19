@@ -73,42 +73,57 @@ export async function processCourseData(data: any) {
                 option.courseFees,
             );
 
-            await prisma.courseOption.upsert({
+            // Construct the compound ID input
+            const compoundId = {
+                courseId: dbCourse.id,
+                year: parseInt(option.applyCycle || "2026"),
+                studyMode: option.studyMode?.caption,
+                duration: option.duration
+                    ? `${option.duration.quantity} ${option.duration.durationType?.caption}`
+                    : "3 Years",
+            };
+
+            // Check if exists to avoid overwriting with nulls
+            const existingOption = await prisma.courseOption.findUnique({
                 where: {
-                    courseId_year_studyMode_duration: {
-                        courseId: dbCourse.id,
-                        year: parseInt(option.applyCycle || "2026"),
-                        studyMode: option.studyMode?.caption,
-                        duration: option.duration
-                            ? `${option.duration.quantity} ${option.duration.durationType?.caption}`
-                            : "3 Years",
-                    },
-                },
-                update: {
-                    startDate: option.startDate?.date,
-                    outcomeQualification: outcome,
-                    homeFee,
-                    internationalFee,
-
-                    // Spread A-level fields
-                    ...aLevels,
-                },
-                create: {
-                    courseId: dbCourse.id,
-                    year: parseInt(option.applyCycle || "2026"),
-                    studyMode: option.studyMode?.caption,
-                    duration: option.duration
-                        ? `${option.duration.quantity} ${option.duration.durationType?.caption}`
-                        : "3 Years",
-                    startDate: option.startDate?.date,
-                    outcomeQualification: outcome,
-                    homeFee,
-                    internationalFee,
-
-                    // Spread A-level fields
-                    ...aLevels,
+                    courseId_year_studyMode_duration: compoundId,
                 },
             });
+
+            if (existingOption) {
+                // Update only non-nulls
+                const updateData: any = {};
+                if (option.startDate?.date) updateData.startDate = option.startDate.date;
+                if (outcome) updateData.outcomeQualification = outcome;
+                if (homeFee != null) updateData.homeFee = homeFee;
+                if (internationalFee != null) updateData.internationalFee = internationalFee;
+                
+                // Spread A-level fields only if they exist
+                if (Object.keys(aLevels).length > 0) {
+                     Object.assign(updateData, aLevels);
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    await prisma.courseOption.update({
+                        where: {
+                             courseId_year_studyMode_duration: compoundId,
+                        },
+                        data: updateData,
+                    });
+                }
+            } else {
+                // Create new
+                await prisma.courseOption.create({
+                    data: {
+                        ...compoundId,
+                        startDate: option.startDate?.date,
+                        outcomeQualification: outcome,
+                        homeFee,
+                        internationalFee,
+                        ...aLevels,
+                    },
+                });
+            }
         }
     }
 
