@@ -24,6 +24,7 @@ import { SouthamptonAdapter } from './adapters/Southampton';
 import { StAndrewsAdapter } from './adapters/StAndrews';
 import { SunderlandAdapter } from './adapters/Sunderland';
 import { UCLAdapter } from './adapters/UCL';
+import { SoasAdapter } from './adapters/Soas';
 
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
@@ -47,6 +48,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'StAndrewsAdapter': return new StAndrewsAdapter();
         case 'SunderlandAdapter': return new SunderlandAdapter();
         case 'UCLAdapter': return new UCLAdapter();
+        case 'SoasAdapter': return new SoasAdapter();
         case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
@@ -223,7 +225,8 @@ async function runScrapingManager() {
                     config.adapterName === 'SheffieldAdapter' ||
                     config.adapterName === 'SouthamptonAdapter' ||
                     config.adapterName === 'StAndrewsAdapter' ||
-                    config.adapterName === 'SunderlandAdapter';
+                    config.adapterName === 'SunderlandAdapter' ||
+                    config.adapterName === 'SoasAdapter';
 
                 if (!course.courseUrl && !canResolveMissingUrl) {
                     console.log(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
