@@ -7,6 +7,7 @@ import CoursesPage from "../pages/Courses";
 import CourseDetails from "../pages/CourseDetails";
 import ProtectedLayout from "../layouts/ProtectedLayout";
 import VisualisationPage from "../pages/Visualisation";
+import Comparison from "../pages/Comparison";
 
 export default function AppRouter() {
   return (
@@ -20,6 +21,7 @@ export default function AppRouter() {
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
           <Route path="/visualisation" element={<VisualisationPage />} />
+          <Route path="/compare" element={<Comparison />} />
         </Route>
       </Route>
 
