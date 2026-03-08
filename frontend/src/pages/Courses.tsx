@@ -68,16 +68,40 @@ export default function CoursesPage() {
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
   const [showPageDropdown, setShowPageDropdown] = useState(false);
 
+  const [selectedCourseOptionCounts, setSelectedCourseOptionCounts] = useState<
+    Map<string, number>
+  >(new Map());
+
+  const selectedOptionCount = Array.from(
+    selectedCourseOptionCounts.values(),
+  ).reduce((sum, count) => sum + count, 0);
+
   function toggleSelection(id: string) {
     if (selectAllMode) return;
+
+    const course = courses.find((c) => c.id === id);
 
     setSelectedCourseIds((prev) => {
       const newSet = new Set(prev);
 
       if (newSet.has(id)) {
         newSet.delete(id);
+
+        setSelectedCourseOptionCounts((prevMap) => {
+          const newMap = new Map(prevMap);
+          newMap.delete(id);
+          return newMap;
+        });
       } else {
         newSet.add(id);
+
+        if (course) {
+          setSelectedCourseOptionCounts((prevMap) => {
+            const newMap = new Map(prevMap);
+            newMap.set(id, course.options?.length ?? 0);
+            return newMap;
+          });
+        }
       }
 
       return newSet;
@@ -214,13 +238,13 @@ export default function CoursesPage() {
 
       // Pass current filters to scraper
       const res = await startScraper({
-          q: search || undefined,
-          unis: selectedUniversityIds,
-          year: undefined, // Not in UI yet?
-          minFee: minFee ? Number(minFee) : undefined,
-          maxFee: maxFee ? Number(maxFee) : undefined,
-          feeType: feeType || undefined,
-          level: level !== "all" ? level : undefined
+        q: search || undefined,
+        unis: selectedUniversityIds,
+        year: undefined, // Not in UI yet?
+        minFee: minFee ? Number(minFee) : undefined,
+        maxFee: maxFee ? Number(maxFee) : undefined,
+        feeType: feeType || undefined,
+        level: level !== "all" ? level : undefined,
       });
       // Immediate update to running state
       setScraperState({ status: "running", pid: res.pid });
@@ -553,10 +577,10 @@ export default function CoursesPage() {
                 </div>
 
                 <div className="selectionButtons">
-                  {selectedCourseIds.size > 1 && (
+                  {selectedOptionCount > 1 && (
                     <button
                       className="actionBtn compareBtn"
-                      disabled={selectedCourseIds.size < 2}
+                      disabled={selectedOptionCount < 2}
                       onClick={() => {
                         navigate("/compare", {
                           state: { courseIds: Array.from(selectedCourseIds) },
