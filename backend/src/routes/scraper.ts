@@ -18,19 +18,31 @@ router.post("/start", (req: Request, res: Response): void => {
         return;
     }
 
-    const { unis, courses } = req.body;
+    const { unis } = req.body;
 
     // Determine the script path
-    const scriptPath = path.resolve(__dirname, "../../src/scrapers/manager.ts");
+    // CHANGED: Now points to the orchestrator script
+    const scriptPath = path.resolve(__dirname, "../../src/scrapers/orchestrator.ts");
 
     // Prepare arguments (mock interface for now as requested)
     const args = [];
     if (unis) {
-        args.push("--uni=" + unis.join(","));
+        args.push("--universityIds=" + unis.join(","));
     }
-    if (courses) {
-        args.push("--course=" + courses.join(","));
-    }
+    // Note: manager.ts uses --q for search query, not --courses directly, but let's map it if needed or check manager.ts args
+    // manager.ts uses --q, --universityIds, --year, --minFee, --maxFee, --feeType, --level
+    // If 'courses' is passed, maybe map to --q? Or ignore if not supported by manager.ts
+    // The previous code mapped it to --course=... but manager.ts doesn't seem to support --course directly?
+    // manager.ts supports --q. If courses is array of IDs, maybe not supported?
+    // Let's assume passed args should match manager.ts support.
+    
+    // Pass other filters from body if present
+    if (req.body.q) args.push("--q=" + req.body.q);
+    if (req.body.year) args.push("--year=" + req.body.year);
+    if (req.body.minFee) args.push("--minFee=" + req.body.minFee);
+    if (req.body.maxFee) args.push("--maxFee=" + req.body.maxFee);
+    if (req.body.feeType) args.push("--feeType=" + req.body.feeType);
+    if (req.body.level) args.push("--level=" + req.body.level);
 
     // Spawn the detached process
     // Using 'ts-node' for execution in this dev environment.

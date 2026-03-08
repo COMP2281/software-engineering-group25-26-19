@@ -27,7 +27,12 @@ export async function processCourseData(data: any) {
     let courseUrl = course.courseURL || course.deepLink;
 
     // If not found, look inside the first option (common in Search API v3 / Details)
-    if (!courseUrl && course.options && Array.isArray(course.options) && course.options.length > 0) {
+    if (
+        !courseUrl &&
+        course.options &&
+        Array.isArray(course.options) &&
+        course.options.length > 0
+    ) {
         // Use the first option's provider URL
         courseUrl = course.options[0].providerCourseUrl;
     }
@@ -58,31 +63,67 @@ export async function processCourseData(data: any) {
     if (course.options && Array.isArray(course.options)) {
         for (const option of course.options) {
             const aLevels = extractALevels(
-                option.academicEntryRequirements?.qualifications
+                option.academicEntryRequirements?.qualifications,
             );
 
             // Outcome qualification
             const outcome = option.outcomeQualification?.caption;
 
-            const { homeFee, internationalFee } = extractFees(option.courseFees);
+            const { homeFee, internationalFee } = extractFees(
+                option.courseFees,
+            );
 
-            await prisma.courseOption.create({
-                data: {
-                    courseId: dbCourse.id,
-                    year: parseInt(option.applyCycle || "2026"),
-                    studyMode: option.studyMode?.caption,
-                    duration: option.duration
-                        ? `${option.duration.quantity} ${option.duration.durationType?.caption}`
-                        : null,
-                    startDate: option.startDate?.date,
-                    outcomeQualification: outcome,
-                    homeFee,
-                    internationalFee,
+            // Construct the compound ID input
+            const compoundId = {
+                courseId: dbCourse.id,
+                year: parseInt(option.applyCycle || "2026"),
+                studyMode: option.studyMode?.caption,
+                duration: option.duration
+                    ? `${option.duration.quantity} ${option.duration.durationType?.caption}`
+                    : "3 Years",
+            };
 
-                    // Spread A-level fields
-                    ...aLevels,
+            // Check if exists to avoid overwriting with nulls
+            const existingOption = await prisma.courseOption.findUnique({
+                where: {
+                    courseId_year_studyMode_duration: compoundId,
                 },
             });
+
+            if (existingOption) {
+                // Update only non-nulls
+                const updateData: any = {};
+                if (option.startDate?.date) updateData.startDate = option.startDate.date;
+                if (outcome) updateData.outcomeQualification = outcome;
+                if (homeFee != null) updateData.homeFee = homeFee;
+                if (internationalFee != null) updateData.internationalFee = internationalFee;
+                
+                // Spread A-level fields only if they exist
+                if (Object.keys(aLevels).length > 0) {
+                     Object.assign(updateData, aLevels);
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    await prisma.courseOption.update({
+                        where: {
+                             courseId_year_studyMode_duration: compoundId,
+                        },
+                        data: updateData,
+                    });
+                }
+            } else {
+                // Create new
+                await prisma.courseOption.create({
+                    data: {
+                        ...compoundId,
+                        startDate: option.startDate?.date,
+                        outcomeQualification: outcome,
+                        homeFee,
+                        internationalFee,
+                        ...aLevels,
+                    },
+                });
+            }
         }
     }
 
@@ -93,7 +134,7 @@ function extractALevels(qualifications: any[]) {
     if (!qualifications) return {};
 
     const aLevel = qualifications.find(
-        (q: any) => q.qualificationName === "A level"
+        (q: any) => q.qualificationName === "A level",
     );
     if (!aLevel) return {};
 
@@ -137,7 +178,12 @@ function calculateGradeScore(gradeString: string): number {
     const grades = gradeString.match(/[A-Z]\*?/g) || [];
     let score = 0;
     const values: { [key: string]: number } = {
-        "A*": 6, "A": 5, "B": 4, "C": 3, "D": 2, "E": 1
+        "A*": 6,
+        A: 5,
+        B: 4,
+        C: 3,
+        D: 2,
+        E: 1,
     };
     for (const g of grades) {
         score += values[g] || 0;

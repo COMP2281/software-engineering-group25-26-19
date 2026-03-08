@@ -11,6 +11,12 @@
   padding: 20px;
   border: 1px solid #eee;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  min-width: 0; /* Prevents flex/grid items from overflowing */
+}
+
+/* New class for full-width cards */
+.chartCard.fullWidth {
+  grid-column: 1 / -1;
 }
 
 .chartCard h3 {

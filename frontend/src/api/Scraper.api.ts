@@ -10,13 +10,24 @@ export interface ScraperStartResponse {
     status: 'running';
 }
 
-export async function startScraper(courseId?: string): Promise<ScraperStartResponse> {
+export interface ScraperStartOptions {
+    unis?: string[];
+    courses?: string[]; // Kept for backward compat but effectively ignored or needs handling
+    q?: string;
+    year?: number;
+    minFee?: number;
+    maxFee?: number;
+    feeType?: string;
+    level?: string;
+}
+
+export async function startScraper(options: ScraperStartOptions = {}): Promise<ScraperStartResponse> {
     const res = await fetch('/api/scraper/start', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ courseId }),
+        body: JSON.stringify(options),
     });
     
     if (!res.ok) {

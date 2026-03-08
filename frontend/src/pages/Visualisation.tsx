@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -15,6 +15,19 @@ import {
   Legend,
 } from "recharts";
 import "./Visualisation.css";
+import {
+  getUniversityDistribution,
+  getLevelDistribution,
+  getStudyModes,
+  getSubjects,
+  getPriceHistory,
+} from "../api/Visualisation.api";
+import type {
+  UniversityDistributionItem,
+  LevelDistributionItem,
+  StudyModeItem,
+  PriceHistoryItem,
+} from "../api/Visualisation.types";
 
 const purple = "#68246d";
 
@@ -22,68 +35,63 @@ export default function VisualisationPage() {
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState("Computer Science");
 
-  const courses = [
-    "Computer Science",
-    "Mechanical Engineering",
-    "Business Management",
-    "Law",
-    "Medicine",
-  ];
+  const [coursesPerUniversity, setCoursesPerUniversity] = useState<UniversityDistributionItem[]>([]);
+  const [levelDistribution, setLevelDistribution] = useState<LevelDistributionItem[]>([]);
+  const [studyModes, setStudyModes] = useState<StudyModeItem[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryItem[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>([]);
 
-  const coursesPerUniversity = [
-    { name: "Durham", courses: 120 },
-    { name: "Manchester", courses: 110 },
-    { name: "Leeds", courses: 95 },
-    { name: "York", courses: 70 },
-  ];
+  useEffect(() => {
+    const fetchBaseData = async () => {
+      try {
+        const [uniData, levelData, studyData, subjectsData] = await Promise.all([
+          getUniversityDistribution(),
+          getLevelDistribution(),
+          getStudyModes(),
+          getSubjects(),
+        ]);
 
-  const levelDistribution = [
-    { name: "Undergraduate", value: 320 },
-    { name: "Postgraduate", value: 180 },
-  ];
+        setCoursesPerUniversity(uniData);
+        setLevelDistribution(levelData);
+        setStudyModes(studyData);
+        setAvailableSubjects(subjectsData);
+        
+        if (subjectsData.length > 0 && !subjectsData.includes(selectedCourse)) {
+            setSelectedCourse(subjectsData[0]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch visualisation data:", error);
+      }
+    };
 
-  const studyModes = [
-    { name: "Full-time", value: 410 },
-    { name: "Part-time", value: 60 },
-    { name: "Distance", value: 30 },
-  ];
+    fetchBaseData();
+  }, []);
 
-  const priceHistoryByCourse: Record<string, any[]> = {
-    "Computer Science": [
-      { year: "2021", home: 9000, international: 18000 },
-      { year: "2022", home: 9250, international: 18500 },
-      { year: "2023", home: 9250, international: 19000 },
-      { year: "2024", home: 9250, international: 19500 },
-    ],
-    "Mechanical Engineering": [
-      { year: "2021", home: 8800, international: 17500 },
-      { year: "2022", home: 9100, international: 18200 },
-      { year: "2023", home: 9200, international: 18800 },
-      { year: "2024", home: 9250, international: 19200 },
-    ],
-    "Business Management": [
-      { year: "2021", home: 8700, international: 17000 },
-      { year: "2022", home: 9000, international: 17500 },
-      { year: "2023", home: 9200, international: 18000 },
-      { year: "2024", home: 9250, international: 18500 },
-    ],
-    Law: [
-      { year: "2021", home: 8900, international: 17600 },
-      { year: "2022", home: 9100, international: 18000 },
-      { year: "2023", home: 9250, international: 18500 },
-      { year: "2024", home: 9250, international: 18800 },
-    ],
-    Medicine: [
-      { year: "2021", home: 9500, international: 30000 },
-      { year: "2022", home: 9800, international: 31000 },
-      { year: "2023", home: 10000, international: 32000 },
-      { year: "2024", home: 10200, international: 33000 },
-    ],
-  };
+  useEffect(() => {
+    const fetchPricing = async () => {
+      if (!selectedCourse) return;
+      try {
+        const history = await getPriceHistory(selectedCourse);
+        setPriceHistory(history);
+      } catch (error) {
+        console.error("Failed to fetch price history:", error);
+      }
+    };
 
-  const priceHistory = priceHistoryByCourse[selectedCourse];
+    fetchPricing();
+  }, [selectedCourse]);
 
   const donutColors = ["#68246d", "#a36aa6", "#caa7cc"];
+  const studyModeColors = [
+    "#68246d", // Dark Purple
+    "#8e44ad", // Deep Violet
+    "#a36aa6", // Medium Purple
+    "#d2b4de", // Light Lavender
+    "#9b59b6", // Amethyst
+    "#512e5f", // Very Dark Purple
+    "#e8daef", // Pale Purple
+    "#76448a", // Grape
+  ];
 
   return (
     <main className="mainContent">
@@ -97,19 +105,30 @@ export default function VisualisationPage() {
       </div>
 
       <section className="analyticsGrid">
-        {/* Courses per University */}
-        <div className="chartCard">
+        {/* Courses per University - Full Width */}
+        <div className="chartCard fullWidth">
           <h3>Courses per University</h3>
-
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={coursesPerUniversity}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="courses" fill={purple} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          
+          <div style={{ width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+            <div style={{ width: Math.max(coursesPerUniversity.length * 60, 600), height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={coursesPerUniversity} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                        dataKey="name" 
+                        angle={-45} 
+                        textAnchor="end" 
+                        interval={0} 
+                        height={80}
+                        tick={{ fontSize: 12 }}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="courses" fill={purple} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
         {/* Level Distribution */}
@@ -126,8 +145,8 @@ export default function VisualisationPage() {
                 outerRadius={100}
                 paddingAngle={3}
               >
-                {levelDistribution.map((entry, index) => (
-                  <Cell key={index} fill={donutColors[index]} />
+                {levelDistribution.map((_entry, index) => (
+                  <Cell key={index} fill={donutColors[index % donutColors.length]} />
                 ))}
               </Pie>
               <Tooltip />
@@ -136,8 +155,32 @@ export default function VisualisationPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Price Over Time */}
+        {/* Study Mode Distribution */}
         <div className="chartCard">
+          <h3>Study Mode Distribution</h3>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={studyModes}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={3}
+              >
+                {studyModes.map((_entry, index) => (
+                  <Cell key={index} fill={studyModeColors[index % studyModeColors.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Price Over Time - Full Width */}
+        <div className="chartCard fullWidth">
           <div className="chartHeader">
             <h3>Course Price Over Time</h3>
 
@@ -152,7 +195,7 @@ export default function VisualisationPage() {
 
               {showCourseDropdown && (
                 <div className="dropdownPanel">
-                  {courses.map((course) => (
+                  {availableSubjects.map((course) => (
                     <div
                       key={course}
                       className="dropdownItem"
@@ -181,40 +224,16 @@ export default function VisualisationPage() {
                 dataKey="home"
                 stroke="#68246d"
                 strokeWidth={3}
+                name="Home Fees"
               />
               <Line
                 type="monotone"
                 dataKey="international"
                 stroke="#c9a3cc"
                 strokeWidth={3}
+                name="International Fees"
               />
             </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Study Mode Distribution */}
-        <div className="chartCard">
-          <h3>Study Mode Distribution</h3>
-
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={studyModes}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={3}
-              >
-                {studyModes.map((entry, index) => (
-                  <Cell key={index} fill={donutColors[index]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend
-               
-              />
-            </PieChart>
           </ResponsiveContainer>
         </div>
       </section>

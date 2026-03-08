@@ -5,6 +5,7 @@ import dashboardRouter from "./dashboard";
 import scraperRouter from "./scraper";
 import excelRouter from "./excel";
 import { requireAuth } from "../middleware/auth";
+import visualisationRouter from "./visualisation";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use("/auth", authRouter);
 
 // Protected routes
 router.use("/courses", requireAuth, coursesRouter);
+router.use("/visualisation", requireAuth, visualisationRouter);
 router.use("/dashboard", requireAuth, dashboardRouter);
 router.use("/scraper", requireAuth, scraperRouter);
 router.use("/excel", requireAuth, excelRouter);
