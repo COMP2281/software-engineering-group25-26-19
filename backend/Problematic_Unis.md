@@ -32,8 +32,26 @@ List of unis with ANY sort of error. Most are minor and I've included roughly ho
 
 - [ ] University of Nottingham: Doesn't work for foundation courses
 
-- [ ] University of Oxford: Doesn't work for all graduate courses as you must click on a button to end up landing on the required page. Foundation Years should be free of charge (oxford only!), and must manage redirects to actual course page!
+- [X] University of Oxford: Doesn't work for all graduate courses as you must click on a button to end up landing on the required page. Foundation Years should be free of charge (oxford only!), and must manage redirects to actual course page!
 
-- [ ] Queen Mary University of London: completely incorrect scrapes, both home and intl fees are either null or misfigured completely, requires spearate script that is highly specialised to fix this issue!
+- [X] Queen Mary University of London: completely incorrect scrapes, both home and intl fees are either null or misfigured completely, requires spearate script that is highly specialised to fix this issue!
 
 - [ ] Queen's University Belfast: different tuition fees classifications based on NI, ROI, GB so must double check that scottish fees are quoted correctly, mostly PG courses that are problematic
+
+- [X] University of Sheffield: stale URLs stored on UCAS server, foundation and masters courses fail completely with most UG courses failing too! Requires a highly specialised script to fix!
+
+- [X] University of Southampton: stale URLs stored on UCAS server, foundation and masters courses fail completely with most UG courses failing too! Requires a highly specialised script to fix, swapped home and intl fees in a lot of instances too!
+
+- [X] University of St Andrews: stale URLs stored on UCAS server, incorrect mapping of tuition fees to courseOptions, highly specialised script required!
+
+- [X] University of Sunderland: no distinction between international and home fees, stale data, insufferable web-design making scrapers far too brittle!
+
+- [X] UCL (University College London) : tough web-design navigation making scraping logic confused most of the time, a lot of courses that need a specific, highly curated script to fix them!
+
+- [ ] University of Surrey: UG tuition fees are labelled "to be confirmed" on their website, PG courses have got their tuition fees collected.
+
+- [X] SOAS University of London: strict limits when it comes to scraping, axios will be blocked quite frequently, international fees arent distinguished from home fees
+
+- [X] University of Warwick: no clear fee structure, must look at internal tables for overseas fees, UG home is standard ofcourse across all. Table lookup needed for all PG courses
+
+- [X] University of York: just requires duration-aware table matching, but UCAS API fetches most results anyways
