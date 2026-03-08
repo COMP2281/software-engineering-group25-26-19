@@ -13,6 +13,7 @@ export interface ScrapeContext {
     studyMode: string | null; // e.g., "Full-time", "Part-time"
     year: number;             // e.g., 2026
     duration: string | null;  // e.g., "3 Years", "4 Years"
+    outcomeQualification?: string | null; // e.g., "MSc", "PGDip", "MLitt"
 }
 
 // NEW: Links the scraped fees back to the specific option ID
