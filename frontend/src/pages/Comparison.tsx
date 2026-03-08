@@ -4,44 +4,41 @@ import { getCourseById, getCourses } from "../api/Courses.api";
 import type { Course } from "../api/Courses.types";
 import "./Comparison.css";
 
+type CourseOptionCard = {
+  course: Course;
+  option: Course["options"][number];
+};
+
 export default function Comparison() {
   const location = useLocation();
   const courseIds = location.state?.courseIds as string[] | undefined;
 
-  // --- Comparison State ---
-  const [courses, setCourses] = useState<(Course | null)[]>(() => {
-
-    // If coming from Courses page, start empty
-    if (courseIds && courseIds.length > 0) {
-        return new Array(courseIds.length).fill(null);
-    }
-
-    // Otherwise restore previous comparison
-    const saved = localStorage.getItem("comparison_courses");
+  const [cards, setCards] = useState<(CourseOptionCard | null)[]>(() => {
+    const saved = localStorage.getItem("comparison_cards");
 
     if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) {
-                return parsed;
-            }
-        } catch {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(Boolean);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved comparison cards", e);
+      }
     }
 
-    return [null, null];
-});
+    return [];
+  });
 
   useEffect(() => {
-    localStorage.setItem("comparison_courses", JSON.stringify(courses));
-  }, [courses]);
+    localStorage.setItem("comparison_cards", JSON.stringify(cards));
+  }, [cards]);
 
   useEffect(() => {
     if (!courseIds || courseIds.length === 0) return;
 
-    async function loadCourses() {
-        
+    async function loadCards() {
       if (!courseIds || courseIds.length === 0) return;
-
       try {
         const results = await Promise.all(
           courseIds.map(async (id) => {
@@ -50,62 +47,88 @@ export default function Comparison() {
           }),
         );
 
-        if (results.length === 1) {
-          setCourses([results[0], null]);
-        } else {
-          setCourses(results);
-        }
+        const expandedCards = results.flatMap((course) =>
+          course.options.map((option) => ({
+            course,
+            option,
+          })),
+        );
+
+        setCards(expandedCards);
       } catch (err) {
         console.error("Failed to load comparison courses", err);
       }
     }
 
-    loadCourses();
+    loadCards();
   }, [courseIds]);
 
   const handleSelect = (index: number, course: Course) => {
-    const newCourses = [...courses];
-    newCourses[index] = course;
-    setCourses(newCourses);
+    const optionCards: CourseOptionCard[] =
+      course.options && course.options.length > 0
+        ? course.options.map((option) => ({
+            course,
+            option,
+          }))
+        : [];
+
+    const newCards = [...cards];
+
+    if (optionCards.length > 0) {
+      newCards.splice(index, 1, ...optionCards);
+    } else {
+      newCards[index] = null;
+    }
+
+    setCards(newCards);
   };
 
   const handleRemove = (index: number) => {
-    const newCourses = [...courses];
-    if (newCourses.length > 2) {
-      newCourses.splice(index, 1);
-    } else {
-      newCourses[index] = null;
+    const newCards = [...cards];
+    newCards.splice(index, 1);
+
+    if (newCards.length === 0) {
+      setCards([]);
+      return;
     }
-    setCourses(newCourses);
+
+    setCards(newCards);
   };
 
   const handleAddSlot = () => {
-    setCourses([...courses, null]);
+    const hasSearchSlot = cards.some((c) => c === null);
+    if (hasSearchSlot) return;
+
+    setCards([...cards, null]);
   };
 
-  const selectedCoursesCount = courses.filter((c) => c !== null).length;
+  const selectedCardsCount = cards.filter((c) => c !== null).length;
 
-  const validHomeFees = courses
-    .map((c) => c?.options?.[0]?.homeFee)
+  const validHomeFees = cards
+    .map((c) => c?.option?.homeFee)
     .filter((f): f is number => !!f);
+
   const minHomeFee =
-    selectedCoursesCount <= 2 && validHomeFees.length
+    selectedCardsCount <= 2 && validHomeFees.length
       ? Math.min(...validHomeFees)
       : null;
+
   const maxHomeFee =
-    selectedCoursesCount <= 2 && validHomeFees.length
+    selectedCardsCount <= 2 && validHomeFees.length
       ? Math.max(...validHomeFees)
       : null;
 
-  const validIntlFees = courses
-    .map((c) => c?.options?.[0]?.internationalFee)
+  const validIntlFees = cards
+    .map((c) => c?.option?.internationalFee)
     .filter((f): f is number => !!f);
+
   const minIntlFee =
-    selectedCoursesCount <= 2 && validIntlFees.length
+    selectedCardsCount <= 2 && validIntlFees.length
       ? Math.min(...validIntlFees)
       : null;
+
   const maxIntlFee =
-    selectedCoursesCount <= 2 && validIntlFees.length
+    selectedCardsCount <= 2 && validIntlFees.length
       ? Math.max(...validIntlFees)
       : null;
 
@@ -119,19 +142,25 @@ export default function Comparison() {
       </div>
 
       <div className="comparisonArea">
-        {courses.map((course, index) => (
-          <CourseSlot
-            key={index}
-            label={`Course ${String.fromCharCode(65 + index)}`}
-            course={course}
-            minHomeFee={minHomeFee}
-            maxHomeFee={maxHomeFee}
-            minIntlFee={minIntlFee}
-            maxIntlFee={maxIntlFee}
-            onSelect={(c) => handleSelect(index, c)}
-            onRemove={() => handleRemove(index)}
-          />
-        ))}
+        {cards.map((card, index) =>
+          card ? (
+            <CourseDetailsCard
+              key={`${card.course.id}-${card.option.id}`}
+              course={card.course}
+              option={card.option}
+              minHomeFee={minHomeFee}
+              maxHomeFee={maxHomeFee}
+              minIntlFee={minIntlFee}
+              maxIntlFee={maxIntlFee}
+              onRemove={() => handleRemove(index)}
+            />
+          ) : (
+            <CourseSearch
+              key={`search-${index}`}
+              onSelect={(course) => handleSelect(index, course)}
+            />
+          ),
+        )}
 
         <div className="addCourseSlot" onClick={handleAddSlot}>
           <div className="addCourseIcon">
@@ -144,49 +173,11 @@ export default function Comparison() {
   );
 }
 
-interface CourseSlotProps {
-  label: string;
-  course: Course | null;
-  minHomeFee: number | null;
-  maxHomeFee: number | null;
-  minIntlFee: number | null;
-  maxIntlFee: number | null;
-  onSelect: (course: Course) => void;
-  onRemove: () => void;
-}
-
-function CourseSlot({
-  label,
-  course,
-  minHomeFee,
-  maxHomeFee,
-  minIntlFee,
-  maxIntlFee,
-  onSelect,
-  onRemove,
-}: CourseSlotProps) {
-  if (course) {
-    return (
-      <CourseDetailsCard
-        course={course}
-        minHomeFee={minHomeFee}
-        maxHomeFee={maxHomeFee}
-        minIntlFee={minIntlFee}
-        maxIntlFee={maxIntlFee}
-        onRemove={onRemove}
-      />
-    );
-  }
-
-  return <CourseSearch label={label} onSelect={onSelect} />;
-}
-
 interface CourseSearchProps {
-  label: string;
   onSelect: (course: Course) => void;
 }
 
-function CourseSearch({ label, onSelect }: CourseSearchProps) {
+function CourseSearch({ onSelect }: CourseSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
@@ -202,12 +193,14 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
       }
 
       setLoading(true);
+
       try {
         const res = await getCourses({
           page: 1,
           pageSize: 20,
           q: searchTerm,
         });
+
         setResults(res.data);
         setShowDropdown(true);
       } catch (err) {
@@ -215,7 +208,7 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
       } finally {
         setLoading(false);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
@@ -229,7 +222,9 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
         setShowDropdown(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
@@ -238,7 +233,9 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
       <div className="searchIconWrapper">
         <i className="bi bi-search"></i>
       </div>
-      <div className="searchInstructions">Search for {label}</div>
+
+      <div className="searchInstructions">Search for Course</div>
+
       <input
         type="text"
         className="courseSearchInput"
@@ -299,6 +296,7 @@ function CourseSearch({ label, onSelect }: CourseSearchProps) {
 
 interface CourseDetailsCardProps {
   course: Course;
+  option: Course["options"][number];
   minHomeFee: number | null;
   maxHomeFee: number | null;
   minIntlFee: number | null;
@@ -308,16 +306,13 @@ interface CourseDetailsCardProps {
 
 function CourseDetailsCard({
   course,
+  option,
   minHomeFee,
   maxHomeFee,
   minIntlFee,
   maxIntlFee,
   onRemove,
 }: CourseDetailsCardProps) {
-  // Use the first option as the default to display details
-  const option =
-    course.options && course.options.length > 0 ? course.options[0] : null;
-
   const getFeeColor = (
     fee: number | null,
     minF: number | null,
@@ -326,13 +321,13 @@ function CourseDetailsCard({
     if (!fee || minF === maxF) return undefined;
     if (fee === maxF) return "var(--danger-color, #dc3545)";
     if (fee === minF) return "var(--success-color, #198754)";
-    return undefined; // in between
+    return undefined;
   };
 
   let degreeLevel = "Unknown";
   let isUndergrad = false;
 
-  if (option?.outcomeQualification) {
+  if (option.outcomeQualification) {
     isUndergrad = option.outcomeQualification.toLowerCase().startsWith("b");
     degreeLevel = isUndergrad ? "Undergraduate" : "Postgraduate";
   }
@@ -346,11 +341,13 @@ function CourseDetailsCard({
               {course.title}{" "}
               {course.applicationCode ? `(${course.applicationCode})` : ""}
             </h2>
+
             <div className="courseCardSubheader">
               <p className="courseCardUni">
                 {course.university?.name || "Unknown University"}
               </p>
-              {option?.outcomeQualification && (
+
+              {option.outcomeQualification && (
                 <span
                   className={`levelBadge ${isUndergrad ? "badgeUg" : "badgePg"}`}
                 >
@@ -359,128 +356,112 @@ function CourseDetailsCard({
               )}
             </div>
           </div>
+
           <button
             className="removeCourseBtn"
             onClick={onRemove}
-            title="Remove course"
+            title="Remove course option"
           >
             <i className="bi bi-x-circle"></i>
           </button>
         </div>
 
-        {option && (
-          <>
-            <div className="detailSection">
-              <h3 className="detailSectionTitle">Study Options</h3>
-              <div className="detailRow">
-                <span className="detailLabel">Academic Year</span>
-                <span className="detailValue">{option.year || "N/A"}</span>
-              </div>
-              <div className="detailRow">
-                <span className="detailLabel">Duration</span>
-                <span className="detailValue">{option.duration || "N/A"}</span>
-              </div>
-              <div className="detailRow">
-                <span className="detailLabel">Study Mode</span>
-                <span className="detailValue">{option.studyMode || "N/A"}</span>
-              </div>
-              <div className="detailRow">
-                <span className="detailLabel">Start Date</span>
-                <span className="detailValue">{option.startDate || "N/A"}</span>
-              </div>
-            </div>
+        <div className="detailSection">
+          <h3 className="detailSectionTitle">Study Options</h3>
 
-            <div className="detailSection">
-              <h3 className="detailSectionTitle">Fees</h3>
-              <div className="detailRow">
-                <span className="detailLabel">Home Fee</span>
-                <span
-                  className="detailValue"
-                  style={{
-                    color: getFeeColor(option.homeFee, minHomeFee, maxHomeFee),
-                    fontWeight: getFeeColor(
-                      option.homeFee,
-                      minHomeFee,
-                      maxHomeFee,
-                    )
-                      ? "bold"
-                      : "normal",
-                  }}
-                >
-                  {option.homeFee
-                    ? `£${option.homeFee.toLocaleString()}`
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="detailRow">
-                <span className="detailLabel">International Fee</span>
-                <span
-                  className="detailValue"
-                  style={{
-                    color: getFeeColor(
-                      option.internationalFee,
-                      minIntlFee,
-                      maxIntlFee,
-                    ),
-                    fontWeight: getFeeColor(
-                      option.internationalFee,
-                      minIntlFee,
-                      maxIntlFee,
-                    )
-                      ? "bold"
-                      : "normal",
-                  }}
-                >
-                  {option.internationalFee
-                    ? `£${option.internationalFee.toLocaleString()}`
-                    : "N/A"}
-                </span>
-              </div>
-            </div>
-
-            <div className="detailSection">
-              <h3 className="detailSectionTitle">Requirements</h3>
-              {!option.aLevelGrade1 &&
-              !option.aLevelGrade2 &&
-              !option.aLevelGrade3 &&
-              !option.aLevelGrade4 ? (
-                <div className="detailRow">
-                  <span className="detailLabel">A-Level</span>
-                  <span className="detailValue">N/A</span>
-                </div>
-              ) : (
-                <div className="detailRow">
-                  <span className="detailLabel">A-Levels</span>
-                  <span className="detailValue">
-                    {[1, 2, 3, 4]
-                      .map(
-                        (i) =>
-                          option[`aLevelGrade${i}` as keyof typeof option] as
-                            | string
-                            | null,
-                      )
-                      .filter(Boolean)
-                      .join(", ")}
-                  </span>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {!option && (
-          <div
-            className="detailSection"
-            style={{
-              color: "var(--text-secondary)",
-              textAlign: "center",
-              fontStyle: "italic",
-              marginTop: "20px",
-            }}
-          >
-            No specific study options or fee data available for this course.
+          <div className="detailRow">
+            <span className="detailLabel">Academic Year</span>
+            <span className="detailValue">{option.year || "N/A"}</span>
           </div>
-        )}
+
+          <div className="detailRow">
+            <span className="detailLabel">Duration</span>
+            <span className="detailValue">{option.duration || "N/A"}</span>
+          </div>
+
+          <div className="detailRow">
+            <span className="detailLabel">Study Mode</span>
+            <span className="detailValue">{option.studyMode || "N/A"}</span>
+          </div>
+
+          <div className="detailRow">
+            <span className="detailLabel">Start Date</span>
+            <span className="detailValue">{option.startDate || "N/A"}</span>
+          </div>
+        </div>
+
+        <div className="detailSection">
+          <h3 className="detailSectionTitle">Fees</h3>
+
+          <div className="detailRow">
+            <span className="detailLabel">Home Fee</span>
+            <span
+              className="detailValue"
+              style={{
+                color: getFeeColor(option.homeFee, minHomeFee, maxHomeFee),
+                fontWeight: getFeeColor(option.homeFee, minHomeFee, maxHomeFee)
+                  ? "bold"
+                  : "normal",
+              }}
+            >
+              {option.homeFee ? `£${option.homeFee.toLocaleString()}` : "N/A"}
+            </span>
+          </div>
+
+          <div className="detailRow">
+            <span className="detailLabel">International Fee</span>
+            <span
+              className="detailValue"
+              style={{
+                color: getFeeColor(
+                  option.internationalFee,
+                  minIntlFee,
+                  maxIntlFee,
+                ),
+                fontWeight: getFeeColor(
+                  option.internationalFee,
+                  minIntlFee,
+                  maxIntlFee,
+                )
+                  ? "bold"
+                  : "normal",
+              }}
+            >
+              {option.internationalFee
+                ? `£${option.internationalFee.toLocaleString()}`
+                : "N/A"}
+            </span>
+          </div>
+        </div>
+
+        <div className="detailSection">
+          <h3 className="detailSectionTitle">Requirements</h3>
+
+          {!option.aLevelGrade1 &&
+          !option.aLevelGrade2 &&
+          !option.aLevelGrade3 &&
+          !option.aLevelGrade4 ? (
+            <div className="detailRow">
+              <span className="detailLabel">A-Level</span>
+              <span className="detailValue">N/A</span>
+            </div>
+          ) : (
+            <div className="detailRow">
+              <span className="detailLabel">A-Levels</span>
+              <span className="detailValue">
+                {[1, 2, 3, 4]
+                  .map(
+                    (i) =>
+                      option[`aLevelGrade${i}` as keyof typeof option] as
+                        | string
+                        | null,
+                  )
+                  .filter(Boolean)
+                  .join(", ")}
+              </span>
+            </div>
+          )}
+        </div>
 
         {course.courseUrl && (
           <div
