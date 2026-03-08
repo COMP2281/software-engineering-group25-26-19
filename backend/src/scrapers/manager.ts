@@ -19,6 +19,8 @@ import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
 import { OxfordAdapter } from './adapters/Oxford';
 import { QueenMaryAdapter } from './adapters/QueenMary';
+import { SheffieldAdapter } from './adapters/Sheffield';
+import { SouthamptonAdapter } from './adapters/Southampton';
 
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
@@ -37,6 +39,8 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'NewcastleAdapter': return new NewcastleAdapter();
         case 'OxfordAdapter': return new OxfordAdapter();
         case 'QueenMaryAdapter': return new QueenMaryAdapter();
+        case 'SheffieldAdapter': return new SheffieldAdapter();
+        case 'SouthamptonAdapter': return new SouthamptonAdapter();
         case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
@@ -208,7 +212,10 @@ async function runScrapingManager() {
             for (const [courseId, courseData] of coursesMap.entries()) {
                 const course = courseData.course;
                 const options = courseData.options;
-                const canResolveMissingUrl = config.adapterName === 'QueenMaryAdapter';
+                const canResolveMissingUrl =
+                    config.adapterName === 'QueenMaryAdapter' ||
+                    config.adapterName === 'SheffieldAdapter' ||
+                    config.adapterName === 'SouthamptonAdapter';
 
                 if (!course.courseUrl && !canResolveMissingUrl) {
                     console.log(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
