@@ -300,7 +300,7 @@ async function runScrapingManager() {
         }
     }
 
-    Logger.info("\n=== Scraper Manager Finished ===");
+    Logger.printSummary();
 }
 
 if (require.main === module) {
