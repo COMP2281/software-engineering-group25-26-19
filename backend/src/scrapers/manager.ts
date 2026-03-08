@@ -23,6 +23,7 @@ import { SheffieldAdapter } from './adapters/Sheffield';
 import { SouthamptonAdapter } from './adapters/Southampton';
 import { StAndrewsAdapter } from './adapters/StAndrews';
 import { SunderlandAdapter } from './adapters/Sunderland';
+import { UCLAdapter } from './adapters/UCL';
 
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
@@ -45,6 +46,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'SouthamptonAdapter': return new SouthamptonAdapter();
         case 'StAndrewsAdapter': return new StAndrewsAdapter();
         case 'SunderlandAdapter': return new SunderlandAdapter();
+        case 'UCLAdapter': return new UCLAdapter();
         case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);

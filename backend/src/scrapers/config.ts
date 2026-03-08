@@ -83,5 +83,29 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
     "University of Oxford": {
         strategy: "CUSTOM_HTML",
         adapterName: "OxfordAdapter"
+    },
+    "Queen Mary University of London": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "QueenMaryAdapter"
+    },
+    "University of Sheffield": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "SheffieldAdapter"
+    },
+    "University of St Andrews": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "StAndrewsAdapter"
+    },
+    "University of Sunderland": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "SunderlandAdapter"
+    },
+    "UCL (University College London)": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "UCLAdapter"
+    },
+    "University of Southampton": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "SouthamptonAdapter"
     }
 };
