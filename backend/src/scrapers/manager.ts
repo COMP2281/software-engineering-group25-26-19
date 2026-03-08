@@ -3,12 +3,14 @@
 import prisma from '../db';
 import { ScraperConfig } from './config';
 import { IScraperAdapter, ScrapeContext, OptionScrapeResult, UniversityScraperConfig } from './interfaces';
+import { Logger } from './logger';
 import { GenericHtmlAdapter } from './adapters/GenericHtml';
 import { BulkPdfAdapter } from './adapters/BulkPdf';
 import { BathAdapter } from './adapters/Bath';
 import { BirminghamAdapter } from './adapters/Birmingham';
 import { BristolAdapter } from './adapters/Bristol';
 import { CambridgeAdapter } from './adapters/Cambridge';
+// import { CardiffAdapter } from './adapters/Cardiff';
 import { EdinburghAdapter } from './adapters/Edinburgh';
 import { ExeterAdapter } from './adapters/Exeter';
 import { GlasgowAdapter } from './adapters/Glasgow';
@@ -20,6 +22,7 @@ import { NewcastleAdapter } from './adapters/Newcastle';
 import { NottsAdapter } from './adapters/Notts';
 import { OxfordAdapter } from './adapters/Oxford';
 import { QueenMaryAdapter } from './adapters/QueenMary';
+import { QueensBelfastAdapter } from './adapters/QueensBelfast';
 import { SheffieldAdapter } from './adapters/Sheffield';
 import { SouthamptonAdapter } from './adapters/Southampton';
 import { StAndrewsAdapter } from './adapters/StAndrews';
@@ -35,6 +38,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'BirminghamAdapter': return new BirminghamAdapter();
         case 'BristolAdapter': return new BristolAdapter();
         case 'CambridgeAdapter': return new CambridgeAdapter();
+        // case 'CardiffAdapter': return new CardiffAdapter();
         case 'EdinburghAdapter': return new EdinburghAdapter();
         case 'ExeterAdapter': return new ExeterAdapter();
         case 'GlasgowAdapter': return new GlasgowAdapter(config.centralFeeUrls!);
@@ -46,6 +50,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'NottsAdapter': return new NottsAdapter();
         case 'OxfordAdapter': return new OxfordAdapter();
         case 'QueenMaryAdapter': return new QueenMaryAdapter();
+        case 'QueensBelfastAdapter': return new QueensBelfastAdapter();
         case 'SheffieldAdapter': return new SheffieldAdapter();
         case 'SouthamptonAdapter': return new SouthamptonAdapter();
         case 'StAndrewsAdapter': return new StAndrewsAdapter();
@@ -91,7 +96,7 @@ function getConfigForUniversity(dbName: string): UniversityScraperConfig {
 }
 
 async function runScrapingManager() {
-    console.log("\n=== Starting Scraper Manager ===");
+    Logger.info("\n=== Starting Scraper Manager ===");
 
     // --- 1. CLI ARGUMENT PARSING ---
     const filters: any = {
@@ -166,11 +171,11 @@ async function runScrapingManager() {
     });
 
     if (targetOptions.length === 0) {
-        console.log("No course options found matching the criteria. Exiting.");
+        Logger.info("No course options found matching the criteria. Exiting.");
         return;
     }
 
-    console.log(`Found ${targetOptions.length} course options to scrape.`);
+    Logger.info(`Found ${targetOptions.length} course options to scrape.`);
 
     const uniMap = new Map<string, any>();
 
@@ -201,12 +206,12 @@ async function runScrapingManager() {
         const uni = uniData.university;
         const coursesMap = uniData.courses;
 
-        console.log(`\n--- Processing: ${uni.name} ${uniId} (${coursesMap.size} unique courses) ---`);
+        Logger.info(`\n--- Processing: ${uni.name} ${uniId} (${coursesMap.size} unique courses) ---`);
 
         // UPDATED: Use the helper function to find the config
         const config = getConfigForUniversity(uni.name);
         
-        console.log(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
+        Logger.debug(`Strategy: ${config.strategy} | Adapter: ${config.adapterName}`);
         
         const adapter = getAdapter(config);
 
@@ -235,15 +240,16 @@ async function runScrapingManager() {
                     config.adapterName === 'WarwickAdapter';
 
                 if (!course.courseUrl && !canResolveMissingUrl) {
-                    console.log(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
+                    Logger.warn(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
+                    Logger.stats.skipped += options.length;
                     count++;
                     continue;
                 }
 
                 if (!course.courseUrl && canResolveMissingUrl) {
-                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options) [No URL in DB, attempting adapter resolution]`);
+                    Logger.info(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options) [No URL in DB, attempting adapter resolution]`);
                 } else {
-                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options)`);
+                    Logger.info(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options)`);
                 }
 
                 const targetUrl = course.courseUrl ?? '';
@@ -258,6 +264,8 @@ async function runScrapingManager() {
                 }));
 
                 try {
+                    Logger.stats.total += contexts.length;
+
                     const results: OptionScrapeResult[] = await adapter.scrapeCourse(targetUrl, contexts);
 
                     for (const res of results) {
@@ -265,7 +273,7 @@ async function runScrapingManager() {
                         const hasIntlFee = res.internationalFee !== null && res.internationalFee !== undefined;
 
                         if (hasHomeFee || hasIntlFee) {
-                            console.log(`   > Option [${res.optionId}]: Home £${res.homeFee}, Intl £${res.internationalFee}`);
+                            Logger.debug(`   > Option [${res.optionId}]: Home £${res.homeFee}, Intl £${res.internationalFee}`);
                             
                             const updateData: any = {};
                             if (hasHomeFee) updateData.homeFee = res.homeFee;
@@ -275,12 +283,15 @@ async function runScrapingManager() {
                                 where: { id: res.optionId },
                                 data: updateData
                             });
+                            Logger.stats.success++;
                         } else {
-                            console.log(`   > Option [${res.optionId}]: No fees found.`);
+                            Logger.debug(`   > Option [${res.optionId}]: No fees found.`);
+                            Logger.stats.failed++;
                         }
                     }
                 } catch (err) {
-                    console.error(`   > Error scraping ${course.title}:`, err);
+                    Logger.error(`   > Error scraping ${course.title}:`, err);
+                    Logger.stats.failed += contexts.length;
                 }
 
                 count++;
@@ -289,7 +300,7 @@ async function runScrapingManager() {
         }
     }
 
-    console.log("\n=== Scraper Manager Finished ===");
+    Logger.printSummary();
 }
 
 if (require.main === module) {

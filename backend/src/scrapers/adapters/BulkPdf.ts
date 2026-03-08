@@ -5,6 +5,7 @@ import * as stringSimilarity from 'string-similarity';
 import prisma from '../../db';
 import { PDFParse } from 'pdf-parse';
 import { IScraperAdapter } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
@@ -15,14 +16,14 @@ interface ExtractedRow {
 }
 
 function debug(msg: string) {
-    if (DEBUG) console.log(`[DEBUG] ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] ${msg}`);
 }
 
 export class BulkPdfAdapter implements IScraperAdapter {
     
     async scrapeBulk(universityName: string, bulkUrl: string): Promise<void> {
-        console.log(`\n=== Running Bulk PDF Adapter for: ${universityName} ===`);
-        console.log(`PDF URL: ${bulkUrl}`);
+        Logger.debug(`\n=== Running Bulk PDF Adapter for: ${universityName} ===`);
+        Logger.debug(`PDF URL: ${bulkUrl}`);
 
         try {
             debug("Downloading PDF...");
@@ -34,10 +35,10 @@ export class BulkPdfAdapter implements IScraperAdapter {
 
             debug("Parsing tabular data...");
             const extractedRows = this.extractTableData(text);
-            console.log(`Extracted ${extractedRows.length} potential course rows from the PDF.`);
+            Logger.debug(`Extracted ${extractedRows.length} potential course rows from the PDF.`);
 
             if (extractedRows.length === 0) {
-                console.log("No data extracted. The PDF might not be formatted as a standard text table.");
+                Logger.debug("No data extracted. The PDF might not be formatted as a standard text table.");
                 return;
             }
 
@@ -48,18 +49,19 @@ export class BulkPdfAdapter implements IScraperAdapter {
             });
 
             if (!university || university.courses.length === 0) {
-                console.error(`No courses found in the database for university: ${universityName}`);
+                Logger.error(`No courses found in the database for university: ${universityName}`);
                 return;
             }
 
             debug("Starting fuzzy matching and database updates...");
             await this.matchAndUpdateCourses(university.courses, extractedRows);
 
-            console.log("=== Bulk PDF Adapter Finished Successfully ===\n");
+            Logger.debug("=== Bulk PDF Adapter Finished Successfully ===\n");
 
         } catch (error) {
-            console.error("!!! Bulk PDF Adapter Failed !!!");
-            console.error(error instanceof Error ? error.message : error);
+            Logger.error("!!! Bulk PDF Adapter Failed !!!");
+            let errMsg = error instanceof Error ? error.message : String(error);
+            Logger.error(errMsg);
         }
     }
 
@@ -161,6 +163,6 @@ export class BulkPdfAdapter implements IScraperAdapter {
                 }
             }
         }
-        console.log(`Successfully mapped and updated ${matchCount} courses in the database.`);
+        Logger.debug(`Successfully mapped and updated ${matchCount} courses in the database.`);
     }
 }

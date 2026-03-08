@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -13,7 +14,7 @@ const HEADERS_BROWSER = {
 };
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] SOAS: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] SOAS: ${msg}`);
 }
 
 export class SoasAdapter extends GenericHtmlAdapter {

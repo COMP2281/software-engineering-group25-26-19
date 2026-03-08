@@ -4,6 +4,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
@@ -35,7 +36,7 @@ export class GlasgowAdapter extends GenericHtmlAdapter {
         // 1. Route Postgraduate courses to the Generic Scraper
         // The GenericHtmlAdapter handles contexts natively, so we just pass it through.
         if (courseUrl.toLowerCase().includes('/postgraduate/')) {
-            if (DEBUG) console.log(`[DEBUG] Glasgow: Routing PG course to GenericHtmlAdapter.`);
+            if (DEBUG) Logger.debug(`[DEBUG] Glasgow: Routing PG course to GenericHtmlAdapter.`);
             // Note: We use our custom handlePostgraduate for specific regex fixes, 
             // but we need to map it to the array format.
             const pgFees = await this.handlePostgraduate(courseUrl);
@@ -72,12 +73,12 @@ export class GlasgowAdapter extends GenericHtmlAdapter {
             const homeFee = this.extractPriceAfterKeyword(text, 'UK', 4500);
             const intlFee = this.extractPriceAfterKeyword(text, 'International', 10000);
 
-            if (DEBUG) console.log(`[DEBUG] Glasgow PG: Home £${homeFee}, Intl £${intlFee}`);
+            if (DEBUG) Logger.debug(`[DEBUG] Glasgow PG: Home £${homeFee}, Intl £${intlFee}`);
 
             return { homeFee, internationalFee: intlFee };
 
         } catch (error) {
-            if (DEBUG) console.log(`[DEBUG] Glasgow PG Fetch Failed: ${error}`);
+            if (DEBUG) Logger.debug(`[DEBUG] Glasgow PG Fetch Failed: ${error}`);
             return { homeFee: null, internationalFee: null };
         }
     }
@@ -98,7 +99,7 @@ export class GlasgowAdapter extends GenericHtmlAdapter {
             const $ = cheerio.load(response.data);
             pageText = $('body').text().toLowerCase().replace(/\s+/g, ' ');
         } catch (e) {
-            if (DEBUG) console.log(`[DEBUG] Glasgow: Failed to fetch UG course page for context.`);
+            if (DEBUG) Logger.debug(`[DEBUG] Glasgow: Failed to fetch UG course page for context.`);
         }
 
         const title = dbCourseTitle.toLowerCase();
@@ -120,7 +121,7 @@ export class GlasgowAdapter extends GenericHtmlAdapter {
     }
 
     private async loadUgCentralFees() {
-        if (DEBUG) console.log(`[DEBUG] Glasgow: Lazy-loading UG central fees...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Glasgow: Lazy-loading UG central fees...`);
         this.ugBands = { ruk: null, intlArts: null, intlScience: null, intlClinical: null };
 
         try {
@@ -136,7 +137,7 @@ export class GlasgowAdapter extends GenericHtmlAdapter {
             this.ugBands.intlClinical = this.extractPriceAfterKeyword(intlText, 'clinical', 40000);
 
         } catch (error) {
-            if (DEBUG) console.log(`[DEBUG] Glasgow: Failed to load central UG fees. ${error}`);
+            if (DEBUG) Logger.debug(`[DEBUG] Glasgow: Failed to load central UG fees. ${error}`);
         }
     }
 

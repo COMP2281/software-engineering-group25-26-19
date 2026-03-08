@@ -5,6 +5,7 @@ import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const RESOLUTION_HOPS = 3;
@@ -18,7 +19,7 @@ const HEADERS_BROWSER = {
 };
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] Oxford: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Oxford: ${msg}`);
 }
 
 export class OxfordAdapter extends GenericHtmlAdapter {

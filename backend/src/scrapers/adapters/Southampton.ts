@@ -6,6 +6,7 @@ import type { Element } from 'domhandler';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -33,7 +34,7 @@ interface SouthamptonTuitionExtraction extends ScrapedFees {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] Southampton: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Southampton: ${msg}`);
 }
 
 export class SouthamptonAdapter extends GenericHtmlAdapter {

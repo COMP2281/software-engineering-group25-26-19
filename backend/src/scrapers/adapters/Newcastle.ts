@@ -3,13 +3,14 @@
 import { GenericHtmlAdapter } from './GenericHtml';
 import { ScrapeContext, ScrapedFees } from '../interfaces';
 import * as cheerio from 'cheerio';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
 export class NewcastleAdapter extends GenericHtmlAdapter {
     
     protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
-        if (DEBUG) console.log(`[DEBUG] Newcastle: Sanitizing trap keywords...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Newcastle: Sanitizing trap keywords...`);
         
         let cleanedHtml = html
             .replace(/funding/gi, 'fnding')

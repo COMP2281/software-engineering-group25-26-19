@@ -4,6 +4,7 @@ import type { Element } from 'domhandler';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -28,7 +29,7 @@ interface SearchCandidate {
 }
 
 function debug(message: string): void {
-    if (DEBUG) console.log(`[DEBUG] Notts: ${message}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Notts: ${message}`);
 }
 
 export class NottsAdapter extends GenericHtmlAdapter {

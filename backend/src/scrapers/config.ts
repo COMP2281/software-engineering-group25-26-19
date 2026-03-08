@@ -36,10 +36,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
         strategy: "CUSTOM_HTML",
         adapterName: "BirminghamAdapter",
     },
-    "Cardiff University": {
-        strategy: "GENERIC_HTML",
-        adapterName: "GenericHtmlAdapter"
-    },
+    // "Cardiff University": {
+    //     strategy: "CUSTOM_HTML",
+    //     adapterName: "CardiffAdapter",
+    // },
     "The University of Edinburgh": {
         strategy: "CUSTOM_HTML",
         adapterName: "EdinburghAdapter"
@@ -91,6 +91,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
     "Queen Mary University of London": {
         strategy: "CUSTOM_HTML",
         adapterName: "QueenMaryAdapter"
+    },
+    "Queen's University Belfast": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "QueensBelfastAdapter"
     },
     "University of Sheffield": {
         strategy: "CUSTOM_HTML",

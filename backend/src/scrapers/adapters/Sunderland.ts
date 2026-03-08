@@ -3,6 +3,7 @@ import * as stringSimilarity from 'string-similarity';
 import * as vm from 'node:vm';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -33,7 +34,7 @@ interface IntakeLike {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] Sunderland: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Sunderland: ${msg}`);
 }
 
 export class SunderlandAdapter extends GenericHtmlAdapter {
