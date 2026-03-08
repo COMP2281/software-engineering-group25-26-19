@@ -1,4 +1,4 @@
-import type { AnalyticsCourse, Course, CourseFiltersResponse } from "./Courses.types";
+import type { Course, CourseFiltersResponse } from "./Courses.types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const res = await fetch(url, options);
@@ -82,16 +82,4 @@ export async function getCourseById(
 
 export async function getCourseFilters(): Promise<CourseFiltersResponse> {
     return fetchJson<CourseFiltersResponse>("/api/courses/filters");
-}
-
-export async function getCourseAnalytics(
-    params: Omit<GetCoursesParams, "page" | "pageSize">
-): Promise<{ data: AnalyticsCourse[] }> {
-    const query = new URLSearchParams();
-
-    if (params.q && params.q.trim()) query.append("q", params.q);
-    if (params.universityIds && params.universityIds.trim()) query.append("universityIds", params.universityIds);
-    if (params.level && params.level !== "all") query.append("level", params.level);
-
-    return fetchJson<{ data: AnalyticsCourse[] }>(`/api/courses/analytics?${query}`);
 }
