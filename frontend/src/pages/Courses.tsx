@@ -544,6 +544,20 @@ export default function CoursesPage() {
                 </div>
 
                 <div className="selectionButtons">
+                  {selectedCourseIds.size > 1 && (
+                    <button
+                      className="actionBtn compareBtn"
+                      disabled={selectedCourseIds.size < 2}
+                      onClick={() => {
+                        navigate("/compare", {
+                          state: { courseIds: Array.from(selectedCourseIds) },
+                        });
+                      }}
+                    >
+                      <i className="bi bi-columns-gap"></i>
+                      Compare
+                    </button>
+                  )}
                   <button
                     className="actionBtn exportBtn"
                     onClick={() => handleQuickExport()}
