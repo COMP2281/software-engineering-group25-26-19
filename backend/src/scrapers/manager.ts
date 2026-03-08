@@ -18,6 +18,7 @@ import { LoughboroughAdapter } from './adapters/Loughborough';
 import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
 import { OxfordAdapter } from './adapters/Oxford';
+import { QueenMaryAdapter } from './adapters/QueenMary';
 
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
@@ -35,6 +36,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'ManchesterAdapter': return new ManchesterAdapter();
         case 'NewcastleAdapter': return new NewcastleAdapter();
         case 'OxfordAdapter': return new OxfordAdapter();
+        case 'QueenMaryAdapter': return new QueenMaryAdapter();
         case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
@@ -206,14 +208,21 @@ async function runScrapingManager() {
             for (const [courseId, courseData] of coursesMap.entries()) {
                 const course = courseData.course;
                 const options = courseData.options;
+                const canResolveMissingUrl = config.adapterName === 'QueenMaryAdapter';
 
-                if (!course.courseUrl) {
+                if (!course.courseUrl && !canResolveMissingUrl) {
                     console.log(`[${count}/${coursesMap.size}] Skipping ${course.title} ${courseId}: No URL`);
                     count++;
                     continue;
                 }
 
-                console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options)`);
+                if (!course.courseUrl && canResolveMissingUrl) {
+                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options) [No URL in DB, attempting adapter resolution]`);
+                } else {
+                    console.log(`[${count}/${coursesMap.size}] Scraping: ${course.title} (${options.length} options)`);
+                }
+
+                const targetUrl = course.courseUrl ?? '';
 
                 const contexts: ScrapeContext[] = options.map((opt: any) => ({
                     optionId: opt.id,
@@ -224,7 +233,7 @@ async function runScrapingManager() {
                 }));
 
                 try {
-                    const results: OptionScrapeResult[] = await adapter.scrapeCourse(course.courseUrl, contexts);
+                    const results: OptionScrapeResult[] = await adapter.scrapeCourse(targetUrl, contexts);
 
                     for (const res of results) {
                         const hasHomeFee = res.homeFee !== null && res.homeFee !== undefined;
