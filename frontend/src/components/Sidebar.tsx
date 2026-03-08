@@ -73,6 +73,10 @@ export default function Sidebar({ onToggleHide }: SidebarProps) {
                     Visualisation
                 </NavLink>
 
+                <NavLink to="/compare" className="menuItem">
+                    Compare
+                </NavLink>
+
                 <NavLink to="/settings" className="menuItem">
                     Settings
                 </NavLink>

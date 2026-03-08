@@ -38,7 +38,11 @@ router.get("/", async (req, res) => {
 
         // Universities: allow multiple ids (comma separated)
         let uniIdsArr: string[] | undefined;
-        if (universityIds) uniIdsArr = universityIds.split(",").map(s => s.trim()).filter(Boolean);
+        if (universityIds)
+            uniIdsArr = universityIds
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
         if (uniIdsArr && uniIdsArr.length) {
             andConditions.push({ universityId: { in: uniIdsArr } });
         }
@@ -48,10 +52,17 @@ router.get("/", async (req, res) => {
         if (year) optionFilters.push({ year: parseInt(year, 10) });
 
         // Fee range filter (apply to homeFee or internationalFee depending on feeType)
-        const min = (minFee !== undefined && minFee !== "") ? parseFloat(minFee as string) : undefined;
-        const max = (maxFee !== undefined && maxFee !== "") ? parseFloat(maxFee as string) : undefined;
+        const min =
+            minFee !== undefined && minFee !== ""
+                ? parseFloat(minFee as string)
+                : undefined;
+        const max =
+            maxFee !== undefined && maxFee !== ""
+                ? parseFloat(maxFee as string)
+                : undefined;
         if (!isNaN(Number(min)) || !isNaN(Number(max))) {
-            const feeField = (feeType === "international") ? "internationalFee" : "homeFee";
+            const feeField =
+                feeType === "international" ? "internationalFee" : "homeFee";
             const feeCond: any = {};
             if (!isNaN(Number(min))) feeCond.gte = min;
             if (!isNaN(Number(max))) feeCond.lte = max;
@@ -60,13 +71,30 @@ router.get("/", async (req, res) => {
 
         // Level filter: undergraduate if outcomeQualification starts with 'B' (case-insensitive), postgraduate otherwise
         if (level === "undergraduate") {
-            optionFilters.push({ outcomeQualification: { startsWith: "B", mode: "insensitive" } });
+            optionFilters.push({
+                outcomeQualification: { startsWith: "B", mode: "insensitive" },
+            });
         } else if (level === "postgraduate") {
-            optionFilters.push({ AND: [ { outcomeQualification: { not: null } }, { NOT: { outcomeQualification: { startsWith: "B", mode: "insensitive" } } } ] });
+            optionFilters.push({
+                AND: [
+                    { outcomeQualification: { not: null } },
+                    {
+                        NOT: {
+                            outcomeQualification: {
+                                startsWith: "B",
+                                mode: "insensitive",
+                            },
+                        },
+                    },
+                ],
+            });
         }
 
         if (optionFilters.length) {
-            const optionWhere = (optionFilters.length === 1) ? optionFilters[0] : { AND: optionFilters };
+            const optionWhere =
+                optionFilters.length === 1
+                    ? optionFilters[0]
+                    : { AND: optionFilters };
             andConditions.push({ options: { some: optionWhere } });
         }
 
@@ -77,7 +105,7 @@ router.get("/", async (req, res) => {
         // Safe orderBy: only allow a few keys; default to title
         const orderBy: any = {};
         const sortKey = sort || "title";
-        orderBy[sortKey] = (order === "desc") ? "desc" : "asc";
+        orderBy[sortKey] = order === "desc" ? "desc" : "asc";
 
         const data = await prisma.course.findMany({
             where,
@@ -87,7 +115,15 @@ router.get("/", async (req, res) => {
             orderBy,
         });
 
-        return res.status(200).json({ data, page: pageNum, limit: lim, total, totalPages: Math.ceil(total / lim) });
+        return res
+            .status(200)
+            .json({
+                data,
+                page: pageNum,
+                limit: lim,
+                total,
+                totalPages: Math.ceil(total / lim),
+            });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Failed to fetch courses" });
@@ -97,21 +133,147 @@ router.get("/", async (req, res) => {
 // GET /courses/filters - returns available filter options (universities and fee ranges)
 router.get("/filters", async (_req, res) => {
     try {
-        const universities = await prisma.university.findMany({ orderBy: { name: "asc" } });
+        const universities = await prisma.university.findMany({
+            orderBy: { name: "asc" },
+        });
 
-        const homeAgg = await prisma.courseOption.aggregate({ _min: { homeFee: true }, _max: { homeFee: true } });
-        const intlAgg = await prisma.courseOption.aggregate({ _min: { internationalFee: true }, _max: { internationalFee: true } });
+        const homeAgg = await prisma.courseOption.aggregate({
+            _min: { homeFee: true },
+            _max: { homeFee: true },
+        });
+        const intlAgg = await prisma.courseOption.aggregate({
+            _min: { internationalFee: true },
+            _max: { internationalFee: true },
+        });
 
         return res.status(200).json({
             universities,
             fees: {
-                home: { min: homeAgg._min.homeFee ?? null, max: homeAgg._max.homeFee ?? null },
-                international: { min: intlAgg._min.internationalFee ?? null, max: intlAgg._max.internationalFee ?? null },
+                home: {
+                    min: homeAgg._min.homeFee ?? null,
+                    max: homeAgg._max.homeFee ?? null,
+                },
+                international: {
+                    min: intlAgg._min.internationalFee ?? null,
+                    max: intlAgg._max.internationalFee ?? null,
+                },
             },
         });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Failed to fetch filters" });
+    }
+});
+
+// GET /courses/analytics
+router.get("/analytics", async (req, res) => {
+    try {
+        const {
+            q,
+            titleOnly,
+            universityIds,
+            year,
+            minFee,
+            maxFee,
+            feeType = "home",
+            level = "all",
+        } = req.query as Record<string, string>;
+
+        const andConditions: any[] = [];
+
+        if (q) {
+            const isTitleOnly = titleOnly === "true";
+            andConditions.push({
+                OR: [
+                    { title: { contains: q, mode: "insensitive" } },
+                    { ucasCourseId: { contains: q, mode: "insensitive" } },
+                    ...(isTitleOnly
+                        ? []
+                        : [{ summary: { contains: q, mode: "insensitive" } }]),
+                ],
+            });
+        }
+
+        let uniIdsArr: string[] | undefined;
+        if (universityIds)
+            uniIdsArr = universityIds
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+        if (uniIdsArr && uniIdsArr.length) {
+            andConditions.push({ universityId: { in: uniIdsArr } });
+        }
+
+        const optionFilters: any[] = [];
+        if (year) optionFilters.push({ year: parseInt(year, 10) });
+
+        const min =
+            minFee !== undefined && minFee !== ""
+                ? parseFloat(minFee as string)
+                : undefined;
+        const max =
+            maxFee !== undefined && maxFee !== ""
+                ? parseFloat(maxFee as string)
+                : undefined;
+        if (!isNaN(Number(min)) || !isNaN(Number(max))) {
+            const feeField =
+                feeType === "international" ? "internationalFee" : "homeFee";
+            const feeCond: any = {};
+            if (!isNaN(Number(min))) feeCond.gte = min;
+            if (!isNaN(Number(max))) feeCond.lte = max;
+            optionFilters.push({ [feeField]: feeCond });
+        }
+
+        if (level === "undergraduate") {
+            optionFilters.push({
+                outcomeQualification: { startsWith: "B", mode: "insensitive" },
+            });
+        } else if (level === "postgraduate") {
+            optionFilters.push({
+                AND: [
+                    { outcomeQualification: { not: null } },
+                    {
+                        NOT: {
+                            outcomeQualification: {
+                                startsWith: "B",
+                                mode: "insensitive",
+                            },
+                        },
+                    },
+                ],
+            });
+        }
+
+        if (optionFilters.length) {
+            const optionWhere =
+                optionFilters.length === 1
+                    ? optionFilters[0]
+                    : { AND: optionFilters };
+            andConditions.push({ options: { some: optionWhere } });
+        }
+
+        const where = andConditions.length ? { AND: andConditions } : {};
+
+        const data = await prisma.course.findMany({
+            where,
+            select: {
+                id: true,
+                title: true,
+                university: { select: { name: true } },
+                options: {
+                    select: {
+                        homeFee: true,
+                        internationalFee: true,
+                        outcomeQualification: true,
+                    },
+                },
+            },
+        });
+
+        return res.status(200).json({ data });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Failed to fetch analytics" });
     }
 });
 
@@ -133,7 +295,5 @@ router.get("/:id", async (req, res) => {
         return res.status(500).json({ error: "Failed to fetch course" });
     }
 });
-
-
 
 export default router;

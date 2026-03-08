@@ -58,29 +58,40 @@ export type Course = {
 export type CoursesResponse = Course[];
 
 export type CoursesFilters = {
-  q?: string;
-  universityId?: string;
-  year?: string;
-  studyMode?: string;
-  sort: string;
-  order: "asc" | "desc";
+    q?: string;
+    universityId?: string;
+    year?: string;
+    studyMode?: string;
+    sort: string;
+    order: "asc" | "desc";
 };
 
 export interface UniversityFilterOption {
-  id: string;
-  name: string;
+    id: string;
+    name: string;
 }
 
 export interface CourseFiltersResponse {
-  universities: UniversityFilterOption[];
-  fees: {
-    home: {
-      min: number | null;
-      max: number | null;
+    universities: UniversityFilterOption[];
+    fees: {
+        home: {
+            min: number | null;
+            max: number | null;
+        };
+        international: {
+            min: number | null;
+            max: number | null;
+        };
     };
-    international: {
-      min: number | null;
-      max: number | null;
-    };
-  };
+}
+
+export interface AnalyticsCourse {
+    id: string;
+    title: string;
+    university: { name: string };
+    options: {
+        homeFee: number | null;
+        internationalFee: number | null;
+        outcomeQualification: string | null;
+    }[];
 }
