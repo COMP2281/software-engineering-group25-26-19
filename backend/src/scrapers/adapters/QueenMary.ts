@@ -6,6 +6,7 @@ import type { Element } from 'domhandler';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -36,7 +37,7 @@ interface UgFeeSection extends ScrapedFees {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] QueenMary: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] QueenMary: ${msg}`);
 }
 
 export class QueenMaryAdapter extends GenericHtmlAdapter {

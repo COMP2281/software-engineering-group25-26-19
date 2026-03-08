@@ -4,6 +4,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
@@ -19,7 +20,7 @@ export class EdinburghAdapter extends GenericHtmlAdapter {
 
         // Check if it's a postgraduate course
         if (targetUrl.includes('postgraduate-taught') || targetUrl.includes('postgraduate-research')) {
-            if (DEBUG) console.log(`[DEBUG] Edinburgh: Intercepting PG course to find internal programme_code...`);
+            if (DEBUG) Logger.debug(`[DEBUG] Edinburgh: Intercepting PG course to find internal programme_code...`);
             
             try {
                 const response = await axios.get(courseUrl, { headers: HEADERS_BROWSER, timeout: 10000 });
@@ -37,11 +38,11 @@ export class EdinburghAdapter extends GenericHtmlAdapter {
                 });
 
                 if (foundFeeUrl) {
-                    if (DEBUG) console.log(`[DEBUG] Edinburgh: Fast-forwarding directly to fee page -> ${foundFeeUrl}`);
+                    if (DEBUG) Logger.debug(`[DEBUG] Edinburgh: Fast-forwarding directly to fee page -> ${foundFeeUrl}`);
                     targetUrl = foundFeeUrl;
                 }
             } catch (error) {
-                if (DEBUG) console.log(`[DEBUG] Edinburgh: Failed to intercept main page. ${error}`);
+                if (DEBUG) Logger.debug(`[DEBUG] Edinburgh: Failed to intercept main page. ${error}`);
             }
         }
 

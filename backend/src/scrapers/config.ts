@@ -36,10 +36,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
         strategy: "CUSTOM_HTML",
         adapterName: "BirminghamAdapter",
     },
-    "Cardiff University": {
-        strategy: "GENERIC_HTML",
-        adapterName: "GenericHtmlAdapter"
-    },
+    // "Cardiff University": {
+    //     strategy: "CUSTOM_HTML",
+    //     adapterName: "CardiffAdapter",
+    // },
     "The University of Edinburgh": {
         strategy: "CUSTOM_HTML",
         adapterName: "EdinburghAdapter"

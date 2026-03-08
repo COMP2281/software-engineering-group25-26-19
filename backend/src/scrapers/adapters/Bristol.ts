@@ -1,93 +1,65 @@
 // src/scrapers/adapters/Bristol.ts
 
-import axios from 'axios';
+import { GenericHtmlAdapter } from './GenericHtml';
+import { ScrapedFees, ScrapeContext } from '../interfaces';
 import * as cheerio from 'cheerio';
-import { IScraperAdapter, OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
-let puppeteer: any;
-try { puppeteer = require('puppeteer'); } catch (e) {}
+const DEBUG = true;
 
-const TIMEOUT = 30000;
-// const DEBUG = true;
-
-const HEADERS_BROWSER = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-};
-
-export class BristolAdapter implements IScraperAdapter {
+export class BristolAdapter extends GenericHtmlAdapter {
     
-    async scrapeCourse(courseUrl: string, contexts: ScrapeContext[]): Promise<OptionScrapeResult[]> {
-        const html = await this.fetchHtml(courseUrl);
-        if (!html) return [];
-
-        const $ = cheerio.load(html);
-        const pageText = $('body').text().replace(/\s+/g, ' ');
+    protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
+        if (DEBUG) Logger.debug(`[DEBUG] Bristol: Custom parsing and sanitizing...`);
         
-        const results: OptionScrapeResult[] = [];
+        // 1. Sanitize Trap Keywords
+        // Bristol uses "Fees and funding", so we mangle "funding" to prevent DOM deletion.
+        let cleanedHtml = html
+            .replace(/funding/gi, 'fnding')
+            .replace(/scholarships?/gi, 'scholrships')
+            .replace(/bursar(y|ies)/gi, 'brsaries');
 
-        for (const context of contexts) {
-            const mode = (context.studyMode || 'full-time').toLowerCase();
-            const isPartTime = mode.includes('part');
+        // 2. Custom Extraction Logic
+        // Note: The HTML has ALREADY been sanitized for study mode by GenericHtmlAdapter.
+        // Conflicting part-time/full-time fees have been erased from the text.
+        const $ = cheerio.load(cleanedHtml);
+        const text = $('body').text().replace(/\s+/g, ' ');
+        
+        let homeFee: number | null = null;
+        let intlFee: number | null = null;
 
-            // Define Regex based on Study Mode
-            // PG Example: "Home: full-time £19,500" vs "Home: part-time £9,750"
-            const modeString = isPartTime ? 'part-?time' : 'full-?time';
-            
-            // PG Regexes
-            const pgHomeRegex = new RegExp(`home:\\s*${modeString}[^£]{0,40}£\\s?([0-9]{1,3}(,[0-9]{3})*)`, 'i');
-            const pgIntlRegex = new RegExp(`overseas:\\s*${modeString}[^£]{0,40}£\\s?([0-9]{1,3}(,[0-9]{3})*)`, 'i');
+        // Forward-looking regexes (Label -> Price)
+        const homeFwd = text.match(/(?:home|uk)[^£]{0,60}£\s?([0-9]{1,3}(,[0-9]{3})*)/i);
+        const intlFwd = text.match(/(?:international|overseas)[^£]{0,60}£\s?([0-9]{1,3}(,[0-9]{3})*)/i);
 
-            // UG Regexes (Usually just one list, but we check anyway)
-            // "£9,535 per year, home students"
-            const ugHomeRegex = /£\s?([0-9]{1,3}(,[0-9]{3})*)[^£]{0,40}home/i;
-            const ugIntlRegex = /£\s?([0-9]{1,3}(,[0-9]{3})*)[^£]{0,40}international/i;
+        // Backward-looking regexes (Price -> Label) (For UG format: "£28,200 per year, international students")
+        const homeBwd = text.match(/£\s?([0-9]{1,3}(,[0-9]{3})*)[^£]{0,60}(?:home|uk)/i);
+        const intlBwd = text.match(/£\s?([0-9]{1,3}(,[0-9]{3})*)[^£]{0,60}(?:international|overseas)/i);
 
-            let fees: ScrapedFees = { homeFee: null, internationalFee: null };
+        // Assign Home Fee
+        if (homeFwd && homeFwd[1]) homeFee = parseInt(homeFwd[1].replace(/,/g, ''), 10);
+        else if (homeBwd && homeBwd[1]) homeFee = parseInt(homeBwd[1].replace(/,/g, ''), 10);
 
-            // Try PG Patterns first (Specific mode)
-            const pgHomeMatch = pageText.match(pgHomeRegex);
-            const pgIntlMatch = pageText.match(pgIntlRegex);
+        // Assign Intl Fee
+        if (intlFwd && intlFwd[1]) intlFee = parseInt(intlFwd[1].replace(/,/g, ''), 10);
+        else if (intlBwd && intlBwd[1]) intlFee = parseInt(intlBwd[1].replace(/,/g, ''), 10);
 
-            if (pgHomeMatch || pgIntlMatch) {
-                if (pgHomeMatch && pgHomeMatch[1]) fees.homeFee = parseInt(pgHomeMatch[1].replace(/,/g, ''), 10);
-                if (pgIntlMatch && pgIntlMatch[1]) fees.internationalFee = parseInt(pgIntlMatch[1].replace(/,/g, ''), 10);
-            } else {
-                // Try UG Patterns (Generic)
-                const ugHomeMatch = pageText.match(ugHomeRegex);
-                const ugIntlMatch = pageText.match(ugIntlRegex);
-                if (ugHomeMatch && ugHomeMatch[1]) fees.homeFee = parseInt(ugHomeMatch[1].replace(/,/g, ''), 10);
-                if (ugIntlMatch && ugIntlMatch[1]) fees.internationalFee = parseInt(ugIntlMatch[1].replace(/,/g, ''), 10);
-            }
+        // Filter out invalid numbers
+        if (homeFee && (homeFee < 1000 || homeFee > 80000)) homeFee = null;
+        if (intlFee && (intlFee < 4500 || intlFee > 80000)) intlFee = null;
 
-            results.push({
-                optionId: context.optionId,
-                ...fees
-            });
+        if (homeFee && intlFee) {
+            if (DEBUG) Logger.debug(`[DEBUG] Bristol: Extracted via custom regex -> Home: £${homeFee}, Intl: £${intlFee}`);
+            return { homeFee, internationalFee: intlFee };
         }
 
-        return results;
-    }
-
-    private async fetchHtml(url: string): Promise<string | null> {
-        try {
-            const response = await axios.get(url, { headers: HEADERS_BROWSER, timeout: 10000 });
-            if (response.status < 400) return response.data;
-        } catch (e) {}
-
-        if (puppeteer) {
-            let browser: any = null;
-            try {
-                browser = await puppeteer.launch({ headless: "new", args:['--no-sandbox'] });
-                const page = await browser.newPage();
-                await page.setUserAgent(HEADERS_BROWSER['User-Agent']);
-                await page.goto(url, { waitUntil: 'networkidle2', timeout: TIMEOUT });
-                return await page.content();
-            } catch (e) {
-            } finally {
-                if (browser) await browser.close();
-            }
-        }
-        return null;
+        // 3. Ultimate Fallback to Generic Parser
+        if (DEBUG) Logger.debug(`[DEBUG] Bristol: Missing some fees, falling back to generic parser.`);
+        const genericResult = await super.parseHtml(cleanedHtml, context, isPdf);
+        
+        return {
+            homeFee: homeFee || genericResult.homeFee,
+            internationalFee: intlFee || genericResult.internationalFee
+        };
     }
 }

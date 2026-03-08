@@ -3,13 +3,14 @@
 import { GenericHtmlAdapter } from './GenericHtml';
 import { ScrapeContext, ScrapedFees } from '../interfaces';
 import * as cheerio from 'cheerio';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
 export class LancasterAdapter extends GenericHtmlAdapter {
     
     protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
-        if (DEBUG) console.log(`[DEBUG] Lancaster: Custom parsing and sanitizing...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Lancaster: Custom parsing and sanitizing...`);
         
         // 1. Sanitize Trap Keywords
         let cleanedHtml = html

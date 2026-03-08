@@ -3,6 +3,7 @@
 import { GenericHtmlAdapter } from './GenericHtml';
 import { ScrapedFees, ScrapeContext } from '../interfaces';
 import * as cheerio from 'cheerio';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
@@ -10,7 +11,7 @@ export class ManchesterAdapter extends GenericHtmlAdapter {
     
     // UPDATED SIGNATURE: Accepts context
     protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
-        if (DEBUG) console.log(`[DEBUG] Manchester: Sanitizing trap keywords...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Manchester: Sanitizing trap keywords...`);
         
         let cleanedHtml = html
             .replace(/funding/gi, 'fnding')

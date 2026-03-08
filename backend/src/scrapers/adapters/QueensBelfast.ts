@@ -3,13 +3,14 @@
 import { GenericHtmlAdapter } from './GenericHtml';
 import { ScrapedFees, ScrapeContext } from '../interfaces';
 import * as cheerio from 'cheerio';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 
 export class QueensBelfastAdapter extends GenericHtmlAdapter {
     
     protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
-        if (DEBUG) console.log(`[DEBUG] Queen's Belfast: Custom parsing for GB fees and PGCerts...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Queen's Belfast: Custom parsing for GB fees and PGCerts...`);
         
         let cleanedHtml = html
             .replace(/funding/gi, 'fnding')
@@ -38,7 +39,7 @@ export class QueensBelfastAdapter extends GenericHtmlAdapter {
 
         // 3. Fallback to Generic Parser if we missed anything
         if (!homeFee || !intlFee) {
-            if (DEBUG) console.log(`[DEBUG] QUB: Missing some fees, falling back to generic parser.`);
+            if (DEBUG) Logger.debug(`[DEBUG] QUB: Missing some fees, falling back to generic parser.`);
             
             // Erase the NI and ROI fees from the HTML so Math.min() doesn't grab them.
             cleanedHtml = cleanedHtml
@@ -55,11 +56,11 @@ export class QueensBelfastAdapter extends GenericHtmlAdapter {
         // scraper grabbed the International fee twice because we erased the NI/ROI fees.
         // We discard the Home fee to be safe.
         if (homeFee && intlFee && homeFee >= intlFee) {
-            if (DEBUG) console.log(`[DEBUG] QUB: Sanity Check Failed - Home (£${homeFee}) >= Intl (£${intlFee}). Discarding Home fee.`);
+            if (DEBUG) Logger.debug(`[DEBUG] QUB: Sanity Check Failed - Home (£${homeFee}) >= Intl (£${intlFee}). Discarding Home fee.`);
             homeFee = null;
         }
 
-        if (DEBUG) console.log(`[DEBUG] QUB: Final Extracted -> GB Home: £${homeFee}, Intl: £${intlFee}`);
+        if (DEBUG) Logger.debug(`[DEBUG] QUB: Final Extracted -> GB Home: £${homeFee}, Intl: £${intlFee}`);
         
         return {
             homeFee: homeFee,

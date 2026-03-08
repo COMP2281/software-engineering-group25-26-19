@@ -6,6 +6,7 @@ import type { Element } from 'domhandler';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -44,7 +45,7 @@ interface SearchCandidate {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] StAndrews: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] StAndrews: ${msg}`);
 }
 
 export class StAndrewsAdapter extends GenericHtmlAdapter {

@@ -5,6 +5,7 @@ import * as cheerio from 'cheerio';
 import type { Cheerio, CheerioAPI } from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 import { IScraperAdapter, OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 let puppeteer: any;
 try {
@@ -16,7 +17,7 @@ try {
 const pdfParse = require('pdf-parse');
 
 const TIMEOUT = 30000;
-const DEBUG = true;
+// const DEBUG = true;
 const MIN_FEE = 4500;
 const MAX_FEE = 80000;
 
@@ -42,9 +43,9 @@ interface FeeContext {
     scotland: number[];
 }
 
-function debug(msg: string) {
-    if (DEBUG) console.log(`[DEBUG] ${msg}`);
-}
+// function debug(msg: string) {
+//     if (DEBUG) console.log(`[DEBUG] ${msg}`);
+// }
 
 export class GenericHtmlAdapter implements IScraperAdapter {
     
@@ -54,7 +55,7 @@ export class GenericHtmlAdapter implements IScraperAdapter {
 
         // 1. Fetch Content
         try {
-            debug(`Attempting Axios fetch: ${courseUrl}`);
+            Logger.debug(`Attempting Axios fetch: ${courseUrl}`);
             const response = await axios.get(courseUrl, {
                 headers: HEADERS_BROWSER,
                 timeout: 10000,
@@ -79,17 +80,17 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 const bodyText = $('body').text().trim();
                 if (bodyText.length < 500 && !rawHtml!.includes('£')) {
                     rawHtml = null;
-                    debug("Axios returned empty shell. Switching to Puppeteer...");
+                    Logger.debug("Axios returned empty shell. Switching to Puppeteer...");
                 }
             }
 
         } catch (error) {
-            debug(`Axios failed: ${error instanceof Error ? error.message : error}`);
+            Logger.debug(`Axios failed: ${error instanceof Error ? error.message : error}`);
         }
 
         // Puppeteer Fallback
         if (!rawHtml && !isPdf && puppeteer) {
-            debug("Falling back to Puppeteer (Headless Browser)...");
+            Logger.debug("Falling back to Puppeteer (Headless Browser)...");
             let browser: any = null;
             try {
                 browser = await puppeteer.launch({ 
@@ -109,10 +110,10 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 } catch (e) { /* ignore timeout */ }
 
                 rawHtml = await page.content();
-                debug("Puppeteer render complete.");
+                Logger.debug("Puppeteer render complete.");
 
             } catch (error) {
-                debug(`Puppeteer failed: ${error instanceof Error ? error.message : error}`);
+                Logger.debug(`Puppeteer failed: ${error instanceof Error ? error.message : error}`);
             } finally {
                 if (browser) {
                     try { await browser.close(); } catch (e) {}

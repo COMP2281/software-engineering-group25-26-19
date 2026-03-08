@@ -4,6 +4,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as stringSimilarity from 'string-similarity';
 import { IScraperAdapter, OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
+// import { log } from 'console';
 
 let puppeteer: any;
 try { puppeteer = require('puppeteer'); } catch (e) {}
@@ -28,6 +30,7 @@ interface UgBandState {
 
 interface PgCourseFee {
     rawName: string;
+    rowText: string; // NEW: Stores the full text of the row + nearest heading for study mode filtering
     homeFee: number | null;
     intlFee: number | null;
 }
@@ -45,35 +48,40 @@ export class BathAdapter implements IScraperAdapter {
 
     async scrapeCourse(courseUrl: string, contexts: ScrapeContext[]): Promise<OptionScrapeResult[]> {
         const level: StudyLevel = courseUrl.toLowerCase().includes('postgraduate') ? 'pg' : 'ug';
-        const results: OptionScrapeResult[] = [];
-
-        // We only need to fetch the page/bands ONCE per course, not per option.
-        // We use the title from the first context to determine the band/match.
-        const courseTitle = contexts[0]?.courseTitle || '';
-
-        let fees: ScrapedFees = { homeFee: null, internationalFee: null };
+        const results: OptionScrapeResult[] =[];
 
         if (level === 'ug') {
-            // Fetch page content for UG banding logic
+            // UG logic: Banding is universal for the course, so we fetch once and apply to all contexts
+            const courseTitle = contexts[0]?.courseTitle || '';
             const html = await this.fetchHtml(courseUrl);
+            let fees: ScrapedFees = { homeFee: null, internationalFee: null };
+            
             if (html) {
                 const $ = cheerio.load(html);
                 const pageText = $('body').text().toLowerCase().replace(/\s+/g, ' ');
                 const h1Text = $('h1').first().text().toLowerCase().trim();
                 fees = await this.handleUndergraduate(courseTitle, pageText, h1Text);
             }
-        } else {
-            // PG logic uses cached dictionary, no page fetch needed usually
-            fees = await this.handlePostgraduate(courseTitle);
-        }
 
-        // Map the found fees to ALL options provided in the context
-        for (const context of contexts) {
-            results.push({
-                optionId: context.optionId,
-                homeFee: fees.homeFee,
-                internationalFee: fees.internationalFee
-            });
+            for (const context of contexts) {
+                results.push({
+                    optionId: context.optionId,
+                    homeFee: fees.homeFee,
+                    internationalFee: fees.internationalFee
+                });
+            }
+        } else {
+            // PG logic: Fees differ by study mode, so we evaluate PER CONTEXT
+            if (!this.pgCache) await this.loadPgCentralFees();
+            
+            for (const context of contexts) {
+                const fees = await this.handlePostgraduate(context.courseTitle, context.studyMode || '');
+                results.push({
+                    optionId: context.optionId,
+                    homeFee: fees.homeFee,
+                    internationalFee: fees.internationalFee
+                });
+            }
         }
 
         return results;
@@ -91,20 +99,17 @@ export class BathAdapter implements IScraperAdapter {
         
         const context = `${title} ${h1Text} ${pageText.substring(0, 2000)}`;
 
-        // Band 2: Management & Economics
         if (/(management|business|accounting|finance|economics)/.test(title) || /(school of management|department of economics)/.test(context)) {
             targetBand = 'band2';
         } 
-        // Band 3: Science, Engineering, Health, Psychology
         else if (/(science|engineering|health|psychology|bioscience|chemistry|physics|mathematics|computer|architecture|pharmacy|pharmacology|aerospace|civil|mechanical|electrical)/.test(title) || /(faculty of science|faculty of engineering|department for health|department of psychology)/.test(context)) {
             targetBand = 'band3';
         } 
-        // Band 1: Humanities & Social Sciences
         else if (/(humanities|social science|language|politics|education|sociology|criminology|sport|policy|history|french|spanish|german)/.test(title) || /(faculty of humanities)/.test(context)) {
             targetBand = 'band1';
         }
 
-        if (DEBUG) console.log(`[DEBUG] UG Mapped DB Title "${dbCourseTitle}" (H1: "${h1Text}") to ${targetBand ? targetBand.toUpperCase() : 'UNKNOWN'}`);
+        if (DEBUG) Logger.debug(`[DEBUG] UG Mapped DB Title "${dbCourseTitle}" (H1: "${h1Text}") to ${targetBand ? targetBand.toUpperCase() : 'UNKNOWN'}`);
 
         return {
             homeFee: this.ugBands.home,
@@ -114,7 +119,7 @@ export class BathAdapter implements IScraperAdapter {
 
     private async loadUgCentralFees() {
         if (!this.urls.ug) return;
-        if (DEBUG) console.log(`[DEBUG] Lazy-loading UG central fees...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Lazy-loading UG central fees...`);
         
         const html = await this.fetchHtml(this.urls.ug);
         if (!html) return;
@@ -133,20 +138,43 @@ export class BathAdapter implements IScraperAdapter {
     // ==========================================
     // POSTGRADUATE LOGIC (Bulk HTML Tables)
     // ==========================================
-    private async handlePostgraduate(dbCourseTitle: string): Promise<ScrapedFees> {
-        if (!this.pgCache) await this.loadPgCentralFees();
+    private async handlePostgraduate(dbCourseTitle: string, studyMode: string): Promise<ScrapedFees> {
         if (!this.pgCache || this.pgCache.length === 0) return { homeFee: null, internationalFee: null };
 
+        const mode = studyMode.toLowerCase();
+        const isPartTime = mode.includes('part');
+        const isFullTime = mode.includes('full');
+
+        // 1. Filter the cache based on the requested study mode
+        let validCache = this.pgCache.filter(c => {
+            const rowStr = c.rowText;
+            if (isPartTime) {
+                return /part-?time/i.test(rowStr);
+            } else if (isFullTime) {
+                // If looking for full-time, it should either explicitly say full-time OR not mention part-time (default)
+                return /full-?time/i.test(rowStr) || !/part-?time/i.test(rowStr);
+            }
+            return true;
+        });
+
+        // Fallback: If filtering leaves us with nothing, search the whole cache
+        if (validCache.length === 0) {
+            validCache = this.pgCache;
+        }
+
+        // 2. Normalize DB title for better matching
         const normalizedTitle = dbCourseTitle.toLowerCase().replace(/\b(msc|ma|mba|mres|pgdip|pgcert)\b/gi, '').replace(/[(),\-&]/g, ' ').replace(/\s+/g, ' ').trim();
 
-        const cacheNames = this.pgCache.map(c => c.rawName);
+        const cacheNames = validCache.map(c => c.rawName);
+        if (cacheNames.length === 0) return { homeFee: null, internationalFee: null };
+
         const matchResult = stringSimilarity.findBestMatch(normalizedTitle, cacheNames);
         const bestMatch = matchResult.bestMatch;
 
         if (bestMatch.rating > 0.55) {
-            const target = this.pgCache.find(c => c.rawName === bestMatch.target);
+            const target = validCache.find(c => c.rawName === bestMatch.target);
             if (target) {
-                if (DEBUG) console.log(`[DEBUG] PG Fuzzy Matched: "${dbCourseTitle}" -> "${target.rawName}" (Score: ${bestMatch.rating.toFixed(2)})`);
+                if (DEBUG) Logger.debug(`[DEBUG] PG Fuzzy Matched: "${dbCourseTitle}" (${studyMode}) -> "${target.rawName}" (Score: ${bestMatch.rating.toFixed(2)})`);
                 return {
                     homeFee: target.homeFee,
                     internationalFee: target.intlFee
@@ -154,15 +182,15 @@ export class BathAdapter implements IScraperAdapter {
             }
         }
 
-        if (DEBUG) console.log(`[DEBUG] PG Match Failed for "${dbCourseTitle}". Best guess: "${bestMatch.target}" (Score: ${bestMatch.rating.toFixed(2)})`);
+        if (DEBUG) Logger.debug(`[DEBUG] PG Match Failed for "${dbCourseTitle}" (${studyMode}). Best guess: "${bestMatch.target}" (Score: ${bestMatch.rating.toFixed(2)})`);
         return { homeFee: null, internationalFee: null };
     }
 
     private async loadPgCentralFees() {
         if (!this.urls.pg || this.urls.pg.length === 0) return;
-        if (DEBUG) console.log(`[DEBUG] Lazy-loading PG central fees from ${this.urls.pg.length} pages...`);
+        if (DEBUG) Logger.debug(`[DEBUG] Lazy-loading PG central fees from ${this.urls.pg.length} pages...`);
         
-        this.pgCache = [];
+        this.pgCache =[];
 
         for (const url of this.urls.pg) {
             const html = await this.fetchHtml(url);
@@ -171,12 +199,18 @@ export class BathAdapter implements IScraperAdapter {
             const $ = cheerio.load(html);
             
             $('table').each((_, table) => {
+                // Grab the nearest heading above the table in case it says "Part-time courses"
+                const prevHeading = $(table).prevAll('h2, h3, h4').first().text().toLowerCase();
+
                 $(table).find('tr').each((_, tr) => {
                     const cells = $(tr).find('td');
                     if (cells.length >= 2) {
                         const rawName = $(cells[0]).text().toLowerCase().replace(/\b(msc|ma|mba|mres|pgdip|pgcert)\b/gi, '').replace(/[(),\-&]/g, ' ').replace(/\s+/g, ' ').trim();
                         
-                        const fees: number[] = [];
+                        // Combine heading and row text to capture study mode context
+                        const rowText = `${prevHeading} ${$(tr).text().toLowerCase().replace(/\s+/g, ' ')}`;
+
+                        const fees: number[] =[];
                         cells.each((i, td) => {
                             if (i === 0) return; 
                             const price = this.extractPriceFromSimpleString($(td).text());
@@ -188,13 +222,13 @@ export class BathAdapter implements IScraperAdapter {
                             const homeCandidates = fees.filter(f => f < intlFee);
                             const homeFee = homeCandidates.length > 0 ? Math.min(...homeCandidates) : (fees.length === 1 ? intlFee : null);
 
-                            this.pgCache!.push({ rawName, homeFee, intlFee });
+                            this.pgCache!.push({ rawName, rowText, homeFee, intlFee });
                         }
                     }
                 });
             });
         }
-        if (DEBUG) console.log(`[DEBUG] Successfully cached ${this.pgCache.length} PG courses into memory.`);
+        if (DEBUG) Logger.debug(`[DEBUG] Successfully cached ${this.pgCache.length} PG courses into memory.`);
     }
 
     // ==========================================

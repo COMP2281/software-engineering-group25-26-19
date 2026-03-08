@@ -4,6 +4,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 15000;
@@ -23,7 +24,7 @@ interface FeeYearData {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] Sheffield: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Sheffield: ${msg}`);
 }
 
 export class SheffieldAdapter extends GenericHtmlAdapter {

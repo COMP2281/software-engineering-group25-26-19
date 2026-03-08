@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import * as stringSimilarity from 'string-similarity';
 import { GenericHtmlAdapter } from './GenericHtml';
 import { OptionScrapeResult, ScrapeContext, ScrapedFees } from '../interfaces';
+import { Logger } from '../logger';
 
 const DEBUG = true;
 const FETCH_TIMEOUT_MS = 20000;
@@ -42,7 +43,7 @@ interface WarwickUgRow {
 }
 
 function debug(msg: string): void {
-    if (DEBUG) console.log(`[DEBUG] Warwick: ${msg}`);
+    if (DEBUG) Logger.debug(`[DEBUG] Warwick: ${msg}`);
 }
 
 export class WarwickAdapter extends GenericHtmlAdapter {
