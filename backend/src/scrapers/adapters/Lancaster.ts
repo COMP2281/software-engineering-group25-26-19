@@ -1,14 +1,14 @@
 // src/scrapers/adapters/Lancaster.ts
 
 import { GenericHtmlAdapter } from './GenericHtml';
-import { ScrapedFees } from '../interfaces';
+import { ScrapeContext, ScrapedFees } from '../interfaces';
 import * as cheerio from 'cheerio';
 
 const DEBUG = true;
 
 export class LancasterAdapter extends GenericHtmlAdapter {
     
-    protected override async parseHtml(html: string, isPdf: boolean): Promise<ScrapedFees> {
+    protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
         if (DEBUG) console.log(`[DEBUG] Lancaster: Custom parsing and sanitizing...`);
         
         // 1. Sanitize Trap Keywords
@@ -52,7 +52,7 @@ export class LancasterAdapter extends GenericHtmlAdapter {
         }
 
         // 3. Fallback to Generic Parser
-        const genericResult = await super.parseHtml(cleanedHtml, isPdf);
+        const genericResult = await super.parseHtml(cleanedHtml, context, isPdf);
         
         return {
             homeFee: homeFee || genericResult.homeFee,

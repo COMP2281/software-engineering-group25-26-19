@@ -17,6 +17,7 @@ import { LiverpoolAdapter } from './adapters/Liverpool';
 import { LoughboroughAdapter } from './adapters/Loughborough';
 import { ManchesterAdapter } from './adapters/Manchester';
 import { NewcastleAdapter } from './adapters/Newcastle';
+import { OxfordAdapter } from './adapters/Oxford';
 
 function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
     switch (config.adapterName) {
@@ -33,6 +34,7 @@ function getAdapter(config: UniversityScraperConfig): IScraperAdapter {
         case 'LoughboroughAdapter': return new LoughboroughAdapter();
         case 'ManchesterAdapter': return new ManchesterAdapter();
         case 'NewcastleAdapter': return new NewcastleAdapter();
+        case 'OxfordAdapter': return new OxfordAdapter();
         case 'GenericHtmlAdapter': return new GenericHtmlAdapter();
         default:
             console.warn(`[WARNING] Adapter ${config.adapterName} not implemented yet. Falling back to Generic.`);
@@ -225,12 +227,15 @@ async function runScrapingManager() {
                     const results: OptionScrapeResult[] = await adapter.scrapeCourse(course.courseUrl, contexts);
 
                     for (const res of results) {
-                        if (res.homeFee || res.internationalFee) {
+                        const hasHomeFee = res.homeFee !== null && res.homeFee !== undefined;
+                        const hasIntlFee = res.internationalFee !== null && res.internationalFee !== undefined;
+
+                        if (hasHomeFee || hasIntlFee) {
                             console.log(`   > Option [${res.optionId}]: Home £${res.homeFee}, Intl £${res.internationalFee}`);
                             
                             const updateData: any = {};
-                            if (res.homeFee) updateData.homeFee = res.homeFee;
-                            if (res.internationalFee) updateData.internationalFee = res.internationalFee;
+                            if (hasHomeFee) updateData.homeFee = res.homeFee;
+                            if (hasIntlFee) updateData.internationalFee = res.internationalFee;
 
                             await prisma.courseOption.update({
                                 where: { id: res.optionId },

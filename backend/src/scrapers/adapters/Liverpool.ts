@@ -1,13 +1,13 @@
 // src/scrapers/adapters/Liverpool.ts
 
 import { GenericHtmlAdapter } from './GenericHtml';
-import { ScrapedFees } from '../interfaces';
+import { ScrapeContext, ScrapedFees } from '../interfaces';
 
 const DEBUG = true;
 
 export class LiverpoolAdapter extends GenericHtmlAdapter {
     
-    protected override async parseHtml(html: string, isPdf: boolean): Promise<ScrapedFees> {
+    protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
         if (DEBUG) console.log(`[DEBUG] Liverpool: Sanitizing trap keywords...`);
         
         // Only sanitize traps. Study mode conflicts are handled by GenericHtmlAdapter before this is called.
@@ -16,6 +16,6 @@ export class LiverpoolAdapter extends GenericHtmlAdapter {
             .replace(/scholarships?/gi, 'scholrships')
             .replace(/bursar(y|ies)/gi, 'brsaries');
 
-        return super.parseHtml(cleanedHtml, isPdf);
+        return super.parseHtml(cleanedHtml, context, isPdf);
     }
 }

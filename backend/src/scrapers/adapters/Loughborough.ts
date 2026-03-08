@@ -1,13 +1,13 @@
 // src/scrapers/adapters/Loughborough.ts
 
 import { GenericHtmlAdapter } from './GenericHtml';
-import { ScrapedFees } from '../interfaces';
+import { ScrapeContext, ScrapedFees } from '../interfaces';
 
 const DEBUG = true;
 
 export class LoughboroughAdapter extends GenericHtmlAdapter {
     
-    protected override async parseHtml(html: string, isPdf: boolean): Promise<ScrapedFees> {
+    protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
         if (DEBUG) console.log(`[DEBUG] Loughborough: Sanitizing trap keywords...`);
         
         let cleanedHtml = html
@@ -17,6 +17,6 @@ export class LoughboroughAdapter extends GenericHtmlAdapter {
             .replace(/financial support/gi, 'fin support')
             .replace(/additional costs?/gi, 'extra expenses');
 
-        return super.parseHtml(cleanedHtml, isPdf);
+        return super.parseHtml(cleanedHtml, context, isPdf);
     }
 }

@@ -1,14 +1,14 @@
 // src/scrapers/adapters/Newcastle.ts
 
 import { GenericHtmlAdapter } from './GenericHtml';
-import { ScrapedFees } from '../interfaces';
+import { ScrapeContext, ScrapedFees } from '../interfaces';
 import * as cheerio from 'cheerio';
 
 const DEBUG = true;
 
 export class NewcastleAdapter extends GenericHtmlAdapter {
     
-    protected override async parseHtml(html: string, isPdf: boolean): Promise<ScrapedFees> {
+    protected override async parseHtml(html: string, context: ScrapeContext, isPdf: boolean): Promise<ScrapedFees> {
         if (DEBUG) console.log(`[DEBUG] Newcastle: Sanitizing trap keywords...`);
         
         let cleanedHtml = html
@@ -39,7 +39,7 @@ export class NewcastleAdapter extends GenericHtmlAdapter {
             return { homeFee, internationalFee: intlFee };
         }
 
-        const genericResult = await super.parseHtml(cleanedHtml, isPdf);
+        const genericResult = await super.parseHtml(cleanedHtml, context, isPdf);
         
         return {
             homeFee: homeFee || genericResult.homeFee,

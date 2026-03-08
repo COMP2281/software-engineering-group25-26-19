@@ -79,5 +79,9 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
     "Newcastle University": {
         strategy: "CUSTOM_HTML",
         adapterName: "NewcastleAdapter"
+    },
+    "University of Oxford": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "OxfordAdapter"
     }
 };
