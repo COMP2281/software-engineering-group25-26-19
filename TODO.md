@@ -4,9 +4,6 @@
 - [ ] Add proper error handling (if not already there). I.e. skip a certain course/university if it is causing too many issues and fails to scrape multiple times. (Keep count of # of failed scrapes on each courseoption in the DB, do not scrape if count exceeds a certain threshold)
 - [ ] Add checks for whether there is already a scrape running and if so, don't start a new one. Look in "Scrape" table, if most recent entry has status "pending" then don't start.
 
-- [ ] Apply filters from routes/courses.ts to scraper/manager.ts as parameters that control scraping
-- [ ] Make proper study mode distinguishing. Schema: make study mode mandatory and default to full time, may need to do so for duration too
-
 ## Visualisation
 
 - [ ] Create routes for fetching the 2 courses being compared
