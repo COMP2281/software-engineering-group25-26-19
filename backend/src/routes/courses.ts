@@ -115,15 +115,13 @@ router.get("/", async (req, res) => {
             orderBy,
         });
 
-        return res
-            .status(200)
-            .json({
-                data,
-                page: pageNum,
-                limit: lim,
-                total,
-                totalPages: Math.ceil(total / lim),
-            });
+        return res.status(200).json({
+            data,
+            page: pageNum,
+            limit: lim,
+            total,
+            totalPages: Math.ceil(total / lim),
+        });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Failed to fetch courses" });
@@ -177,7 +175,17 @@ router.get("/:id", async (req, res) => {
 
         if (!course) return res.status(404).json({ error: "Course not found" });
 
-        return res.status(200).json({ data: course });
+        const feeHistory = course.options
+            .map((opt) => ({
+                year: opt.year,
+                homeFee: opt.homeFee,
+                internationalFee: opt.internationalFee,
+                studyMode: opt.studyMode,
+                duration: opt.duration,
+            }))
+            .sort((a, b) => a.year - b.year);
+
+        return res.status(200).json({ data: course, feeHistory });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: "Failed to fetch course" });
