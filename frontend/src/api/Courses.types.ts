@@ -85,3 +85,15 @@ export interface CourseFiltersResponse {
     };
 }
 
+export type FeeHistoryItem = {
+    year: number;
+    homeFee: number | null;
+    internationalFee: number | null;
+    studyMode?: string | null;
+    duration?: string | null;
+};
+
+export type CourseDetailsResponse = {
+    data: Course;
+    feeHistory: FeeHistoryItem[];
+};

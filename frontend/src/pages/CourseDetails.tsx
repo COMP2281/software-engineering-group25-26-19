@@ -1,9 +1,23 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCourseById } from "../api/Courses.api";
-import type { Course } from "../api/Courses.types";
+import type {
+  Course,
+  CourseFiltersResponse,
+  CourseDetailsResponse,
+} from "../api/Courses.types";
 import "./CourseDetails.css";
 import { useNavigate } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 
 export default function CourseDetails() {
   const { id } = useParams();
@@ -22,8 +36,9 @@ export default function CourseDetails() {
 
       try {
         const res = await getCourseById(id);
+        console.log(res);
         setCourse(res.data);
-        console.log(res.data);
+        console.log(res.feeHistory);
       } catch (err: unknown) {
         if (err instanceof Error && err.message.includes("404")) {
           setCourse(null);
@@ -48,76 +63,87 @@ export default function CourseDetails() {
 
   if (!course) {
     return (
-        <main className="mainContent centeredState">
-          <h2>Course Not Found</h2>
-          <p>The course you are looking for does not exist.</p>
-        </main>
+      <main className="mainContent centeredState">
+        <h2>Course Not Found</h2>
+        <p>The course you are looking for does not exist.</p>
+      </main>
     );
   }
 
   return (
-      <main
-        className="mainContent courseDetails"
-        style={{ paddingRight: 0, paddingTop: 0 }}
-      >
-        <header className="courseHero">
-          <div className="heroText">
-            <button className="backButton" onClick={() => navigate(-1)}>
-              <i className="bi bi-arrow-left"></i>
-              Back to Courses
-            </button>
+    <main
+      className="mainContent courseDetails"
+      style={{ paddingRight: 0, paddingTop: 0 }}
+    >
+      <header className="courseHero">
+        <div className="heroText">
+          <button className="backButton" onClick={() => navigate(-1)}>
+            <i className="bi bi-arrow-left"></i>
+            Back to Courses
+          </button>
 
-            <h1 className="courseTitle">
-              {course.title} {course.applicationCode && "·"}{" "}
-              {course.applicationCode}
-            </h1>
-            <p className="courseSubtitle">{course.university?.name}</p>
+          <h1 className="courseTitle">
+            {course.title} {course.applicationCode && "·"}{" "}
+            {course.applicationCode}
+          </h1>
+          <p className="courseSubtitle">{course.university?.name}</p>
+        </div>
+
+        {course.university?.logoUrl && (
+          <div className="heroLogoPanel">
+            <img
+              src={course.university.logoUrl}
+              alt={course.university?.name}
+              className="universityLogo"
+            />
           </div>
+        )}
+      </header>
 
-          {course.university?.logoUrl && (
-            <div className="heroLogoPanel">
-              <img
-                src={course.university.logoUrl}
-                alt={course.university?.name}
-                className="universityLogo"
-              />
+      <div style={{ paddingRight: 28 }}>
+        <section className="contentSection summarySection overviewPanel">
+          <h2 className="sectionTitle">Overview</h2>
+
+          <div className="summaryContainer">
+            <div className="summaryText">
+              {course.summary?.split("\n").map((paragraph, i) => {
+                if (!paragraph.trim()) return null;
+
+                const formatted = paragraph.replace(
+                  /\*\*(.*?)\*\*/g,
+                  "<strong>$1</strong>",
+                );
+
+                return (
+                  <p key={i} dangerouslySetInnerHTML={{ __html: formatted }} />
+                );
+              })}
             </div>
-          )}
-        </header>
+          </div>
+        </section>
 
-        <div style={{ paddingRight: 28 }}>
-          <section className="contentSection summarySection overviewPanel">
-            <h2 className="sectionTitle">Overview</h2>
+        <section
+          className="contentSection optionSection overviewPanel"
+          style={{ marginTop: 24 }}
+        >
+          <h2 className="sectionTitle">Available Options</h2>
 
-            <div className="summaryContainer">
-              <div className="summaryText">
-                {course.summary?.split("\n").map((paragraph, i) => {
-                  if (!paragraph.trim()) return null;
-
-                  const formatted = paragraph.replace(
-                    /\*\*(.*?)\*\*/g,
-                    "<strong>$1</strong>",
-                  );
-
-                  return (
-                    <p
-                      key={i}
-                      dangerouslySetInnerHTML={{ __html: formatted }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="contentSection optionSection overviewPanel"
-            style={{ marginTop: 24 }}
-          >
-            <h2 className="sectionTitle">Available Options</h2>
-
-            <div className="optionsGrid">
-              {course.options.map((opt) => (
+          <div className="optionsGrid">
+            {course.options.map((opt) => {
+              const history = course.options
+                .filter(
+                  (o) =>
+                    o.studyMode === opt.studyMode &&
+                    o.outcomeQualification === opt.outcomeQualification &&
+                    (o.homeFee !== null || o.internationalFee !== null),
+                )
+                .map((o) => ({
+                  year: o.year,
+                  homeFee: o.homeFee,
+                  internationalFee: o.internationalFee,
+                }))
+                .sort((a, b) => a.year - b.year);
+              return (
                 <div key={opt.id} className="optionCard">
                   <div className="optionHeader">
                     {opt.outcomeQualification} · {opt.studyMode}
@@ -149,11 +175,42 @@ export default function CourseDetails() {
                       <strong>£{opt.internationalFee?.toLocaleString()}</strong>
                     </div>
                   </div>
+
+                  {history.length > 0 && (
+                    <div style={{ width: "100%", height: 180, marginTop: 16 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={history}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="year" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+
+                          <Line
+                            type="monotone"
+                            dataKey="homeFee"
+                            stroke="#68246d"
+                            strokeWidth={2}
+                            name="Home Fees"
+                          />
+
+                          <Line
+                            type="monotone"
+                            dataKey="internationalFee"
+                            stroke="#c9a3cc"
+                            strokeWidth={2}
+                            name="International Fees"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

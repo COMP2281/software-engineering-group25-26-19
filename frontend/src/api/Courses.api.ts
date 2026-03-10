@@ -1,4 +1,4 @@
-import type { Course, CourseFiltersResponse } from "./Courses.types";
+import type { Course, CourseFiltersResponse, CourseDetailsResponse } from "./Courses.types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const res = await fetch(url, options);
@@ -29,10 +29,6 @@ export type PagedCoursesResponse = {
     totalPages: number;
     page: number;
     pageSize: number;
-};
-
-export type CourseDetailsResponse = {
-    data: Course;
 };
 
 export async function getCourses(
