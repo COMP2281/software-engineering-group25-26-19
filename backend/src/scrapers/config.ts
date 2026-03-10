@@ -60,6 +60,10 @@ export const ScraperConfig: Record<string, UniversityScraperConfig> = {
             ugIntl: "https://www.gla.ac.uk/undergraduate/fees/intlfees/"
         }
     },
+    "Imperial College London": {
+        strategy: "CUSTOM_HTML",
+        adapterName: "ImperialAdapter"
+    },
     "Lancaster University": {
         strategy: "CUSTOM_HTML",
         adapterName: "LancasterAdapter"
