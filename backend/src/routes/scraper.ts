@@ -115,4 +115,12 @@ router.post("/stop", (_req: Request, res: Response) => {
     }
 });
 
+export const stopScraperProcess = () => {
+    if (scraperProcess) {
+        console.log("Stopping active scraper process...");
+        scraperProcess.kill("SIGTERM");
+        scraperProcess = null;
+    }
+};
+
 export default router;
