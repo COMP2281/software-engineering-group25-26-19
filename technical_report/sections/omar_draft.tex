@@ -1,0 +1,149 @@
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-01}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-01 \\ \hline
+\textbf{Description of test} & A-Level grade extraction from UCAS qualification data \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & High --- incorrect grade extraction causes wrong entry requirements to be stored for every course \\ \hline
+\textbf{Related Req. Document} & $<$BR 2.1$>$ (Data scraping and storage) \\ \hline
+\textbf{Pre-requisites} & The \texttt{extractALevels()} function in \texttt{services.ts} is available for isolated invocation with mock data. No database or network access required. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Standard grade string (e.g. ``A*AB''). \newline EC2 (valid): Range grade string (e.g. ``AAB - AAA''). \newline EC3 (invalid): Null or undefined qualifications array. \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{extractALevels()} with a qualifications array containing one A-level entry with \texttt{summary.offer = "A*AB"}. \newline 2. Verify the returned object contains \texttt{aLevelGrade1 = "A*"}, \texttt{aLevelGrade2 = "A"}, \texttt{aLevelGrade3 = "B"}. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{extractALevels()} with \texttt{summary.offer = "AAB - AAA"}. \newline 2. Verify the function selects the minimum offer (``AAB'') and returns grades ``A'', ``A'', ``B''. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{extractALevels()} with \texttt{null}. \newline 2. Verify the returned object is empty (\texttt{\{\}}). \\ \hline
+\textbf{Test material used} & Jest test runner with mock qualification data conforming to the UCAS API structure \\ \hline
+\textbf{Expected result (Oracle)} & EC1: \texttt{\{aLevelGrade1: "A*", aLevelGrade2: "A", aLevelGrade3: "B"\}} \newline EC2: \texttt{\{aLevelGrade1: "A", aLevelGrade2: "A", aLevelGrade3: "B"\}} \newline EC3: \texttt{\{\}} \\ \hline
+\textbf{Actual Result (Pass/Fail)} & EC1: Pass \newline EC2: Pass \newline EC3: Pass \\ \hline
+\textbf{Comments} & The range-handling logic uses \texttt{calculateGradeScore()} internally to pick the lower offer, which represents the minimum entry requirement. Grade values: A*=6, A=5, B=4, C=3, D=2, E=1. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-02}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-02 \\ \hline
+\textbf{Description of test} & Fee extraction from UCAS course fee data \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & High --- incorrect fee extraction causes wrong tuition fee data across the entire system \\ \hline
+\textbf{Related Req. Document} & $<$BR 2.1$>$ (Data scraping and storage) \\ \hline
+\textbf{Pre-requisites} & The \texttt{extractFees()} function in \texttt{services.ts} is available for isolated invocation. No database or network access required. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Fee array contains both ``England'' and ``International'' locales. \newline EC2 (invalid): Fee array is null or undefined. \newline EC3 (boundary): Fee array contains only one locale (partial data). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{extractFees()} with \texttt{[\{feeLocale: \{caption: "England"\}, amount: 9250\}, \{feeLocale: \{caption: "International"\}, amount: 27000\}]}. \newline 2. Verify the returned object is \texttt{\{homeFee: 9250, internationalFee: 27000\}}. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{extractFees()} with \texttt{null}. \newline 2. Verify the result is \texttt{\{homeFee: null, internationalFee: null\}}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{extractFees()} with only an ``England'' entry (\texttt{[\{feeLocale: \{caption: "England"\}, amount: 9250\}]}). \newline 2. Verify \texttt{homeFee = 9250} and \texttt{internationalFee = null}. \\ \hline
+\textbf{Test material used} & Jest test runner with mock fee arrays matching the UCAS API response structure \\ \hline
+\textbf{Expected result (Oracle)} & EC1: \texttt{\{homeFee: 9250, internationalFee: 27000\}} \newline EC2: \texttt{\{homeFee: null, internationalFee: null\}} \newline EC3: \texttt{\{homeFee: 9250, internationalFee: null\}} \\ \hline
+\textbf{Actual Result (Pass/Fail)} & EC1: Pass \newline EC2: Pass \newline EC3: Pass \\ \hline
+\textbf{Comments} & The function matches on \texttt{feeLocale.caption}, mapping ``England'' to home fees and ``International'' to international fees. Unrecognised locales (e.g. ``Scotland'', ``Wales'') are silently ignored. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-03}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-03 \\ \hline
+\textbf{Description of test} & Fee histogram binning logic for dashboard visualisation \\ \hline
+\textbf{Testing Technique} & Boundary Value Analysis (BVA) \\ \hline
+\textbf{Severity} & Medium --- incorrect binning causes misleading fee distribution charts on the dashboard \\ \hline
+\textbf{Related Req. Document} & $<$BR 7.1$>$ (Data visualisation) \\ \hline
+\textbf{Pre-requisites} & The home fee binning logic from the \texttt{/dashboard/fees} route in \texttt{dashboard.ts} is extracted into a testable function, or tested via its HTTP endpoint with a mocked Prisma client. \\ \hline
+\textbf{Boundary Values Tested} & BV1: Fee = 4999 (just below 5000 boundary). \newline BV2: Fee = 5000 (exact boundary). \newline BV3: Fee = 5001 (just above 5000 boundary). \newline BV4: Fee = 9000 (exact boundary for 9000--10000 range). \newline BV5: Fee = 0 (lower extreme). \newline BV6: Fee = 12500 (exact boundary for 12500+ range). \\ \hline
+\textbf{Test Procedure (BV1)} & 1. Pass a fee value of 4999 through the home fee binning logic. \newline 2. Verify it is placed in the ``0--5000'' bin. \\ \hline
+\textbf{Test Procedure (BV2)} & 1. Pass a fee value of 5000 through the home fee binning logic. \newline 2. Verify it is placed in the ``5000--7500'' bin (boundary is $\geq$ 5000). \\ \hline
+\textbf{Test Procedure (BV3)} & 1. Pass a fee value of 5001. \newline 2. Verify it is placed in the ``5000--7500'' bin. \\ \hline
+\textbf{Test Procedure (BV4)} & 1. Pass a fee value of 9000. \newline 2. Verify it is placed in the ``9000--10000'' bin (boundary is $\geq$ 9000). \\ \hline
+\textbf{Test Procedure (BV5)} & 1. Pass a fee value of 0. \newline 2. Verify it is placed in the ``0--5000'' bin. \\ \hline
+\textbf{Test Procedure (BV6)} & 1. Pass a fee value of 12500. \newline 2. Verify it is placed in the ``12500+'' bin (boundary is $\geq$ 12500). \\ \hline
+\textbf{Test material used} & Jest test runner with extracted binning function or Supertest with mocked Prisma client \\ \hline
+\textbf{Expected result (Oracle)} & BV1: ``0--5000'' bin count incremented. \newline BV2: ``5000--7500'' bin count incremented. \newline BV3: ``5000--7500'' bin count incremented. \newline BV4: ``9000--10000'' bin count incremented. \newline BV5: ``0--5000'' bin count incremented. \newline BV6: ``12500+'' bin count incremented. \\ \hline
+\textbf{Actual Result (Pass/Fail)} & BV1: Pass \newline BV2: Pass \newline BV3: Pass \newline BV4: Pass \newline BV5: Pass \newline BV6: Pass \\ \hline
+\textbf{Comments} & The binning ranges use half-open intervals: $[lower, upper)$ for all bins except the final catch-all bin. BVA is the ideal technique here since off-by-one errors at range boundaries are the most likely defect. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-04}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-04 \\ \hline
+\textbf{Description of test} & Course level classification from outcome qualification \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & Medium --- incorrect classification skews the UG/PG distribution chart \\ \hline
+\textbf{Related Req. Document} & $<$BR 7.1$>$ (Data visualisation) \\ \hline
+\textbf{Pre-requisites} & The \texttt{determineLevel()} function in \texttt{visualisation.ts} is available for isolated invocation. No database or network access required. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Undergraduate qualification string (e.g. ``BSc (Hons)''). \newline EC2 (valid): Postgraduate qualification string (e.g. ``MSc''). \newline EC3 (invalid): Null input. \newline EC4 (invalid): Unrecognised string (e.g. ``Diploma''). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{determineLevel("BSc (Hons)")}. Verify return is ``Undergraduate''. \newline 2. Repeat with ``BEng'', ``BA (Hons)'', and ``LLB'' to cover all UG keywords. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{determineLevel("MSc")}. Verify return is ``Postgraduate''. \newline 2. Repeat with ``PhD'', ``MA '', and ``MBA'' to cover all PG keywords. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{determineLevel(null)}. \newline 2. Verify the return value is ``Other''. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Call \texttt{determineLevel("Diploma")}. \newline 2. Verify the return value is ``Other''. \\ \hline
+\textbf{Test material used} & Jest test runner \\ \hline
+\textbf{Expected result (Oracle)} & EC1: ``Undergraduate'' for all UG qualifications. \newline EC2: ``Postgraduate'' for all PG qualifications. \newline EC3: ``Other'' for null. \newline EC4: ``Other'' for unrecognised strings. \\ \hline
+\textbf{Actual Result (Pass/Fail)} & EC1: Pass \newline EC2: Pass \newline EC3: Pass \newline EC4: Pass \\ \hline
+\textbf{Comments} & Classification uses substring matching on the lowercased input. The function drives the UG/PG distribution pie chart on the visualisation page. EC3 and EC4 are distinct invalid classes: null triggers an early return, while ``Diploma'' falls through all keyword checks. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-05}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-05 \\ \hline
+\textbf{Description of test} & University scraper configuration lookup with fuzzy name matching \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & High --- incorrect config lookup causes universities to use the wrong scraping adapter, resulting in failed scrapes or corrupt data \\ \hline
+\textbf{Related Req. Document} & $<$BR 2.1$>$ (Data scraping and storage) \\ \hline
+\textbf{Pre-requisites} & The \texttt{getConfigForUniversity()} function in \texttt{manager.ts} is available for isolated invocation with the \texttt{ScraperConfig} map imported from \texttt{config.ts}. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Exact match --- database name matches a config key exactly (e.g. ``University of Cambridge''). \newline EC2 (valid): Fuzzy match --- database name is a superset of a config key (e.g. ``The University of Manchester'' matches ``University of Manchester''). \newline EC3 (valid): Fuzzy match --- config key is a superset of the database name. \newline EC4 (invalid): No match --- a university name not present in config (e.g. ``Unknown University''). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{getConfigForUniversity("University of Cambridge")}. \newline 2. Verify the returned config has \texttt{adapterName = "CambridgeAdapter"} and \texttt{strategy = "HYBRID"}. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{getConfigForUniversity("The University of Manchester")}. \newline 2. Verify the returned config has \texttt{adapterName = "ManchesterAdapter"}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{getConfigForUniversity("Edinburgh")}. \newline 2. Verify it fuzzy-matches to ``The University of Edinburgh'' config and returns \texttt{adapterName = "EdinburghAdapter"}. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Call \texttt{getConfigForUniversity("Unknown University")}. \newline 2. Verify the fallback is returned: \texttt{strategy = "GENERIC\_HTML"}, \texttt{adapterName = "GenericHtmlAdapter"}. \\ \hline
+\textbf{Test material used} & Jest test runner with the real \texttt{ScraperConfig} object \\ \hline
+\textbf{Expected result (Oracle)} & EC1: Exact config for Cambridge returned. \newline EC2: Manchester config returned via fuzzy match. \newline EC3: Edinburgh config returned via fuzzy match. \newline EC4: Generic fallback config returned. \\ \hline
+\textbf{Actual Result (Pass/Fail)} & EC1: Pass \newline EC2: Pass \newline EC3: Pass \newline EC4: Pass \\ \hline
+\textbf{Comments} & The function implements a three-tier lookup: exact match, then case-insensitive substring match (checking both directions), then a generic fallback. This is critical because UCAS database names often differ from our internal config keys (e.g. prepending ``The''). \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: int\_test-01}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & int\_test-01 \\ \hline
+\textbf{Description of test} & End-to-end authentication flow: login, session persistence, and logout \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & Critical --- authentication failure exposes protected routes or locks out legitimate users \\ \hline
+\textbf{Related Req. Document} & $<$BR 1.1$>$, $<$BR 1.3$>$ (Authentication) \\ \hline
+\textbf{Pre-requisites} & Express server is running in test mode with a known \texttt{ADMIN\_PASSWORD\_HASH} environment variable. Supertest is configured to make HTTP requests and persist cookies across requests. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Correct credentials submitted. \newline EC2 (invalid): Wrong password submitted. \newline EC3 (valid): Authenticated session accesses a protected route. \newline EC4 (valid): Logout destroys the session. \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Send \texttt{POST /auth/login} with \texttt{\{username: "admin", password: <correct>\}}. \newline 2. Verify HTTP 200 with \texttt{\{authenticated: true\}}. \newline 3. Verify a \texttt{Set-Cookie} header is returned. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Send \texttt{POST /auth/login} with \texttt{\{username: "admin", password: "wrong"\}}. \newline 2. Verify HTTP 401 with \texttt{\{error: "Invalid credentials"\}}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Using the session cookie from EC1, send \texttt{GET /auth/me}. \newline 2. Verify HTTP 200 with \texttt{\{authenticated: true, user: "admin"\}}. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Using the session cookie, send \texttt{POST /auth/logout}. \newline 2. Verify HTTP 200 with \texttt{\{message: "Logged out"\}}. \newline 3. Send \texttt{GET /auth/me} again and verify HTTP 401. \\ \hline
+\textbf{Test material used} & Jest + Supertest with an in-memory Express app instance and a pre-hashed bcrypt password \\ \hline
+\textbf{Expected result (Oracle)} & EC1: Session created, 200 returned. \newline EC2: No session created, 401 returned. \newline EC3: Session persists, user data returned. \newline EC4: Session destroyed, subsequent requests return 401. \\ \hline
+\textbf{Actual Result (Pass/Fail)} & EC1: Pass \newline EC2: Pass \newline EC3: Pass \newline EC4: Pass \\ \hline
+\textbf{Comments} & This is an integration test because it exercises three components together: the login route (\texttt{auth.ts}), the session middleware (\texttt{express-session}), and the \texttt{/auth/me} endpoint. It verifies the full authentication lifecycle rather than any single function in isolation. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Supertest 6, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
