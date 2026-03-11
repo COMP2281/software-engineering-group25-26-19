@@ -1,11 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCourseById } from "../api/Courses.api";
-import type {
-  Course,
-  CourseFiltersResponse,
-  CourseDetailsResponse,
-} from "../api/Courses.types";
+import type { Course } from "../api/Courses.types";
 import "./CourseDetails.css";
 import { useNavigate } from "react-router-dom";
 import {
