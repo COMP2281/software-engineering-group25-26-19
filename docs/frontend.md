@@ -41,6 +41,8 @@ The API layer abstracts backend calls. Each module corresponds to a backend rout
 - **`Courses.tsx`**: A searchable list of all scraped courses.
 - **`CourseDetails.tsx`**: Detailed view of a single course, including fee breakdowns.
 - **`LoginPage.tsx`**: User authentication screen.
+- **`Comparison.tsx`**: Interface for comparing multiple courses side-by-side.
+- **`Visualisation.tsx`**: Graphical representation of fee trends and distributions.
 
 #### 3. Components (`src/components/`)
 - **`Sidebar.tsx`**: Navigation menu for the dashboard layout.
