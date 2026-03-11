@@ -1,0 +1,722 @@
+\section{Test Report}
+
+\subsection{What has been tested (20\%)}
+% Identify items tested (Unit, System, UAT).
+% Discuss integration testing if applicable.
+% Identify Test Oracles.
+
+\subsection{Test Cases (50\%)}
+
+% SAMPLE TABLE LAYOUT
+
+% \begin{table}[h]
+% \small
+% \renewcommand{\arraystretch}{1.1}
+% \begin{tabularx}{\linewidth}{>{\bfseries}l X}
+% \hline
+% Test Case ID & sys\_test-02 \\ \hline
+% Description of test & Application successfully reads a bank card \\ \hline
+% Related requirement document details & $<$user story 1$>$ \\ \hline
+% Pre-requisites for test & System is operational and not currently servicing a request. Bank card is available to be inserted. \\ \hline
+% Test procedure & 
+% 1. Insert readable card.\\
+% & 2. System responds with accept or reject message. \\ \hline
+% Test material used & Bank card \\ \hline
+% Expected result (test oracle) & Card is accepted and system asks for PIN to be typed in \\ \hline
+% Comments & None \\ \hline
+% Created by & SJ \\ \hline
+% Test environment(s) & Windows 10 \\ \hline
+% \end{tabularx}
+% \caption{ATM Test Case}
+% \end{table}
+
+
+
+\subsubsection{Unit Testing}
+
+
+\begin{table}[h!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{tabularx}{\linewidth}{@{} >{\bfseries\raggedright}p{0.22\textwidth} >{\raggedright\arraybackslash}X @{}}
+\toprule
+\multicolumn{2}{@{}l}{\large\bfseries\color{customtitles} unit\_test-01 \hfill {\normalsize\color{black!60} Severity: High}} \\
+\midrule
+Description          & A-Level grade extraction from UCAS qualification data \\
+\addlinespace[2pt]
+Testing Technique    & Equivalence Partitioning (EP) \\
+\addlinespace[2pt]
+Related Req.         & $<$BR 2.1$>$ (Data scraping and storage) \\
+\addlinespace[2pt]
+Pre-requisites       & The \texttt{extractALevels()} function in \texttt{services.ts} is available for isolated invocation with mock data. No database or network access required. \\
+\addlinespace[2pt]
+Equivalence Classes  & \textbf{EC1} (valid): Standard grade string (e.g.\ ``A*AB''). \newline
+                       \textbf{EC2} (valid): Range grade string (e.g.\ ``AAB -- AAA''). \newline
+                       \textbf{EC3} (invalid): Null or undefined qualifications array. \\
+\midrule
+Test Procedure       & \\
+\quad\normalfont\textit{EC1}  & 1. Call \texttt{extractALevels()} with a qualifications array containing one A-level entry with \texttt{summary.offer = "A*AB"}. \newline
+                       2. Verify the returned object contains \texttt{aLevelGrade1 = "A*"}, \texttt{aLevelGrade2 = "A"}, \texttt{aLevelGrade3 = "B"}. \\
+\addlinespace[2pt]
+\quad\normalfont\textit{EC2}  & 1. Call \texttt{extractALevels()} with \texttt{summary.offer = "AAB - AAA"}. \newline
+                       2. Verify the function selects the minimum offer (``AAB'') and returns grades ``A'', ``A'', ``B''. \\
+\addlinespace[2pt]
+\quad\normalfont\textit{EC3}  & 1. Call \texttt{extractALevels()} with \texttt{null}. \newline
+                       2. Verify the returned object is empty (\texttt{\{\}}). \\
+\addlinespace[2pt]
+Expected Result      & \textbf{EC1:} \texttt{\{aLevelGrade1: "A*", aLevelGrade2: "A", aLevelGrade3: "B"\}} \newline
+                       \textbf{EC2:} \texttt{\{aLevelGrade1: "A", aLevelGrade2: "A", aLevelGrade3: "B"\}} \newline
+                       \textbf{EC3:} \texttt{\{\}} \\
+\midrule
+Test Material        & Jest test runner with mock qualification data conforming to the UCAS API structure \\
+\addlinespace[2pt]
+Comments             & The range-handling logic uses \texttt{calculateGradeScore()} internally to pick the lower offer, which represents the minimum entry requirement. Grade values: A*=6, A=5, B=4, C=3, D=2, E=1. \\
+\addlinespace[2pt]
+Created by           & Omar \\
+\addlinespace[2pt]
+Test Environment     & Node.js 20, Jest 29, Windows 10 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-02}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-02 \\ \hline
+\textbf{Description of test} & Fee extraction from UCAS course fee data \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & High --- incorrect fee extraction causes wrong tuition fee data across the entire system \\ \hline
+\textbf{Related Req. Document} & $<$BR 2.1$>$ (Data scraping and storage) \\ \hline
+\textbf{Pre-requisites} & The \texttt{extractFees()} function in \texttt{services.ts} is available for isolated invocation. No database or network access required. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Fee array contains both ``England'' and ``International'' locales. \newline EC2 (invalid): Fee array is null or undefined. \newline EC3 (boundary): Fee array contains only one locale (partial data). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{extractFees()} with \texttt{[\{feeLocale: \{caption: "England"\}, amount: 9250\}, \{feeLocale: \{caption: "International"\}, amount: 27000\}]}. \newline 2. Verify the returned object is \texttt{\{homeFee: 9250, internationalFee: 27000\}}. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{extractFees()} with \texttt{null}. \newline 2. Verify the result is \texttt{\{homeFee: null, internationalFee: null\}}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{extractFees()} with only an ``England'' entry (\texttt{[\{feeLocale: \{caption: "England"\}, amount: 9250\}]}). \newline 2. Verify \texttt{homeFee = 9250} and \texttt{internationalFee = null}. \\ \hline
+\textbf{Test material used} & Jest test runner with mock fee arrays matching the UCAS API response structure \\ \hline
+\textbf{Expected result (Oracle)} & EC1: \texttt{\{homeFee: 9250, internationalFee: 27000\}} \newline EC2: \texttt{\{homeFee: null, internationalFee: null\}} \newline EC3: \texttt{\{homeFee: 9250, internationalFee: null\}} \\ \hline
+\textbf{Comments} & The function matches on \texttt{feeLocale.caption}, mapping ``England'' to home fees and ``International'' to international fees. Unrecognised locales (e.g. ``Scotland'', ``Wales'') are silently ignored. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-03}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-03 \\ \hline
+\textbf{Description of test} & Fee histogram binning logic for dashboard visualisation \\ \hline
+\textbf{Testing Technique} & Boundary Value Analysis (BVA) \\ \hline
+\textbf{Severity} & Medium --- incorrect binning causes misleading fee distribution charts on the dashboard \\ \hline
+\textbf{Related Req. Document} & $<$BR 7.1$>$ (Data visualisation) \\ \hline
+\textbf{Pre-requisites} & The home fee binning logic from the \texttt{/dashboard/fees} route in \texttt{dashboard.ts} is extracted into a testable function, or tested via its HTTP endpoint with a mocked Prisma client. \\ \hline
+\textbf{Boundary Values Tested} & BV1: Fee = 4999 (just below 5000 boundary). \newline BV2: Fee = 5000 (exact boundary). \newline BV3: Fee = 5001 (just above 5000 boundary). \newline BV4: Fee = 9000 (exact boundary for 9000--10000 range). \newline BV5: Fee = 0 (lower extreme). \newline BV6: Fee = 12500 (exact boundary for 12500+ range). \\ \hline
+\textbf{Test Procedure (BV1)} & 1. Pass a fee value of 4999 through the home fee binning logic. \newline 2. Verify it is placed in the ``0--5000'' bin. \\ \hline
+\textbf{Test Procedure (BV2)} & 1. Pass a fee value of 5000 through the home fee binning logic. \newline 2. Verify it is placed in the ``5000--7500'' bin (boundary is $\geq$ 5000). \\ \hline
+\textbf{Test Procedure (BV3)} & 1. Pass a fee value of 5001. \newline 2. Verify it is placed in the ``5000--7500'' bin. \\ \hline
+\textbf{Test Procedure (BV4)} & 1. Pass a fee value of 9000. \newline 2. Verify it is placed in the ``9000--10000'' bin (boundary is $\geq$ 9000). \\ \hline
+\textbf{Test Procedure (BV5)} & 1. Pass a fee value of 0. \newline 2. Verify it is placed in the ``0--5000'' bin. \\ \hline
+\textbf{Test Procedure (BV6)} & 1. Pass a fee value of 12500. \newline 2. Verify it is placed in the ``12500+'' bin (boundary is $\geq$ 12500). \\ \hline
+\textbf{Test material used} & Jest test runner with extracted binning function or Supertest with mocked Prisma client \\ \hline
+\textbf{Expected result (Oracle)} & BV1: ``0--5000'' bin count incremented. \newline BV2: ``5000--7500'' bin count incremented. \newline BV3: ``5000--7500'' bin count incremented. \newline BV4: ``9000--10000'' bin count incremented. \newline BV5: ``0--5000'' bin count incremented. \newline BV6: ``12500+'' bin count incremented. \\ \hline
+\textbf{Comments} & The binning ranges use half-open intervals: $[lower, upper)$ for all bins except the final catch-all bin. BVA is the ideal technique here since off-by-one errors at range boundaries are the most likely defect. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-04}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-04 \\ \hline
+\textbf{Description of test} & Course level classification from outcome qualification \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & Medium --- incorrect classification skews the UG/PG distribution chart \\ \hline
+\textbf{Related Req. Document} & $<$BR 7.1$>$ (Data visualisation) \\ \hline
+\textbf{Pre-requisites} & The \texttt{determineLevel()} function in \texttt{visualisation.ts} is available for isolated invocation. No database or network access required. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Undergraduate qualification string (e.g. ``BSc (Hons)''). \newline EC2 (valid): Postgraduate qualification string (e.g. ``MSc''). \newline EC3 (invalid): Null input. \newline EC4 (invalid): Unrecognised string (e.g. ``Diploma''). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{determineLevel("BSc (Hons)")}. Verify return is ``Undergraduate''. \newline 2. Repeat with ``BEng'', ``BA (Hons)'', and ``LLB'' to cover all UG keywords. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{determineLevel("MSc")}. Verify return is ``Postgraduate''. \newline 2. Repeat with ``PhD'', ``MA '', and ``MBA'' to cover all PG keywords. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{determineLevel(null)}. \newline 2. Verify the return value is ``Other''. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Call \texttt{determineLevel("Diploma")}. \newline 2. Verify the return value is ``Other''. \\ \hline
+\textbf{Test material used} & Jest test runner \\ \hline
+\textbf{Expected result (Oracle)} & EC1: ``Undergraduate'' for all UG qualifications. \newline EC2: ``Postgraduate'' for all PG qualifications. \newline EC3: ``Other'' for null. \newline EC4: ``Other'' for unrecognised strings. \\ \hline
+\textbf{Comments} & Classification uses substring matching on the lowercased input. The function drives the UG/PG distribution pie chart on the visualisation page. EC3 and EC4 are distinct invalid classes: null triggers an early return, while ``Diploma'' falls through all keyword checks. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: unit\_test-05}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & unit\_test-05 \\ \hline
+\textbf{Description of test} & University scraper configuration lookup with fuzzy name matching \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & High --- incorrect config lookup causes universities to use the wrong scraping adapter, resulting in failed scrapes or corrupt data \\ \hline
+\textbf{Related Req. Document} & $<$BR 2.1$>$ (Data scraping and storage) \\ \hline
+\textbf{Pre-requisites} & The \texttt{getConfigForUniversity()} function in \texttt{manager.ts} is available for isolated invocation with the \texttt{ScraperConfig} map imported from \texttt{config.ts}. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Exact match --- database name matches a config key exactly (e.g. ``University of Cambridge''). \newline EC2 (valid): Fuzzy match --- database name is a superset of a config key (e.g. ``The University of Manchester'' matches ``University of Manchester''). \newline EC3 (valid): Fuzzy match --- config key is a superset of the database name. \newline EC4 (invalid): No match --- a university name not present in config (e.g. ``Unknown University''). \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Call \texttt{getConfigForUniversity("University of Cambridge")}. \newline 2. Verify the returned config has \texttt{adapterName = "CambridgeAdapter"} and \texttt{strategy = "HYBRID"}. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Call \texttt{getConfigForUniversity("The University of Manchester")}. \newline 2. Verify the returned config has \texttt{adapterName = "ManchesterAdapter"}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Call \texttt{getConfigForUniversity("Edinburgh")}. \newline 2. Verify it fuzzy-matches to ``The University of Edinburgh'' config and returns \texttt{adapterName = "EdinburghAdapter"}. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Call \texttt{getConfigForUniversity("Unknown University")}. \newline 2. Verify the fallback is returned: \texttt{strategy = "GENERIC\_HTML"}, \texttt{adapterName = "GenericHtmlAdapter"}. \\ \hline
+\textbf{Test material used} & Jest test runner with the real \texttt{ScraperConfig} object \\ \hline
+\textbf{Expected result (Oracle)} & EC1: Exact config for Cambridge returned. \newline EC2: Manchester config returned via fuzzy match. \newline EC3: Edinburgh config returned via fuzzy match. \newline EC4: Generic fallback config returned. \\ \hline
+\textbf{Comments} & The function implements a three-tier lookup: exact match, then case-insensitive substring match (checking both directions), then a generic fallback. This is critical because UCAS database names often differ from our internal config keys (e.g. prepending ``The''). \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Integration Testing}
+
+
+\begin{table}[h!]
+\centering
+\caption{Test Case: int\_test-01}
+\begin{tabular}{|p{0.3\textwidth}|p{0.65\textwidth}|}
+\hline
+\textbf{Test Case ID} & int\_test-01 \\ \hline
+\textbf{Description of test} & End-to-end authentication flow: login, session persistence, and logout \\ \hline
+\textbf{Testing Technique} & Equivalence Partitioning (EP) \\ \hline
+\textbf{Severity} & Critical --- authentication failure exposes protected routes or locks out legitimate users \\ \hline
+\textbf{Related Req. Document} & $<$BR 1.1$>$, $<$BR 1.3$>$ (Authentication) \\ \hline
+\textbf{Pre-requisites} & Express server is running in test mode with a known \texttt{ADMIN\_PASSWORD\_HASH} environment variable. Supertest is configured to make HTTP requests and persist cookies across requests. \\ \hline
+\textbf{Equivalence Classes} & EC1 (valid): Correct credentials submitted. \newline EC2 (invalid): Wrong password submitted. \newline EC3 (valid): Authenticated session accesses a protected route. \newline EC4 (valid): Logout destroys the session. \\ \hline
+\textbf{Test Procedure (EC1)} & 1. Send \texttt{POST /auth/login} with \texttt{\{username: "admin", password: <correct>\}}. \newline 2. Verify HTTP 200 with \texttt{\{authenticated: true\}}. \newline 3. Verify a \texttt{Set-Cookie} header is returned. \\ \hline
+\textbf{Test Procedure (EC2)} & 1. Send \texttt{POST /auth/login} with \texttt{\{username: "admin", password: "wrong"\}}. \newline 2. Verify HTTP 401 with \texttt{\{error: "Invalid credentials"\}}. \\ \hline
+\textbf{Test Procedure (EC3)} & 1. Using the session cookie from EC1, send \texttt{GET /auth/me}. \newline 2. Verify HTTP 200 with \texttt{\{authenticated: true, user: "admin"\}}. \\ \hline
+\textbf{Test Procedure (EC4)} & 1. Using the session cookie, send \texttt{POST /auth/logout}. \newline 2. Verify HTTP 200 with \texttt{\{message: "Logged out"\}}. \newline 3. Send \texttt{GET /auth/me} again and verify HTTP 401. \\ \hline
+\textbf{Test material used} & Jest + Supertest with an in-memory Express app instance and a pre-hashed bcrypt password \\ \hline
+\textbf{Expected result (Oracle)} & EC1: Session created, 200 returned. \newline EC2: No session created, 401 returned. \newline EC3: Session persists, user data returned. \newline EC4: Session destroyed, subsequent requests return 401. \\ \hline
+\textbf{Comments} & This is an integration test because it exercises three components together: the login route (\texttt{auth.ts}), the session middleware (\texttt{express-session}), and the \texttt{/auth/me} endpoint. It verifies the full authentication lifecycle rather than any single function in isolation. \\ \hline
+\textbf{Created by} & Omar \\ \hline
+\textbf{Test environment} & Node.js 20, Jest 29, Supertest 6, Windows 10 \\ \hline
+\end{tabular}
+\end{table}
+
+
+% Scraper standalone: Test the adapter for ONE uni, using cached HTML (including edge cases), test that the regex and parsing logic works.
+
+% Backend Integration: Test that manager.ts correctly queries the database, routes to the correct adapter, and successfully writes the parsed data back to PostgreSQL. Run the adapters against cached/mocked HTML files of the university pages to ensure the regex and DOM pruning logic works without hitting the live servers every time.
+
+% Database Querying: Test that the nested filter parameters are properly passed to postgres and that correct entries are returned
+
+% Concurrency Lock: Ensure that when a scrape is running, another cannot be started
+
+% Frontend-Backend Integration: Verify that when a user clicks "Start Scraper", the frontend correctly hits the API, the backend locks the scraping state, and the frontend receives the correct status updates. (Generally, ensure the frontend receives the right structures when requesting data)
+
+\begin{table}[h]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & int\_test-02 \\ \hline
+Description of test & Backend Scraper Pipeline Execution with Mocked HTML \\ \hline
+Related requirement document details & BR 2.1 \\ \hline
+Pre-requisites for test & Database contains a single course (Ecology MSc, Lancaster University) with two course options that have null fees. \\ \hline
+Test procedure & 
+1. CD into the backend directory via `cd /backend` from the main d \\
+& 2. System responds with accept or reject message. \\ \hline
+Test material used & Mocked static HTML file \\ \hline
+Expected result (test oracle) & Card is accepted and system asks for PIN to be typed in \\ \hline
+Comments & None \\ \hline
+Created by & SJ \\ \hline
+Test environment(s) & Windows 10 \\ \hline
+\end{tabularx}
+\caption{ATM Test Case}
+\end{table}
+
+% Test Case 1: Backend Pipeline Execution with Mocked HTML (Adapter 
+% ↔
+% ↔
+%  DB)
+% Equivalence Classes:
+% Valid (EC1): Mocked HTML contains clear FT and PT fees.
+% Valid (EC2): Mocked HTML contains only FT fees.
+% Invalid (EC3): Mocked HTML contains no fees (empty shell).
+% Boundary Values: Extracted fee is exactly at the MIN_FEE boundary (e.g., £1000) or MAX_FEE boundary (e.g., £80000).
+% Inputs and Preconditions:
+% Precondition: DB contains 1 Course with 2 CourseOptions (Full-time and Part-time) for "Lancaster University" with null fees. HTTP requests via axios are mocked (e.g., using nock) to return a static HTML file containing a table with £9,250 (FT) and £4,625 (PT).
+% Input: Programmatically invoke runScrapingManager() targeting Lancaster.
+% Expected Result (Oracle):
+% The LancasterAdapter is invoked.
+% The mocked HTML is processed without network timeouts.
+% The DB is updated: The FT CourseOption record has homeFee: 9250, and the PT CourseOption record has homeFee: 4625.
+% Severity: Critical (Validates the core data extraction and storage loop).
+% Technique: Equivalence Partitioning (EP), Boundary Value Analysis (BVA), Mocking.
+
+% \begin{table}[h]
+% \small
+% \renewcommand{\arraystretch}{1.1}
+% \begin{tabularx}{\linewidth}{>{\bfseries}l X}
+% \hline
+% Test Case ID & int\_test-01 \\ \hline
+% Description of test & Backend Scraper Pipeline Execution with Mocked HTML \\ \hline
+% Related requirement document details & BR 2.1 \\ \hline
+% Pre-requisites for test & System is operational and not currently servicing a request. Bank card is available to be inserted. \\ \hline
+% Test procedure & 
+% 1. Insert readable card.\\
+% & 2. System responds with accept or reject message. \\ \hline
+% Test material used & Bank card \\ \hline
+% Expected result (test oracle) & Card is accepted and system asks for PIN to be typed in \\ \hline
+% Comments & None \\ \hline
+% Created by & SJ \\ \hline
+% Test environment(s) & Windows 10 \\ \hline
+% \end{tabularx}
+% \caption{ATM Test Case}
+% \end{table}
+
+% Test Case 2: Nested Database Querying via Filters (API 
+% ↔
+% ↔
+%  Prisma)
+% Equivalence Classes:
+% Valid (EC1): Filters match existing DB records.
+% Valid (EC2): Filters are overly restrictive (matches 0 records).
+% Valid (EC3): Optional filters omitted (defaults applied).
+% Boundary Values: minFee = exactly the lowest fee in the DB. maxFee = exactly the highest fee in the DB.
+% Inputs and Preconditions:
+% Precondition: Test DB seeded with 5 specific CourseOptions across different universities, years, and fee amounts.
+% Input: Call the backend data-fetching function/API with parameters: { level: "part-time", minFee: 4000, maxFee: 5000, universityIds:["uuid-1"] }.
+% Expected Result (Oracle):
+% Prisma generates the correct nested SQL query.
+% The function returns exactly the CourseOption records that fit the criteria, strictly excluding full-time courses, courses outside the £4000-£5000 range, and courses from other universities.
+% Severity: High (Ensures the visualization and table data are accurate).
+% Technique: EP, BVA.
+
+% \begin{table}[h]
+% \small
+% \renewcommand{\arraystretch}{1.1}
+% \begin{tabularx}{\linewidth}{>{\bfseries}l X}
+% \hline
+% Test Case ID & int\_test-01 \\ \hline
+% Description of test & Backend Scraper Pipeline Execution with Mocked HTML \\ \hline
+% Related requirement document details & BR 2.1 \\ \hline
+% Pre-requisites for test & System is operational and not currently servicing a request. Bank card is available to be inserted. \\ \hline
+% Test procedure & 
+% 1. Insert readable card.\\
+% & 2. System responds with accept or reject message. \\ \hline
+% Test material used & Bank card \\ \hline
+% Expected result (test oracle) & Card is accepted and system asks for PIN to be typed in \\ \hline
+% Comments & None \\ \hline
+% Created by & SJ \\ \hline
+% Test environment(s) & Windows 10 \\ \hline
+% \end{tabularx}
+% \caption{ATM Test Case}
+% \end{table}
+
+
+% Test Case 4: Frontend-Backend Scrape Trigger & Polling (Frontend 
+% ↔
+% ↔
+%  API)
+% Equivalence Classes:
+% Valid (EC1): API returns 200 OK (started) followed by 200 OK (running/completed).
+% Invalid (EC2): API returns 500 Internal Server Error during polling.
+% Boundary Values: Polling timeout (e.g., frontend stops polling after 30 minutes if stuck on RUNNING).
+% Inputs and Preconditions:
+% Precondition: Frontend test environment (e.g., Cypress/Playwright) connected to a local test backend.
+% Input: User clicks "Start Scraper" on the Dashboard.
+% Expected Result (Oracle):
+% Frontend sends POST to /scrape/start.
+% Backend returns 200 OK.
+% Frontend UI immediately changes to a "Scraping in Progress" state (disabling the button).
+% Frontend successfully polls the /scrape/status endpoint every X seconds, updating the UI when the backend finally returns status: "COMPLETED".
+% Severity: Medium (Validates UX and system synchronization).
+% Technique: EP.
+
+
+\subsubsection{System Testing}
+
+% Consider placing results in a separate table
+
+\begin{table}[h!]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & sys\_test-01 \\ \hline
+Test Description & End-to-End Scrape Initiation and Concurrency Lock \\ \hline
+Related Behavioural Requirements & BR 2.1, 2.2, 8.2 \\ \hline
+Pre-requisites & User is logged in and on the Dashboard. Database has ScrapeStatus set to COMPLETED or PENDING (no active scrapes). \\ \hline
+Equivalence Classes & EC1 (valid): 0 scrapes currently running.\\ & EC2 (invalid): 1 or more scrapes currently running. \\ \hline
+Test Procedure (EC1) & 1. User clicks "Start Scraper".\\ \hline  
+Test Procedure (EC2) & 
+1. User clicks "Start Scraper".\\
+& 2. User immediately opens a second tab and clicks "Start Scraper" again. \\ \hline
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+Expected result (test oracle) & EC1: Scrape initiates successfully and UI updates to show "Running" status.\\ & EC2: Scrape initiates successfully and UI updates to show "Running" status on Tab 1. System rejects second scrape request, and UI displays an error message on Tab 2. \\ \hline
+Comments & None \\ \hline
+Created by & None \\ \hline
+Test environment(s) & Windows 10, Google Chrome \\ \hline
+\end{tabularx}
+\end{table}
+
+% Test Case 1: End-to-End Scrape Initiation and Concurrency Lock (BR 2.1, 2.2, 8.2)
+% Equivalence Classes:
+% Valid (EC1): 0 scrapes currently running.
+% Invalid (EC2): 1 or more scrapes currently running.
+% Boundary Values: 0 active scrapes (allowed), 1 active scrape (blocked).
+% Inputs and Preconditions:
+% Precondition: User is logged in and on the Dashboard. Database has ScrapeStatus set to COMPLETED or PENDING (no active scrapes).
+% Input: User clicks "Start Scraper". User immediately opens a second tab and clicks "Start Scraper" again.
+% Expected Result (Oracle):
+% Tab 1: Scrape initiates successfully. UI updates to show "Running" status.
+% Tab 2: System rejects the second request. UI displays an error message: "Fetch already in progress."
+% Severity: High (Prevents server crash/memory leaks from duplicate Puppeteer instances).
+% Technique: Equivalence Partitioning (EP), Boundary Value Analysis (BVA).
+
+\begin{table}[h!]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & sys\_test-02 \\ \hline
+Test Description & Combined Search \& Multi-Institution Filtering \\ \hline
+Related Behavioural Requirements & BR 5.1, 5.3, 6.1, 6.2 \\ \hline
+Pre-requisites & User is logged in and on the "Courses" page. Database contains the following entries: "BSc Physics" at Durham, "BSc Physics" at Bath, and "BA History" at Durham. \\ \hline
+Equivalence Classes & EC1 (valid): Query matches and course belongs to selected institutions.\\ & EC2 (invalid): Query matches and course does not belong to selected institutions. \\ & EC3 (invalid): Query does not match any course in the database. \\ \hline
+Test Procedure (EC1 \& EC2) & 1. User filters courses by institution and chooses "Durham University". \\ & 2. User inputs "Physics" into search query. \\ \hline  
+Test Procedure (EC3) & 
+1. User inputs "Computer Science" into search query.\\ \hline
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+Expected result (test oracle) & EC1 \& EC2: Page only displays the "BSc Physics" course offered by Durham University and excludes the course offered by Bath. \\ & EC3: Page remains empty and a message is displayed. \\ \hline
+Comments & None \\ \hline
+Created by & None \\ \hline
+Test environment(s) & Windows 10, Google Chrome \\ \hline
+\end{tabularx}
+\end{table}
+
+% Test Case 2: Combined Search and Multi-Institution Filtering (BR 5.1, 5.3, 6.1, 6.2)
+% Equivalence Classes:
+% Valid (EC1): Query matches course title/summary AND course belongs to selected institutions.
+% Invalid (EC2): Query matches, but course belongs to an unselected institution.
+% Invalid (EC3): Query does not match any course.
+% Boundary Values: 0 filters applied, 1 filter applied, N (all) filters applied. Search string length = 1 character, Search string length = 50 characters.
+% Inputs and Preconditions:
+% Precondition: User is on the Courses page. DB contains "BSc Physics" at Durham, "BSc Physics" at Bath, and "BA History" at Durham.
+% Input 1: Search "Physics", Filter Institution: "Durham University".
+% Input 2: Search "Astrophysics", Filter Institution: "Durham University".
+% Expected Result (Oracle):
+% Input 1: Table displays only "BSc Physics" at Durham. Bath's Physics course is excluded.
+% Input 2: Table is empty. UI displays a user-friendly message (e.g., "No courses match your criteria").
+% Severity: High (Core data retrieval functionality).
+% Technique: EP, BVA.
+
+\begin{table}[h]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & sys\_test-03 \\ \hline
+Test Description & Cross-Page Comparison State Persistence \\ \hline
+Related Behavioural Requirements & BR 9.1, 9.2 \\ \hline
+Pre-requisites & User is logged in and on the Courses page. There are at least 11 entries in the database (3 pages with 5 entries each, except for the final page)\\ \hline
+Equivalence Classes & EC1 (valid): Adding courses from the same page. \\ & EC2 (valid): Adding courses from different pages. \\ \hline
+Test Procedure & 1. User selects "Course A" from the first page, "Course B" from the second page, and "Course C" from the third page.\\ & 2. User clicks "Compare". \\ \hline
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+Expected result (test oracle) & The user's selection is not lost when traversing to a new page. When the "Compare" button is clicked, the user is redirected to the comparison page where "Course A", "Course B", and "Course C" are displayed. \\ \hline
+Comments & None \\ \hline
+Created by & None \\ \hline
+Test environment(s) & Windows 10, Google Chrome \\ \hline
+\end{tabularx}
+\end{table}
+
+% Test Case 3: Cross-Page Comparison State Persistence (BR 9.1, 9.2)
+% Equivalence Classes:
+% Valid (EC1): Adding courses from the same page.
+% Valid (EC2): Adding courses from different paginated pages.
+% Boundary Values: 0 courses selected, 1 course selected, 2 courses selected, Maximum allowed courses selected (e.g., 4 or 5, if a limit exists).
+% Inputs and Preconditions:
+% Precondition: User is on the Courses page. Pagination is active (e.g., 10 items per page).
+% Input: User selects "Course A" on Page 1. User clicks "Next Page". User selects "Course B" on Page 2. User navigates to the "Comparison" page.
+% Expected Result (Oracle):
+% The selection state is not lost upon pagination. The Comparison page successfully displays both "Course A" and "Course B" side-by-side, including their respective tuition fees.
+% Severity: Medium (UX and State Management).
+% Technique: EP, BVA.
+
+\begin{table}[h]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & sys\_test-04 \\ \hline
+Test Description & Dataset Export Edge Case Handling \\ \hline
+Related Behavioural Requirements & BR 3.1, 3.2 \\ \hline
+Pre-requisites & User is logged in and on the Courses page. There are at least 10000 entries in the database. \\ \hline
+Equivalence Classes & EC1 (invalid): Export 0 courses \\ & EC2 (valid): Export $\geq 1$ courses. \\ \hline
+Test Procedure (EC1) & 1. User selects 0 courses.\\ & 2. User attempts to export the selected courses. \\ \hline
+Test Procedure (EC2) & 1. User selects 10000 courses.\\ & 2. User clicks the "Export" button. \\ \hline
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+Expected result (test oracle) & EC1: The "Export" button should be disabled on the frontend app. \\ & EC2: An excel file containing exactly the 10000 selected entries is downloaded to the user's local machine within a minute. \\ \hline
+Comments & None \\ \hline
+Created by & None \\ \hline
+Test environment(s) & Windows 10, Google Chrome \\ \hline
+\end{tabularx}
+\end{table}
+
+% Test Case 4: Exporting Filtered vs. Empty Datasets (BR 3.1, 3.2)
+% Equivalence Classes:
+% Valid (EC1): Exporting a dataset with 
+% ≥
+% ≥
+%  1 row.
+% Invalid (EC2): Exporting a dataset with 0 rows.
+% Boundary Values: Dataset size = 0 (Export disabled/fails), Dataset size = 1 (Export succeeds), Dataset size = 10,000 (Export succeeds within acceptable time).
+% Inputs and Preconditions:
+% Precondition: User is on the Courses page.
+% Input 1: User applies filters resulting in 5 courses. User clicks "Export to Excel".
+% Input 2: User applies filters resulting in 0 courses. User attempts to click "Export to Excel".
+% Expected Result (Oracle):
+% Input 1: An .xlsx file is generated and downloaded containing exactly the 5 filtered courses.
+% Input 2: The "Export to Excel" button is disabled. (If triggered via API bypass, the backend returns a 400 Bad Request rather than an empty/corrupted file).
+% Severity: Medium (Data output integrity).
+% Technique: EP, BVA.
+
+\begin{table}[h]
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & sys\_test-05 \\ \hline
+Test Description & Require Authentication for Protected Routes \\ \hline
+Related Behavioural Requirements & BR 1.1, 1.3 \\ \hline
+Pre-requisites & User is logged out of the system \\ \hline
+Equivalence Classes & EC1 (valid): User attempts access to protected routes with a valid session token. \\ & EC2 (valid): User attempts access to protected routes without a vaild session token. \\ \hline
+Test Procedure & User directly enters "http://<appurl>/dashboard into the browser address. \\ \hline
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+Expected result (test oracle) & The request is intercepted, the user is denied access and redirected back to the login page. \\ \hline
+Comments & None \\ \hline
+Created by & None \\ \hline
+Test environment(s) & Windows 10, Google Chrome \\ \hline
+\end{tabularx}
+\end{table}
+
+% Test Case 5: Protected Route Authentication Boundary (BR 1.1, 1.3)
+% Equivalence Classes:
+% Valid (EC1): Request with a valid, unexpired session token.
+% Invalid (EC2): Request with no session token.
+% Invalid (EC3): Request with an expired/tampered session token.
+% Boundary Values: Token expires in 1 second (Valid), Token expired 1 second ago (Invalid).
+% Inputs and Preconditions:
+% Precondition: User is logged out.
+% Input: User types the URL https://[app-url]/dashboard directly into the browser address bar.
+% Expected Result (Oracle):
+% The frontend router or backend middleware intercepts the request, prevents access to the dashboard, redirects the user to /login, and displays an error message (e.g., "Please log in to access this page").
+% Severity: Critical (Security).
+% Technique: EP.
+
+
+\subsubsection{User Acceptance Testing}
+
+\begin{table}[h]
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & uat\_test-01 \\ \hline
+Description of Test & Verify the login response: entering correct credentials successfully redirects to the Dashboard, while entering incorrect credentials is blocked and prompts an “incorrect username or password” message.\\ \hline
+
+Related Requirement Document Details & BR 1.1, BR 1.2, BR 1.3\\ \hline
+
+Prerequisites for Test & Environment check: Web application and backend are running correctly. \\
+&Account preparation: Use admin as the username. \\
+&Password preparation: Users set the original password, and the system automatically hashes it and stores it in the '.env' file.\\ \hline
+
+Test Procedure EC1 & 1. Using the username 'admin' and original password to sign in to the login page. \\ \hline
+Test Procedure EC2& 1. Enter an incorrect username or password and attempt to log in again. \\ 
+ & 2. Observe whether the system displays an error message and remains on the login page.\\ \hline
+
+Test Material Used & Deployed frontend and backend system \\
+&Correctly configured \texttt{.env} file \\
+&Administrator username: \texttt{admin} \\
+&Test password created using \texttt{createPassword.ts} \\
+&Chrome or Edge browser \\ \hline
+
+Test Oracle  & EC1: Successful scenario: When the correct username and password are entered, the system should authenticate the user successfully and redirect the browser to the dashboard page\\
+& EC2: Failure scenario: When an incorrect username or password is entered, the system should reject the login attempt. The page should remain on the login page and display an error message: “Please enter the correct username or password”.\\ \hline
+Comments & The user account in this system is not created through frontend registration. Instead, the password hash is generated through a script and configured through environment variables. Therefore, the \texttt{.env} configuration must be checked carefully before testing. \\ \hline
+\textbf{Created by} & 
+[None] \\ \hline
+\textbf{Test environment} & 
+Windows 11 \\ \hline
+Failure Severity & Severe – If the client cannot log in, the system cannot be used.\\ \hline
+\end{tabularx}
+\end{table}
+
+
+\begin{table}[h]
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & uat\_test-02 \\ \hline
+Description of Test& Test whether the client can use the Quick Scrape feature on the Dashboard page to start the data scraping process.\\ \hline
+Related Requirement Document Details & BR 2.1, BR 2.2, BR 8.2\\ \hline
+
+Prerequisites for Test& 1. The web application has been successfully deployed and is running.\\
+&2. The user has successfully logged into the system.\\
+&3. The user is currently on the Dashboard page.\\
+&4. The Quick Scrape button is present on the Dashboard page.\\ 
+&5. The Dashboard includes a dedicated Status \& Issues panel where the scraping status can be viewed in real time.\\ \hline
+Test Procedure & 1. Enter the Dashboard, confirm that the Quick Scrape button is present in the top-right corner, and verify that the Status \& Issues panel is visible.\\
+&2. Click the Quick Scrape button\\
+&3. Confirm that two changes occur immediately after clicking:\\
+&The button text changes from Quick Scrape to the red “Stop Scraper”.The Status \& Issues panel status changes from Idle to Running.\\
+&4. Wait for the scraping process to finish and confirm that the button and status panel automatically return to the initial Quick Scrape and Idle state.\\
+&5. Check the data cards (e.g., Total Courses) and charts on the Dashboard to confirm that the values have been automatically updated based on the scraping results.\\ \hline
+Test Material Used &Operational frontend and backend system, Google Chrome\\ \hline
+Test Oracle& 1. UI/UX Feedback and State Transition\\
+& • After clicking Quick Scrape, the button in the top-right corner should change from Quick Scrape to a red Stop Scraper button. Once the scraping task is completed, the button should revert to the initial Quick Scrape state.\\
+ &• The Status \& Issues panel on the Dashboard should change its status from Idle to Running, and remain in this state while the scraping task is in progress. After the task finishes, the status should return to Idle.\\
+&2. Data Update and Accuracy\\
+ &• After the scraping task is completed, the statistics cards at the top of the Dashboard, such as Total Courses and Universities Covered, should automatically update according to the newly scraped data.\\
+ &• The Tuition Fee Distribution chart at the bottom of the Dashboard should be automatically re-rendered based on the newly scraped data. \\ \hline
+Comments & [None]\\ \hline
+Created by & [None] \\ \hline
+Test environment & Windows 11 \\ \hline
+Failure Severity & High-If the Quick Scrape function or status display fails, users cannot determine whether the scraping task is running.\\ \hline
+\end{tabularx}
+\end{table}
+
+%test3 BR 3.1 3.2 8.3
+\begin{table}[h]
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & uat\_test-03 \\ \hline
+
+Test Description & Test whether users can export course data on the Courses page and successfully download the Excel file.\\ \hline
+
+Related Behavioural Requirements & BR 3.1, BR 3.2, BR 8.3  \\ \hline
+
+Pre-requisites & 1. The web application has been successfully deployed and is running.\\
+& 2. The user is currently on the Courses page.\\
+&3. Course data already exists in the system and is available for export.\\
+&4. An “Export” button is present on the page. \\ \hline
+
+Test Procedure & 1. Log in and navigate to the Courses page.\\
+&2. Confirm that the course list has been successfully loaded.\\
+&3. Select one or more courses from the list using the checkboxes on the right side of the table.\\
+&4. Click the Export button on the right side of the page. \\ 
+&5. The system should generate an Excel file containing the selected course data.\\
+& 6. The browser should automatically begin downloading the Excel file\\ 
+& 7. Open the downloaded Excel file and verify that its contents match the selected course data.\\ \hline
+
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+
+Test Oracle & • Successful trigger: After clicking Export, the system should generate the Excel file within a reasonable time and automatically start the download.\\
+&• Data consistency: The course names and the number of courses in the downloaded file must exactly match the courses selected on the page.\\
+&• Error feedback: If an error occurs during the export process, the page should display a message indicating that the export has failed.\\ \hline
+
+Comments & None \\ \hline
+
+Created by & None \\ \hline
+
+Test environment(s) & Windows 11, Google Chrome,Localhost\\ \hline
+
+Results &  \\ \hline
+
+Failure Severity& High-If the export functionality fails, users will not be able to download the course data for further analysis or practical use.\\ \hline
+\end{tabularx}
+\end{table}
+
+
+%test4 BR 5.1 ,5.2 ,5.3
+\begin{table}[h]
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & uat\_test-04 \\ \hline
+
+Test Description & Verify that users can quickly locate courses on the Courses page by searching with keywords (either University full names or  course names ).\\ \hline
+Related Behavioural Requirements & BR 5.1 ，BR5.2 ，BR 5.3 \\ \hline
+
+Pre-requisites & 1. The web application has been successfully deployed and is running.\\
+& 2.The user is currently on the Courses page.\\
+&3.The Courses page already contains course data available for display and search.\\
+&4.A “Search Courses” search input box is available at the top of the page. \\ \hline
+
+Test Procedure & 1. Log in and navigate to the Courses page, confirming that a “Search Courses” input box is available at the top of the page.\\
+&2. Enter a full course keyword (e.g., “Computer Science”) and observe whether the course list automatically updates and displays only the matching results.\\
+&3. Clear the search field, then enter a partial keyword (e.g., “Com”) and observe whether the system still returns all courses containing that fragment.\\
+&4. Clear the search field again, then enter a non-existent keyword (eg:“123456”) and verify whether the course table becomes empty and displays “No Results Found.” \\ \hline
+
+Test material used & Operational frontend \& backend system, Google Chrome \\ \hline
+
+Test Oracle & • Accurate search: When a full course name is entered, the result must include and display only the corresponding course.\\
+&• Broad search: When a partial keyword is entered, all related courses containing that keyword must appear in the list.\\
+&• Correct feedback: When no matching content is found, the page should display an empty result or show the message “No Results Found.” \\ \hline
+
+Comments & None \\ \hline
+
+Created by & None \\ \hline
+
+Test environment(s) & Windows 11, Google Chrome,Localhost\\ \hline
+
+Results &  \\ \hline
+
+Failure Severity& High-If the search function fails, users cannot efficiently locate target courses from the dataset. Inaccurate results or unclear feedback would significantly reduce the usability of the page.\\ \hline
+\end{tabularx}
+\end{table}
+
+
+%test5 BR 9.1 9.2
+\begin{table}[h]
+\begin{tabularx}{\linewidth}{>{\bfseries}l X}
+\hline
+Test Case ID & uat\_test-05 \\ \hline
+
+Test Description & Verify that users can search for courses, add them to the comparison list, and view course details side by side on the comparison page.\\ \hline
+Related Behavioural Requirements & BR 9.1 ，BR9.2 \\ \hline
+
+Pre-requisites & 1. The web application has been successfully deployed and is running.\\
+& 2. The user is currently on the Comparison page.\\
+&3. The system database contains course data available for comparison.\\
+&4. At least two courses are available for selection. \\ \hline
+
+Test Procedure & 1. Log in and navigate to the Course Comparison page.\\
+&2. In the “Search for Course” input field, enter at least two characters of a course name.\\
+removed.\\\hline
+
+Test material used & Operational frontend \& backend system, Google Chrome, Test data containing at least two courses. \\ \hline
+
+Test Oracle & • Course search: When the user enters at least two characters in the search field, the system should return a list of matching course results.\\
+&• Add course: When the user selects a course from the search results, the course should be successfully added to the comparison page.\\
+&• Side-by-side comparison: The comparison page should display multiple courses in side-by-side cards to allow direct comparison.\\ 
+& • Key information display: Each course card should display key attributes such as course name, university name, tuition fee, course duration, and entry requirements.\\
+& • Course removal: Users should be able to remove an added course using the remove button, and the page should update accordingly.\\
+& • External link access: Users should be able to open the course detail page via the “View Course Details” link.\\
+
+
+\hline
+
+Comments & This feature allows users to search for courses and add them to the comparison page.
+The selected courses are displayed as cards, enabling users to compare multiple courses side by side. \\ \hline
+
+Created by & None \\ \hline
+
+Test environment(s) & Windows 11, Google Chrome,Localhost\\ \hline
+
+Results &  \\ \hline
+
+Failure Severity& High-The comparison page is an important feature for analysing course data. If users are unable to search for courses or add them to the comparison list for side-by-side comparison, they will not be able to effectively analyse the differences between courses.\\ \hline
+\end{tabularx}
+\end{table}
+
+
+% Some additional ideas for UAT (you don't have to follow them, I just left them here in case you see this and think these ideas are decent)
+% Course comparison: Verify that when the user selects multiple courses and clicks the "compare" button they are redirected to the comparison page and data is correctly displayed.
+% Data visualization: Verify that graphs are displayed properly, and update when new data is inserted into the DB. For example, user visits dashboard/visualization page, check they view the correct data, run quick scrape, wait for it to finish, refresh, check they view the correct, updated data.
+
+
+\subsection{Testing Context (20\%)}
+% Specific tools, environments (browsers, OS), severity scale justification.
+
+\subsection{Summary of Testing (10\%)}
+% Writing good test cases / formatting / summary of results.
