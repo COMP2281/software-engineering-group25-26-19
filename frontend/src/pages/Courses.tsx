@@ -54,6 +54,23 @@ export default function CoursesPage() {
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("pageSize") ?? 5);
   const search = searchParams.get("q") ?? "";
+
+  const [localSearch, setLocalSearch] = useState(search);
+
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== search) {
+        updateParams({ page: "1", q: localSearch || undefined });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const universityIdsParam = searchParams.get("universityIds") ?? "";
   const level = searchParams.get("level") ?? "all";
   const feeType = searchParams.get("feeType") ?? "home";
@@ -130,7 +147,11 @@ export default function CoursesPage() {
   }
 
   useEffect(() => {
-    loadCourses();
+    const timer = setTimeout(() => {
+      loadCourses();
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, [
     page,
     pageSize,
@@ -386,13 +407,8 @@ export default function CoursesPage() {
           <input
             type="text"
             placeholder="Search Courses"
-            value={search}
-            onChange={(e) => {
-              updateParams({
-                page: "1",
-                q: e.target.value || undefined,
-              });
-            }}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             className="searchInput"
           />
 
