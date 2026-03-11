@@ -6,72 +6,281 @@
 \subsection{Source Materials (5\%)}
 The conceptualisation and development of the Competitor Benchmarking System were grounded in three primary categories of source materials:
 
-\begin{enumerate}
-    \item \textbf{Stakeholder Requirements \& Domain Knowledge:} The primary source was the initial consultation with the Strategic Planning and Insight Office (SPIO). Key artifacts included the client's existing manual Excel workflows and the "S-Squared" commercial dataset examples. These established the baseline for data schema (e.g., distinguishing between 'Home' and 'International' fees) and defined the "Must-Have" features for the MVP.
-    \item \textbf{Target Web Specifications:} To develop the scraping engine, we analysed the document object models (DOM) of the 35 target university websites. This source material dictated the need for a polymorphic scraping architecture, as some sites yielded data via static HTML (suitable for lightweight parsing) while others required dynamic rendering (requiring headless browser intervention).
-    \item \textbf{API Documentation:} The UCAS Open Data API formed the basis for the core data ingestion pipeline. This provided the authoritative source for course titles and entry requirements, reducing the load on the custom web scrapers.
-\end{enumerate}
+\begin{itemize}
+    \item \textbf{Stakeholder Requirements \& Domain Knowledge:} The primary source was the consultation with the Strategic Planning and Insight Office (SPIO). Key artifacts included the client's existing manual Excel workflows and the "S-Squared" commercial dataset. These established the baseline for the data schema (specifically the distinction between 'Home' and 'International' fees and 'Course Options') and defined the "Must-Have" features for the MVP.
+    \item \textbf{Target Web Specifications (DOM Analysis):} To develop the scraping engine, we analysed the document object models (DOM) of the 35 target university websites. This analysis revealed a "Dual Certainty Profile": some sites yielded data via static HTML (suitable for lightweight parsing via Cheerio), while others (e.g., University of Edinburgh) relied on Single Page Application (SPA) frameworks, necessitating a headless browser approach (Puppeteer).
+    \item \textbf{API Documentation:} The UCAS Open Data API served as the authoritative source for course titles and entry requirements. This documentation allowed us to design a "Hybrid Ingestion Pipeline," reducing the load on custom web scrapers by only scraping data (like specific fees) that is not available via UCAS.
+\end{itemize}
 
 \subsection{Technical Description (30\%)}
 
 \subsubsection{System Architecture Overview}
-The system follows a classic \textbf{Three-Tier Client-Server Architecture}, ensuring a clean separation of concerns between data presentation, business logic, and data storage.
+The system follows a classic \textbf{Three-Tier Client-Server Architecture}. This separation allows for independent scaling of the scraping logic and the user interface.
 
-\begin{itemize}
-    \item \textbf{Presentation Layer (Frontend):} A Single Page Application (SPA) built with React. It communicates with the backend exclusively via a RESTful API. It is responsible for rendering the dashboard, visualising course information, and triggering scrape jobs.
-    \item \textbf{Application Layer (Backend):} A Node.js runtime environment using the Express.js framework. This layer acts as the orchestrator; it handles authentication, manages the API endpoints, and hosts the "Scraping Engine"—a dedicated module responsible for fetching and parsing external data.
-    \item \textbf{Data Layer (Database):} A PostgreSQL relational database. We utilised a normalised schema to store University, Course, and Fee data, ensuring data integrity and enabling complex historical queries.
-\end{itemize}
+\begin{enumerate}
+    \item \textbf{Presentation Layer (Frontend):} A React (v18) Single Page Application (SPA) built with TypeScript and Vite. It communicates with the backend via a RESTful API using Axios. It is responsible for rendering the dashboard, visualising course comparisons, and initiating scrape jobs via the \texttt{Scraper.api.ts} service module.
+    \item \textbf{Application Layer (Backend):} A Node.js runtime environment using the Express.js framework. This layer acts as the orchestrator. It handles session-based authentication (using a basic local strategy with hashed passwords), manages API routing, and hosts the "Scraping Engine".
+    \item \textbf{Data Layer (Database):} A PostgreSQL relational database managed via Prisma ORM.
+\end{enumerate}
 
-% REPLACE THIS WITH YOUR ARCHITECTURE DIAGRAM FROM THE PREVIOUS REPORT
+% --- FIGURE: ARCHITECTURE DIAGRAM ---
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.85\textwidth]{architecture_diagram.png} 
-    \caption{High-Level System Architecture illustrating the data flow from External Sources (UCAS/Web) all the way to the client.}
+    % Ensure architecture_diagram.png is in your folder
+    \includegraphics[width=0.9\textwidth]{architecture_diagram.png} 
+    \caption{High-Level System Architecture illustrating the data flow from External Sources (UCAS/Web) through the Node.js backend to the React Client.}
     \label{fig:arch}
 \end{figure}
 
-\subsubsection{Design Principles and Patterns}
-To ensure maintainability and scalability, the development adhered to several key software engineering principles:
+\subsubsection{Database Design and Data Modelling}
+A critical aspect of the development was the database schema design. Based on the requirements to track historical fee data, we rejected a simple flat-table structure in favour of a normalised relational model. 
 
+The schema consists of three core entities:
 \begin{itemize}
-    \item \textbf{Strategy Pattern (Scraping Engine):} Given the diversity of target websites, we implemented a Strategy pattern for the scraping logic. A complete separate script with the scraping logic has been created. It firstly starts off with fetching from UCAS API. Then fills in the missing data for all the universities using the html and headless browser scrapers. The system dynamically selects what type of scraping to use depending on the success of each method. Although, this approach may be a bit slower (trying every single method) than pre-determined rule sets for each university, it is a lot more maintainable. This allows the system to select the correct scraping strategy at runtime without altering the core engine code.
-    \item \textbf{Controller-Service-Repository Pattern:} The backend code structure separates the HTTP handling from the business logic and the database interactions. This decoupling facilitates easier unit testing and future database migrations.
-    \item \textbf{Singleton Pattern:} Used for the Database Connection Pool to ensure efficient resource management across concurrent API requests.
+    \item \textbf{University:} Stores high-level institution data (e.g., UKPRN).
+    \item \textbf{Course:} Represents a specific programme (e.g., "Computer Science") linked to a university.
+    \item \textbf{CourseOption:} Stores the variable data for a course, specifically the \texttt{year}, \texttt{studyMode} (Full-time/Part-time), and the \texttt{homeFee} vs \texttt{internationalFee}.
 \end{itemize}
+
+This structure allows the system to store multiple years of data for the same course, enabling the "Historical Data" feature requested by SPIO.
+
+% --- FIGURE: ER DIAGRAM (TIKZ) ---
+\begin{figure}[h!]
+    \centering
+    % Resize box ensures the large diagram perfectly fits the page width without overflowing
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[>=stealth, font=\small]
+        
+        % -----------------------
+        % 1. University Node
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (uni) at (0, 0) {
+            \begin{tabular}{l}
+                \textbf{University} \\
+                \hline
+                PK id: String \\
+                ukprn: String? (Unique) \\
+                name: String \\
+                address: Json? \\
+                website: String? \\
+                logoUrl: String? \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % 2. Course Node
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (course) at (6, 0) {
+            \begin{tabular}{l}
+                \textbf{Course} \\
+                \hline
+                PK id: String \\
+                FK universityId: String \\
+                ucasCourseId: String (Unique) \\
+                title: String \\
+                applicationCode: String? \\
+                summary: String? \\
+                courseUrl: String? \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % 3. CourseOption Node (Very Tall)
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (option) at (13.5, -3.5) {
+            \begin{tabular}{l}
+                \textbf{CourseOption} \\
+                \hline
+                PK, FK courseId: String \\
+                PK year: Int \\
+                PK studyMode: String \\
+                PK duration: String \\
+                id: String (Unique) \\
+                startDate: String? \\
+                homeFee: Float? \\
+                internationalFee: Float? \\
+                aLevelGrade1: String? \\
+                aLevelSubject1: String? \\
+                aLevelGrade2: String? \\
+                aLevelSubject2: String? \\
+                aLevelGrade3: String? \\
+                aLevelSubject3: String? \\
+                aLevelGrade4: String? \\
+                aLevelSubject4: String? \\
+                outcomeQualification: String? \\
+                createdAt: DateTime \\
+                updatedAt: DateTime \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % 4. Scrape Node
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (scrape) at (0, -6) {
+            \begin{tabular}{l}
+                \textbf{Scrape} \\
+                \hline
+                PK id: String \\
+                startedAt: DateTime \\
+                finishedAt: DateTime? \\
+                status: ScrapeStatus (Enum) \\
+                type: String? \\
+                createdAt: DateTime \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % 5. ScrapeIssue Node
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (issue) at (6, -6) {
+            \begin{tabular}{l}
+                \textbf{ScrapeIssue} \\
+                \hline
+                PK id: String \\
+                FK scrapeId: String \\
+                courseId: String? \\
+                universityId: String? \\
+                message: String? \\
+                resolved: Boolean \\
+                createdAt: DateTime \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % 6. Session Node (Standalone)
+        % -----------------------
+        \node[draw, thick, inner sep=0pt, align=left] (session) at (0, -10.5) {
+            \begin{tabular}{l}
+                \textbf{Session} \\
+                \hline
+                PK id: String \\
+                sid: String (Unique) \\
+                data: String \\
+                expiresAt: DateTime \\
+            \end{tabular}
+        };
+
+        % -----------------------
+        % Relationships (Lines)
+        % -----------------------
+        % University -> Course (Straight horizontal line)
+        \draw[->, thick] (uni.east) -- node[above] {1:N} (course.west);
+        
+        % Course -> CourseOption (Orthogonal step line: goes right, then down, then right)
+        \draw[->, thick] (course.east) -- ++(1.5,0) |- node[near end, above] {1:N} (option.west);
+        
+        % Scrape -> ScrapeIssue (Straight horizontal line)
+        \draw[->, thick] (scrape.east) -- node[above] {1:N} (issue.west);
+
+    \end{tikzpicture}
+    } % End of resizebox
+    \caption{Entity Relationship Diagram (ERD) mapping the complete Prisma database schema.}
+    \label{fig:erd}
+\end{figure}
+
+\subsubsection{Scraping Engine Architecture}
+The core technical challenge was managing the diversity of 35 different university websites. To solve this, we implemented the \textbf{Adapter Pattern} within the Scraping Engine.
+
+The \texttt{Manager} class acts as the client. It iterates through the configuration list and instantiates a scraper based on the university's requirements.
+\begin{enumerate}
+    \item \textbf{GenericHtmlAdapter:} The default adapter. It uses \texttt{Cheerio} for fast static parsing and falls back to \texttt{Puppeteer} if dynamic content is detected.
+    \item \textbf{Specific Adapters (e.g., EdinburghAdapter):} These extend the generic adapter to handle edge cases, such as the University of Edinburgh's Single Page Application (SPA) structure, where fee data is hidden behind dynamic redirects.
+\end{enumerate}
+
+This polymorphic design ensures that adding a new university only requires writing a new Adapter class, without modifying the core Engine logic.
+
+% --- FIGURE: CLASS DIAGRAM (TIKZ) ---
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[>=stealth, font=\small]
+        % Interface
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (interface) at (0, 0) {
+            \textbf{\textless\textless interface\textgreater\textgreater} \\
+            \textbf{IScraperAdapter} \\
+            \rule{3.8cm}{0.4pt} \\
+            + scrapeCourse(url): Promise
+        };
+
+        % Generic Adapter
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (generic) at (0, -3) {
+            \textbf{GenericHtmlAdapter} \\
+            \rule{3.8cm}{0.4pt} \\
+            + scrapeCourse(url) \\
+            - parseFees(html)
+        };
+
+        % Specific Adapter
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (specific) at (0, -6) {
+            \textbf{EdinburghAdapter} \\
+            \rule{3.8cm}{0.4pt} \\
+            + scrapeCourse(url) \\
+            - resolveRedirects()
+        };
+
+        % Scraper Manager
+        \node[draw, rectangle, minimum width=4cm, minimum height=2cm, align=center] (manager) at (-6, -3) {
+            \textbf{ScraperManager} \\
+            \rule{3.8cm}{0.4pt} \\
+            + startJob() \\
+            + getAdapter(uniName)
+        };
+
+        % Relations
+        \draw[->, dashed] (generic) -- node[midway, right] {implements} (interface);
+        \draw[->] (specific) -- node[midway, right] {extends} (generic);
+        % L-shaped arrow from manager to interface
+        \draw[->, dashed] (manager.north) |- node[near start, left] {uses} (interface.west); 
+    \end{tikzpicture}
+    \caption{Class Diagram of the Scraper Engine demonstrating the Adapter Pattern.}
+    \label{fig:class_diagram}
+\end{figure}
 
 \subsubsection{Technologies and Platforms}
-The project utilised a strictly typed JavaScript ecosystem to reduce runtime errors and improve developer tooling:
+We selected a unified \textbf{TypeScript} stack for both backend and frontend. This decision directly addresses the feedback regarding a "coherent technical stack":
 
 \begin{itemize}
-    \item \textbf{Language:} \textbf{TypeScript} was used across both Frontend and Backend. Shared interfaces (DTOs) ensured that the data structure expected by the frontend matched exactly what the backend delivered.
-    \item \textbf{Backend:} \textbf{Node.js} with \textbf{Express}. For scraping, we utilised \textbf{Cheerio} for high-speed static HTML parsing and \textbf{Puppeteer} for sites requiring JavaScript execution.
-    \item \textbf{Frontend:} \textbf{React} (v18) using Functional Components and Hooks. State management was handled via React Context for global user states (authentication).
-    \item \textbf{Database:} \textbf{PostgreSQL}, interacting via prisma ORM (Object-Relational Mapper) to prevent SQL injection attacks and manage schema migrations programmatically.
-\end{itemize}
-
-\subsubsection{Software Development Process}
-As outlined in the Project Management plan, we utilised a \textbf{Hybrid Development Model}. 
-\begin{itemize}
-    \item \textbf{Phase 1 (Waterfall):} Requirements gathering, database schema design, and API specification were completed upfront. This rigid start was necessary to ensure the complex data relationships matched SPIO's reporting standards.
-    \item \textbf{Phase 2 (Iterative/Agile):} The development of the different university scrapers followed an iterative approach. Due to the high uncertainty of web scraping (e.g., website structure changes), scrapers were built in 1-week sprints, prioritising "Must-Have" universities first.
+    \item \textbf{Type Safety:} Sharing TypeScript interfaces (DTOs) between the Backend and Frontend ensures that if the database schema changes, the frontend build will fail immediately, preventing runtime errors in production.
+    \item \textbf{Backend (Node.js/Express):} Chosen over Python (originally considered) because it allows for non-blocking I/O, which is essential when scraping multiple websites concurrently.
+    \item \textbf{Database (PostgreSQL \& Prisma):} PostgreSQL was chosen for its strict schema enforcement compared to NoSQL alternatives. Prisma acts as the bridge, generating type-safe database clients automatically.
 \end{itemize}
 
 \subsubsection{Role of Behaviour-Driven Development (BDD)}
-The BDD approach bridged the gap between SPIO's requirements and our implementation. The Gherkin features defined in the Requirements Documentation (e.g., \texttt{Feature: Fetching Data}) served as the blueprint for our Integration Tests. 
+The BDD approach bridged the gap between SPIO's requirements and our implementation. The Gherkin features defined in the Requirements Documentation served as the specification for our API Controllers.
 
-For example, the requirement \textit{"Given I am a logged-in user... When I click Fetch Data..."} directly influenced the logic in our Scrape Controller. We ensured that the code explicitly handled the `Given` (Auth Middleware check) and `Then` (Job Queue initiation) states defined in the scenarios.
+For example, the requirement \textit{"Given I am a logged-in user... When I click Fetch Data..."} directly mapped to the \texttt{ScraperController}. We ensured that the code explicitly handled the authentication check (`Given`) before initiating the job queue (`Then`).
 
-% Need to add actual code to this
-\begin{lstlisting}[language=Gherkin, caption={Code Snippet: Generic Scraper Interface Implementation}, label={lst:code_example}]
-// code code code
+\begin{lstlisting}[language=Gherkin, caption={BDD-Driven Controller Logic}, label={lst:bdd_controller}]
+// src/controllers/ScraperController.ts
+// Maps to Feature: Fetching Data
+router.post('/start', requireAuth, async (req, res) => {
+    // "Given I am a logged-in user" -> handled by isAuthenticated middleware
+    try {
+        // "When I click Fetch Data" -> trigger the manager
+        const jobId = await ScraperManager.startJob(req.body.universities);
+        
+        // "Then I should see a notification" -> return 200 OK
+        res.status(200).json({ message: "Data fetch started", jobId });
+    } catch (error) {
+        res.status(500).json({ error: "Fetch failed" });
+    }
+});
 \end{lstlisting}
 
 \subsection{Usability and User Experience (5\%)}
-Since the system replaces a manual workflow, the UX focused on \textbf{feedback} and \textbf{efficiency} rather than visual flair:
+As an internal enterprise tool replacing a manual workflow, our User Experience strategy prioritised \textbf{efficiency, data trust, and cognitive load reduction}. We addressed usability through the following key sub-features and design decisions:
 
 \begin{enumerate}
-    \item \textbf{Asynchronous Feedback Loops:} Data scraping is a time-consuming process. To prevent the user from thinking the system had frozen, we implemented HTTP-polling for progress. This provides real-time updates about the status of the scraper and if any issues have been encountered, directly addressing the "System Visibility" heuristic.
-    \item \textbf{Error Resilience:} If a specific university scrape fails (common in web scraping), the system does not crash. Instead, it completes the batch and highlights the specific failure in the dashboard, allowing the user to retry just that item.
-    \item \textbf{Familiarity:} The data grid was designed to mimic Excel functionalities (sorting, filtering) as this is the tool SPIO staff are most comfortable with.
+    \item \textbf{System Visibility and Asynchronous Feedback:} Data scraping is a long-running process. To prevent users from assuming the system has frozen, leading to frustrated page refreshes, we implemented a robust feedback loop. HTTP-polling the \texttt{/api/scraper/status} endpoint provides real-time progress updates (e.g., \textit{"Scraping is running, 0 issues discovered..."}).
+    
+    \item \textbf{Error Resilience and Graceful Degradation:} If a specific university's scraper fails due to website layout changes or bot-protection, the system does not crash the entire batch. Instead, the backend logs the error to the \texttt{ScrapeIssue} table and continues processing. The UI highlights these specific failures post-scrape, allowing analysts to immediately export and use the successful data.
+    
+    \item \textbf{Advanced Course Lookup and Faceted Filtering:} To help analysts navigate thousands of courses without needing to export to Excel first, we implemented a highly responsive dynamic data grid featuring:
+    \begin{itemize}
+        \item \textbf{Debounced Searching:} Efficient database queries without lagging the UI, allowing instant keyword lookups (e.g., "Cyber Security").
+        \item \textbf{Multi-criteria Filtering:} Stackable filters (fee ranges, study modes, competitor brackets) to narrow down 10,000+ courses to a target segment in seconds.
+    \end{itemize}
+
+    \item \textbf{Contextual Drill-Down:} Clicking any course row opens a comprehensive "Detailed View". This isolates the course to present historical fee comparisons, granular entry requirements, and crucially, a direct hyperlink to the \textit{original source URL}. Providing this source link builds absolute trust, allowing analysts to manually verify the scraped data if an anomaly appears.
+    
+    \item \textbf{Familiarity and Reduced Learning Curve:} To ensure high user adoption, dashboards and data tables were explicitly styled to mimic SPIO's existing market intelligence tools. Familiar iconography, standard pagination, and an "Export to Excel" pipeline that matches their current workflows ensure staff can transition to this application with near-zero onboarding time.
 \end{enumerate}
