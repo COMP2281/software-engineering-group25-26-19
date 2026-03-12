@@ -193,6 +193,15 @@ This polymorphic design ensures that adding a new university only requires writi
 \begin{figure}[h!]
     \centering
     \begin{tikzpicture}[>=stealth, font=\small]
+        
+        % Scraper Manager (Client)
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (manager) at (-5.5, 0) {
+            \textbf{ScraperManager} \\
+            \rule{3.8cm}{0.4pt} \\
+            + startJob() \\
+            + getAdapter(uniName)
+        };
+
         % Interface
         \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (interface) at (0, 0) {
             \textbf{\textless\textless interface\textgreater\textgreater} \\
@@ -217,19 +226,16 @@ This polymorphic design ensures that adding a new university only requires writi
             - resolveRedirects()
         };
 
-        % Scraper Manager
-        \node[draw, rectangle, minimum width=4cm, minimum height=2cm, align=center] (manager) at (-6, -3) {
-            \textbf{ScraperManager} \\
-            \rule{3.8cm}{0.4pt} \\
-            + startJob() \\
-            + getAdapter(uniName)
-        };
-
         % Relations
-        \draw[->, dashed] (generic) -- node[midway, right] {implements} (interface);
-        \draw[->] (specific) -- node[midway, right] {extends} (generic);
-        % L-shaped arrow from manager to interface
-        \draw[->, dashed] (manager.north) |- node[near start, left] {uses} (interface.west); 
+        % Straight horizontal line from Manager to Interface
+        \draw[->, dashed] (manager.east) -- node[above] {uses} (interface.west);
+        
+        % Straight vertical line from Generic to Interface
+        \draw[->, dashed] (generic.north) -- node[right] {implements} (interface.south);
+        
+        % Straight vertical line from Specific to Generic
+        \draw[->] (specific.north) -- node[right] {extends} (generic.south);
+        
     \end{tikzpicture}
     \caption{Class Diagram of the Scraper Engine demonstrating the Adapter Pattern.}
     \label{fig:class_diagram}
@@ -245,26 +251,24 @@ We selected a unified \textbf{TypeScript} stack for both backend and frontend. T
 \end{itemize}
 
 \subsubsection{Role of Behaviour-Driven Development (BDD)}
-The BDD approach bridged the gap between SPIO's requirements and our implementation. The Gherkin features defined in the Requirements Documentation served as the specification for our API Controllers.
+Behaviour-Driven Development (BDD) served as the core foundation of our software engineering process, providing a shared language that connected the SPIO stakeholders' business needs with our technical work. Rather than treating BDD simply as a way to write tests, we used it as our main design approach to guarantee clear tracking from the initial requirements gathering all the way through to deployment.
 
-For example, the requirement \textit{"Given I am a logged-in user... When I click Fetch Data..."} directly mapped to the \texttt{ScraperController}. We ensured that the code explicitly handled the authentication check (`Given`) before initiating the job queue (`Then`).
+\textbf{From Elicitation to Specification:} 
+Following our initial client meetings, we structured our workflow to translate broad requirements (e.g., "compare university courses") into clear, testable specifications. We applied the MoSCoW method for prioritisation and the INVEST checklist to validate our User Stories. These stories were then expanded into precise Gherkin scenarios (Given-When-Then). As documented in our initial report, this step was vital for removing confusion. By writing concrete examples of how the system should behave, we prevented scope creep and ensured both the client and the developers shared the exact same definition of "done."
 
-\begin{lstlisting}[language=Gherkin, caption={BDD-Driven Controller Logic}, label={lst:bdd_controller}]
-// src/controllers/ScraperController.ts
-// Maps to Feature: Fetching Data
-router.post('/start', requireAuth, async (req, res) => {
-    // "Given I am a logged-in user" -> handled by isAuthenticated middleware
-    try {
-        // "When I click Fetch Data" -> trigger the manager
-        const jobId = await ScraperManager.startJob(req.body.universities);
-        
-        // "Then I should see a notification" -> return 200 OK
-        res.status(200).json({ message: "Data fetch started", jobId });
-    } catch (error) {
-        res.status(500).json({ error: "Fetch failed" });
-    }
-});
-\end{lstlisting}
+\textbf{Guiding Architectural Decisions:} 
+The Gherkin scenarios acted as direct blueprints for our system architecture. For example, \texttt{Feature 2: Fetching Data} directly guided the structure of our backend API and scraping engine:
+\begin{itemize}
+    \item The \texttt{Given} preconditions (e.g., \textit{"Given I am a logged-in user"}) required us to implement the \texttt{requireAuth} middleware across all protected Express routes.
+    \item The \texttt{When} actions mapped directly to specific backend controllers, such as the \texttt{ScraperController} receiving a POST request and passing the data to the \texttt{ScraperManager}.
+    \item The \texttt{Then} outcomes defined the exact HTTP responses and the resulting React UI updates (e.g., triggering a polling mechanism to display the scraping progress).
+\end{itemize}
+
+\textbf{Defining Complex UI and Background Processes:} 
+BDD was particularly helpful for defining the User Experience around long background tasks. Because the actual web scraping happens invisibly on the server, we deliberately wrote our scenarios to describe only what the user can see on the screen, rather than the internal scraping code. Scenarios like \texttt{BR 2.2: Attempting to start a fetch while one is already in progress} forced us to build reliable frontend state management (like disabling buttons and showing specific error messages) and backend database checks (using the \texttt{ScrapeStatus} enum) to deliver the expected behaviour.
+
+\textbf{Test Oracles and Validation:} 
+Finally, these behavioural specifications served as our absolute Test Oracles for both System Testing and User Acceptance Testing. If a specific piece of code—such as the \texttt{Excel.api.ts} service or the \texttt{EdinburghAdapter}—failed to meet the exact \texttt{Then} conditions outlined in the Requirements Document, that sprint's work was not accepted. This strict use of BDD ensured that every line of code written contributed directly to a confirmed client requirement.
 
 \subsection{Usability and User Experience (5\%)}
 As an internal enterprise tool replacing a manual workflow, our User Experience strategy prioritised \textbf{efficiency, data trust, and cognitive load reduction}. We addressed usability through the following key sub-features and design decisions:
