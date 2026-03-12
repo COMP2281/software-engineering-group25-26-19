@@ -7,9 +7,9 @@
 The conceptualisation and development of the Competitor Benchmarking System were grounded in three primary categories of source materials:
 
 \begin{itemize}
-    \item \textbf{Stakeholder Requirements \& Domain Knowledge:} The primary source was the consultation with the Strategic Planning and Insight Office (SPIO). Key artifacts included the client's existing manual Excel workflows and the "S-Squared" commercial dataset. These established the baseline for the data schema (specifically the distinction between 'Home' and 'International' fees and 'Course Options') and defined the "Must-Have" features for the MVP.
-    \item \textbf{Target Web Specifications (DOM Analysis):} To develop the scraping engine, we analysed the document object models (DOM) of the 35 target university websites. This analysis revealed a "Dual Certainty Profile": some sites yielded data via static HTML (suitable for lightweight parsing via Cheerio), while others (e.g., University of Edinburgh) relied on Single Page Application (SPA) frameworks, necessitating a headless browser approach (Puppeteer).
-    \item \textbf{API Documentation:} The UCAS Open Data API served as the authoritative source for course titles and entry requirements. This documentation allowed us to design a "Hybrid Ingestion Pipeline," reducing the load on custom web scrapers by only scraping data (like specific fees) that is not available via UCAS.
+    \item \textbf{Stakeholder Requirements \& Domain Knowledge:} The primary source was the consultation with the Strategic Planning and Insight Office (SPIO). Key artifacts included the client's existing manual Excel workflows and the ``S-Squared'' commercial dataset. These established the baseline for the data schema (specifically the distinction between 'Home' and 'International' fees and 'Course Options') and defined the ``Must-Have'' features for the MVP.
+    \item \textbf{Target Web Specifications (DOM Analysis):} To develop the scraping engine, we analysed the document object models (DOM) of the 35 target university websites. This analysis revealed a ``Dual Certainty Profile'': some sites yielded data via static HTML (suitable for lightweight parsing via Cheerio), while others (e.g., University of Edinburgh) relied on Single Page Application (SPA) frameworks, necessitating a headless browser approach (Puppeteer).
+    \item \textbf{API Documentation:} The UCAS Open Data API served as the authoritative source for course titles and entry requirements. This documentation allowed us to design a ``Hybrid Ingestion Pipeline'', reducing the load on custom web scrapers by only scraping data (like specific fees) that is not available via UCAS.
 \end{itemize}
 
 \subsection{Technical Description}
@@ -19,7 +19,7 @@ The system follows a classic \textbf{Three-Tier Client-Server Architecture}. Thi
 
 \begin{enumerate}
     \item \textbf{Presentation Layer (Frontend):} A React (v18) Single Page Application (SPA) built with TypeScript and Vite. It communicates with the backend via a RESTful API using Axios. It is responsible for rendering the dashboard, visualising course comparisons, and initiating scrape jobs via the \texttt{Scraper.api.ts} service module.
-    \item \textbf{Application Layer (Backend):} A Node.js runtime environment using the Express.js framework. This layer acts as the orchestrator. It handles session-based authentication (using a basic local strategy with hashed passwords), manages API routing, and hosts the "Scraping Engine".
+    \item \textbf{Application Layer (Backend):} A Node.js runtime environment using the Express.js framework. This layer acts as the orchestrator. It handles session-based authentication (using a basic local strategy with hashed passwords), manages API routing, and hosts the ``Scraping Engine''.
     \item \textbf{Data Layer (Database):} A PostgreSQL relational database managed via Prisma ORM.
 \end{enumerate}
 
@@ -38,11 +38,11 @@ A critical aspect of the development was the database schema design. Based on th
 The schema consists of three core entities:
 \begin{itemize}
     \item \textbf{University:} Stores high-level institution data (e.g., UKPRN).
-    \item \textbf{Course:} Represents a specific programme (e.g., "Computer Science") linked to a university.
+    \item \textbf{Course:} Represents a specific programme (e.g., ``Computer Science'') linked to a university.
     \item \textbf{CourseOption:} Stores the variable data for a course, specifically the \texttt{year}, \texttt{studyMode} (Full-time/Part-time), and the \texttt{homeFee} vs \texttt{internationalFee}.
 \end{itemize}
 
-This structure allows the system to store multiple years of data for the same course, enabling the "Historical Data" feature requested by SPIO.
+This structure allows the system to store multiple years of data for the same course, enabling the ``Historical Data'' feature requested by SPIO.
 
 % --- FIGURE: ER DIAGRAM (TIKZ) ---
 \begin{figure}[h!]
@@ -194,47 +194,47 @@ This polymorphic design ensures that adding a new university only requires writi
     \centering
     \begin{tikzpicture}[>=stealth, font=\small]
         
-        % Scraper Manager (Client)
-        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (manager) at (-5.5, 0) {
+        % Scraper Manager (Client) - Top Left
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (manager) at (-3.5, 0) {
             \textbf{ScraperManager} \\
             \rule{3.8cm}{0.4pt} \\
             + startJob() \\
             + getAdapter(uniName)
         };
 
-        % Interface
-        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (interface) at (0, 0) {
+        % Interface - Top Right
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (interface) at (3.5, 0) {
             \textbf{\textless\textless interface\textgreater\textgreater} \\
             \textbf{IScraperAdapter} \\
             \rule{3.8cm}{0.4pt} \\
             + scrapeCourse(url): Promise
         };
 
-        % Generic Adapter
-        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (generic) at (0, -3) {
-            \textbf{GenericHtmlAdapter} \\
-            \rule{3.8cm}{0.4pt} \\
-            + scrapeCourse(url) \\
-            - parseFees(html)
-        };
-
-        % Specific Adapter
-        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (specific) at (0, -6) {
+        % Specific Adapter - Bottom Left
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (specific) at (-3.5, -2.8) {
             \textbf{EdinburghAdapter} \\
             \rule{3.8cm}{0.4pt} \\
             + scrapeCourse(url) \\
             - resolveRedirects()
         };
 
+        % Generic Adapter - Bottom Right
+        \node[draw, rectangle, minimum width=4cm, minimum height=1.5cm, align=center] (generic) at (3.5, -2.8) {
+            \textbf{GenericHtmlAdapter} \\
+            \rule{3.8cm}{0.4pt} \\
+            + scrapeCourse(url) \\
+            - parseFees(html)
+        };
+
         % Relations
-        % Straight horizontal line from Manager to Interface
+        % 1. Manager uses Interface (Horizontal, Left to Right)
         \draw[->, dashed] (manager.east) -- node[above] {uses} (interface.west);
         
-        % Straight vertical line from Generic to Interface
+        % 2. Generic implements Interface (Vertical, Bottom to Top)
         \draw[->, dashed] (generic.north) -- node[right] {implements} (interface.south);
         
-        % Straight vertical line from Specific to Generic
-        \draw[->] (specific.north) -- node[right] {extends} (generic.south);
+        % 3. Edinburgh extends Generic (Horizontal, Left to Right)
+        \draw[->] (specific.east) -- node[above] {extends} (generic.west);
         
     \end{tikzpicture}
     \caption{Class Diagram of the Scraper Engine demonstrating the Adapter Pattern.}
@@ -242,7 +242,7 @@ This polymorphic design ensures that adding a new university only requires writi
 \end{figure}
 
 \subsubsection{Technologies and Platforms}
-We selected a unified \textbf{TypeScript} stack for both backend and frontend. This decision directly addresses the feedback regarding a "coherent technical stack", allowing us to share data models across the entire application:
+We selected a unified \textbf{TypeScript} stack for both backend and frontend. This decision directly addresses the feedback regarding a ``coherent technical stack'', allowing us to share data models across the entire application:
 
 \begin{itemize}
     \item \textbf{Type Safety:} Sharing TypeScript interfaces between the backend and frontend ensures that if the database schema changes, the frontend build will fail immediately, catching integration bugs at compile-time rather than runtime.
@@ -253,7 +253,7 @@ We selected a unified \textbf{TypeScript} stack for both backend and frontend. T
 \end{itemize}
 
 \subsubsection{Software Development Process}
-As established in our initial project management plan, we adopted a \textbf{Hybrid Development Model ("Plan-Driven Iterations")}. We chose this approach to handle the project's "dual certainty profile", balancing the need for a strict internal database with the chaotic nature of external web scraping.
+As established in our initial project management plan, we adopted a \textbf{Hybrid Development Model (``Plan-Driven Iterations'')}. We chose this approach to handle the project's ``dual certainty profile'', balancing the need for a strict internal database with the chaotic nature of external web scraping.
 
 \begin{itemize}
     \item \textbf{Phase 1: Structured Planning (Waterfall Elements):} For stable, well-defined requirements such as the relational database schema, session authentication mechanisms, and the Excel export format, we performed comprehensive upfront design. This ensured architectural consistency and provided a solid foundation before any coding began.
@@ -265,12 +265,12 @@ This hybrid process provided the structural stability needed for the backend API
 Within our hybrid process, Behaviour-Driven Development (BDD) served as the shared language that connected SPIO's business needs with our technical implementation. Rather than treating BDD simply as a way to write tests, we used it as our main design approach.
 
 \textbf{From Elicitation to Specification:} 
-During our planning phase, we applied the MoSCoW method and the INVEST checklist to validate our User Stories. These were then expanded into precise Gherkin scenarios (Given-When-Then). By writing concrete examples of how the system should behave, we prevented scope creep and ensured both the client and developers shared the exact same definition of "done."
+During our planning phase, we applied the MoSCoW method and the INVEST checklist to validate our User Stories. These were then expanded into precise Gherkin scenarios (Given-When-Then). By writing concrete examples of how the system should behave, we prevented scope creep and ensured both the client and developers shared the exact same definition of ``done''.
 
 \textbf{Guiding Architectural Decisions:} 
 The Gherkin scenarios acted as direct blueprints for our system architecture. For example, \texttt{Feature 2: Fetching Data} directly guided the structure of our backend API and scraping engine:
 \begin{itemize}
-    \item The \texttt{Given} preconditions (e.g., \textit{"Given I am a logged-in user"}) required us to implement the \texttt{requireAuth} middleware across all protected Express routes.
+    \item The \texttt{Given} preconditions (e.g., \textit{``Given I am a logged-in user''}) required us to implement the \texttt{requireAuth} middleware across all protected Express routes.
     \item The \texttt{When} actions mapped directly to specific backend controllers, such as the \texttt{ScraperController} receiving a POST request and passing the data to the \texttt{ScraperManager}.
     \item The \texttt{Then} outcomes defined the exact HTTP responses and the resulting React UI updates.
 \end{itemize}
@@ -285,17 +285,17 @@ Finally, these behavioural specifications served as our absolute Test Oracles fo
 As an internal enterprise tool replacing a manual workflow, our User Experience strategy prioritised \textbf{efficiency, data trust, and cognitive load reduction}. We addressed usability through the following key sub-features and design decisions:
 
 \begin{enumerate}
-    \item \textbf{System Visibility and Asynchronous Feedback:} Data scraping is a long-running process. To prevent users from assuming the system has frozen, leading to frustrated page refreshes, we implemented a robust feedback loop. HTTP-polling the \texttt{/api/scraper/status} endpoint provides real-time progress updates (e.g., \textit{"Scraping is running, 0 issues discovered..."}).
+    \item \textbf{System Visibility and Asynchronous Feedback:} Data scraping is a long-running process. To prevent users from assuming the system has frozen, leading to frustrated page refreshes, we implemented a robust feedback loop. HTTP-polling the \texttt{/api/scraper/status} endpoint provides real-time progress updates (e.g., \textit{``Scraping is running, 0 issues discovered...''}).
     
     \item \textbf{Error Resilience and Graceful Degradation:} If a specific university's scraper fails due to website layout changes or bot-protection, the system does not crash the entire batch. Instead, the backend logs the error to the \texttt{ScrapeIssue} table and continues processing. The UI highlights these specific failures post-scrape, allowing analysts to immediately export and use the successful data.
     
     \item \textbf{Advanced Course Lookup and Faceted Filtering:} To help analysts navigate thousands of courses without needing to export to Excel first, we implemented a highly responsive dynamic data grid featuring:
     \begin{itemize}
-        \item \textbf{Debounced Searching:} Efficient database queries without lagging the UI, allowing instant keyword lookups (e.g., "Cyber Security").
+        \item \textbf{Debounced Searching:} Efficient database queries without lagging the UI, allowing instant keyword lookups (e.g., ``Cyber Security'').
         \item \textbf{Multi-criteria Filtering:} Stackable filters (fee ranges, study modes, competitor brackets) to narrow down 10,000+ courses to a target segment in seconds.
     \end{itemize}
 
-    \item \textbf{Contextual Drill-Down:} Clicking any course row opens a comprehensive "Detailed View". This isolates the course to present historical fee comparisons, granular entry requirements, and crucially, a direct hyperlink to the \textit{original source URL}. Providing this source link allows analysts to manually verify the scraped data if an anomaly appears.
+    \item \textbf{Contextual Drill-Down:} Clicking any course row opens a comprehensive ``Detailed View''. This isolates the course to present historical fee comparisons, granular entry requirements, and crucially, a direct hyperlink to the \textit{original source URL}. Providing this source link allows analysts to manually verify the scraped data if an anomaly appears.
     
-    \item \textbf{Familiarity and Reduced Learning Curve:} To ensure high user adoption, dashboards and data tables were explicitly styled to mimic SPIO's existing market intelligence tools. Familiar iconography, standard pagination, and an "Export to Excel" pipeline that matches their current workflows ensure staff can transition to this application with near-zero onboarding time.
+    \item \textbf{Familiarity and Reduced Learning Curve:} To ensure high user adoption, dashboards and data tables were explicitly styled to mimic SPIO's existing market intelligence tools. Familiar iconography, standard pagination, and an ``Export to Excel'' pipeline that matches their current workflows ensure staff can transition to this application with near-zero onboarding time.
 \end{enumerate}
