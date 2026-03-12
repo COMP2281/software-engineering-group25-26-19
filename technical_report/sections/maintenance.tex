@@ -3,11 +3,74 @@
 % ==========================================
 \section{Maintenance and Implications}
 
-\subsection{System Maintenance (5\%)}
-% Information on how system can be maintained.
+\subsection{System Maintenance}
+The system is designed for modular maintainability, supported by comprehensive developer documentation provided alongside the codebase (\texttt{frontend.md}, \texttt{app.md}, \texttt{database.md}, \texttt{scraper.md}). Maintenance is divided into two distinct categories: stable application infrastructure and volatile external integrations.
 
-\subsection{Future Development (5\%)}
-% How possible future development can be implemented.
+\subsubsection{Application Infrastructure Maintenance}
+Routine maintenance of the core application is streamlined by our strict separation of concerns and type-safe environment:
+\begin{itemize}
+    \item \textbf{Database Schema Updates:} Managed entirely via Prisma ORM. If business requirements change (e.g., tracking a new fee type), developers must update \texttt{schema.prisma} and run \texttt{npx prisma migrate dev}. This ensures database updates remain version-controlled and reproducible without manual SQL execution.
+    \item \textbf{API \& UI Synchronisation:} The React frontend communicates with the Node.js backend through a centralised API wrapper layer. If backend Express routes or type interfaces are modified, developers only need to update the corresponding interface in the frontend API module, preventing cascading breaks across individual UI components.
+\end{itemize}
 
-\subsection{Ethical and Societal Impacts (10\%)}
-% Assessment of current and future status.
+\subsubsection{Scraping Engine Maintenance}
+The web scraping engine is inherently the most maintenance-intensive component of the system. Because course data is collected from 35 external university websites, any changes to their HTML structure or security policies will break the parsing logic. The system uses an Adapter Pattern to isolate these failures, meaning one broken university will not crash the system. 
+
+When a scrape fails, the system logs a \texttt{ScrapeIssue} visible on the user dashboard. Maintainers should follow these protocols:
+\begin{enumerate}
+    \item \textbf{Fixing Broken Selectors:} If a university redesigns its website, the parser will fail to extract fee data. Maintainers must use browser developer tools to identify the new HTML structure and update the relevant Keyword/XPath selectors within the specific university's Adapter class (using \texttt{cheerio}).
+    \item \textbf{Addressing Anti-Bot Measures:} If a target university implements bot protection (yielding 403 Forbidden errors or timeouts), maintainers should first increase the request delays in \texttt{config.ts}. If the block persists, the adapter should be updated to rely entirely on the \texttt{Puppeteer} headless browser fallback to mimic real user behaviour.
+    \item \textbf{Integrating New Competitors:} To track a new university, developers do not need to alter the core engine. They simply create a new script implementing the \texttt{IScraperAdapter} interface, define the extraction rules, and register it in the \texttt{ScraperManager}.
+\end{enumerate}
+
+
+\subsection{Future Development}
+
+Although the current system provides a functional platform for collecting and analysing university course fee data, several improvements could be implemented in future iterations.
+
+\textbf{University Support:} One potential extension is expanding the number of universities supported by the scraper. The current architecture allows new institutions to be added by registering additional configurations and implementing custom scraping adapters if required.
+
+\textbf{Data Coverage:} Another improvement would involve expanding the types of information collected. Currently, the system focuses primarily on tuition fees and entry requirements. Future versions could incorporate additional metrics such as student satisfaction scores, graduate employment statistics, course module information, or accommodation costs. This would allow staff to perform more comprehensive analysis of competitor courses and institutions.
+
+%\noindent The analytics component could also be enhanced by storing historical snapshots of scraped data. Recording fee information over multiple years would enable longitudinal analysis of tuition fee trends and provide more meaningful insights through visualisation tools.
+
+\textbf{User Personalisation:} From a user experience perspective, the system could support persistent user accounts and personalised features. For example, users could save favourite courses, generate comparison lists, or receive alerts when course fees change.
+
+\textbf{Weekly Cron Tasks:} Weekly scheduled cron tasks could regularly test the adapters, alerting developers if any adapters fail.
+
+\textbf{Infrastructure:} Deployment and scalability improvements could be implemented. Containerisation using Docker and deployment to a cloud platform would improve reliability, allow scheduled scraping tasks, and support scaling if the dataset or user base grows.
+
+\subsection{Ethical and Societal Impacts}
+
+While the Competitor Benchmarking System operates strictly on publicly available data, its aggregation and the strategic decisions it informs carry significant ethical and societal implications for the higher education ecosystem. 
+
+\subsubsection{Current Status: Ethical Data Collection and Integrity}
+
+\textbf{1. The Ethics of Automated Data Harvesting} \\
+Extracting data from 35 third-party university domains carries the ethical risk of excessive resource consumption. Aggressive scraping can simulate a Distributed Denial of Service (DDoS) attack, degrading competitor website performance for genuine users. 
+\textit{Mitigation:} The scraper enforces strict ``polite scrapin'' protocols. It respects \texttt{robots.txt}, utilises rate limits, injects randomised delays, and caps concurrent requests. If a competitor actively prohibits scraping via bot-mitigation, the system does not attempt malicious circumvention, ensuring ethical compliance.
+
+\noindent \textbf{2. Data Integrity and Decision-Making Risks} \\
+SPIO uses this data for high-stakes strategic decisions, such as adjusting tuition fees. A parsing error, for example, incorrectly scraping a £25,000 International fee as a Home fee, could lead SPIO to conclude Durham's fees are uncompetitive. Acting on this flawed data could result in unwarranted fee hikes, directly causing financial harm to students. 
+\textit{Mitigation:} To prevent automated errors from becoming institutional policy, the UI presents data neutrally and attaches a direct hyperlink to the original source URL for every data point, mandating manual verification of anomalies by analysts.
+
+\subsubsection{Current Status: Societal Impacts on Higher Education}
+
+\textbf{1. Market Transparency and Fair Competition (Positive)} \\
+The system promotes market efficiency by providing rapid, unbiased access to sector data. This allows Durham University to ensure its courses are priced fairly and competitively, preventing monopolistic pricing trends in the sector. Keeping the university financially viable through fair market positioning is a societal good, given its role as a major employer and research hub.
+
+\noindent \textbf{2. The Commodification of Education (Negative)} \\
+Conversely, high-speed benchmarking risks exacerbating the ``commodification'' of higher education, treating degrees strictly as financial products rather than public goods. 
+\textit{Mitigation:} The UI is deliberately designed to present data neutrally. It avoids ``gamifying'' competitor comparisons or explicitly recommending aggressive price hikes, ensuring SPIO staff maintain a measured, ethically sound interpretation of the market.
+
+\subsubsection{Future Status: Predictive Modelling and Algorithmic Impacts}
+
+As outlined in the project's original scope, a future goal is the implementation of \textbf{Predictive Fee Modelling} using historical data. This introduces severe societal risks.
+
+\noindent \textbf{1. Algorithmic Price-Fixing} \\
+If Durham and its competitors increasingly rely on machine learning to forecast and set tuition fees, the sector risks tacit algorithmic collusion. Competing algorithms can autonomously learn that matching high prices maximizes revenue. This would artificially inflate the cost of higher education globally, disproportionately pricing out students from lower socio-economic backgrounds.
+
+\noindent \textbf{2. Impacts on Social Mobility} \\
+Future iterations may also forecast A-Level entry requirements. If predictive analytics are used to artificially inflate entry tariffs simply to match the ``prestige'' metrics of rival Russell Group universities, it actively undermines societal goals of widening participation. 
+\textit{Mitigation:} Any future predictive features must mandate strict algorithmic auditing and Human-In-The-Loop (HITL) oversight. This ensures that pricing and entry requirements remain aligned with Durham University's ethical commitment to accessible education, rather than blindly following algorithmic optimisation.
+
