@@ -3,7 +3,7 @@
 % ==========================================
 \section{Use Instructions}
 
-\subsection{Installation (5\%)}
+\subsection{Installation}
 % System requirements (HW/SW), step-by-step install.
 
 This section outlines the system requirements and installation process to run the application locally.
@@ -87,7 +87,7 @@ PORT=\textless selected\_port\textgreater
 \end{commandbox}
 
 
-\subsection{Deployment (5\%)}
+\subsection{Deployment}
 \label{sec:deployment}
 % Local machine deployment, database setup, VMs/Containers/Cloud.
 
@@ -120,7 +120,7 @@ npm run build \\
 npm run start
 \end{commandbox}
 
-\subsection{Launching (5\%)}
+\subsection{Launching}
 \label{sec:launching}
 % User account creation, login, different roles, first-time setup.
 
@@ -139,13 +139,13 @@ Log in using the administrator account created during deployment. Upon authentic
 
 \begin{commandbox}
 Username: admin \\
-Password: \textless ADMIN\_PASSWORD\textgreater
+Password: \textless admin\_password\textgreater
 \end{commandbox}
 
 \paragraph{3. Initial Data Scrape}
 On launch, the database is empty, so competitor course data must be collected. From the dashboard, the user can initialise the collection process by clicking the \texttt{Quick Fetch} button, with the interface indicating 'in progress' or 'completed'.
 
-\subsection{Troubleshooting (5\%)}
+\subsection{Troubleshooting}
 % Common error messages, solutions, log locations.
 This section outlines common issues that may occur, hindering system functionality or usability during installation, deployment or at runtime, in addition to recommended solutions and available diagnostic tools.
 
@@ -176,7 +176,7 @@ Prisma migration fails & Database connection is invalid or migrations not genera
 \end{tabularx}
 \caption{Common installation issues and recommended fixes}
 \end{table}
-%\vspace{-20pt}
+\vspace{-20pt}
 
 \subsubsection{Application Issues}
 The following section outlines issues that can occur during normal usage of the system through the web interface. 
@@ -198,7 +198,7 @@ No course data visible & Database not populated with scraped data. & Navigate to
 \end{tabularx}
 \caption{Common application issues and recommended fixes}
 \end{table}
-%\vspace{-20pt}
+\vspace{-20pt}
 
 \subsubsection{Logs and Diagnostics}
 
