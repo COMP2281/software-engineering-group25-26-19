@@ -2,6 +2,16 @@
     padding: 40px 32px;
 }
 
+.titleLink {
+  color: #68246d;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 body {
   overflow-x: hidden;
 }

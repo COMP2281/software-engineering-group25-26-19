@@ -79,8 +79,22 @@ export default function CourseDetails() {
           </button>
 
           <h1 className="courseTitle">
-            {course.title} {course.applicationCode && "·"}{" "}
-            {course.applicationCode}
+            {course.courseUrl ? (
+              <a
+                href={course.courseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="titleLink"
+              >
+                {course.title} {course.applicationCode && "·"}{" "}
+                {course.applicationCode}
+              </a>
+            ) : (
+              <>
+                {course.title} {course.applicationCode && "·"}{" "}
+                {course.applicationCode}
+              </>
+            )}
           </h1>
           <p className="courseSubtitle">{course.university?.name}</p>
         </div>
