@@ -25,7 +25,7 @@ Operating System & Windows 10+, macOS 12+, Ubuntu 22.04+ & -- \\
 \caption{Hardware and operating system requirements}
 \end{table}
 
-These requirements outline the required resources to run aspects of the system simultaneously in a local environment. The recommended specs provide increased performance when performing additional tasks, such as scraping, alongside running the application. 
+These requirements define the resources needed to run the system locally. Recommended specifications improve performance when running additional tasks, such as web scraping, alongside the application. 
 
 \subsubsection{Software Requirements}
 
@@ -38,56 +38,54 @@ To run the system locally, several software components must be installed to prov
 \textbf{Software} & \textbf{Version} &\textbf{Purpose} \\
 \midrule
 
-Node.js & v18 + & Provides runtime environment to execute the backend application server, providing data collection, processing and API functionality. \\
+Node.js & v18 + & Provides runtime environment for backend application server, providing data collection, processing and API functionality. \\
 
-npm & Included with Node.js & Install and manage software packages for backend services and frontend interface. \\
+npm & Included with Node.js & Install and manage backend and frontedn software packages. \\
 
-PostgreSQL & v14 + & Relational database used to store collected course and institution data. \\
+PostgreSQL & v14 + & Relational database storing collected course and institution data. \\
 
-Git & Latest stable release & Retrieve system source code from the project repository for local installation. \\
+Git & Latest stable release & Retrieve system source code from the project repository. \\
 
-Web Browser & Latest version & Interact with system's web-based user interface once running locally. \\
+Web Browser & Latest version & Interact with system's web-based user interface locally. \\
 
 \bottomrule
 \end{tabularx}
 \caption{Software dependency requirements}
 \end{table}
 
-The third-party software listed above must be installed prior to installing and deploying the application. Instructions for installing these dependencies can be found here, linking to their official documentation \cite{git, nodejs, postgresql}.
-
-The system's web-based scraping functionality is implemented using the Puppeteer library. This library downloads a compatible headless Chromium browser, used to load and scrape information from university webpages. 
+The third-party software listed above must be installed before deploying the application. Installation instructions for these dependencies are available in their official documentation \cite{git, nodejs, postgresql}.
+The system's web-based scraping functionality uses the Puppeteer library, which downloads a compatible headless Chromium browser to load and extract data from university webpages. 
 
 \subsubsection{Installation Procedure}
 
 \paragraph{1. Retrieve Source Code} The system source code can be obtained from the project repository. This command downloads the project files and navigates into the project directory.
 
 \begin{commandbox}
-git clone \textless repository-url\textgreater \\
-cd project-directory
+git clone https://github.com/COMP2281/software-engineering-group25-26-19.git \\
+cd \textless project\_directory\textgreater
 \end{commandbox}
 
 \paragraph{2. Install Backend Dependencies} The backend server dependencies must be installed to enable the backend application server and scraping capabilities. 
 
-\begin{commandbox}
-cd backend \\
+\begin{commandbox}[/backend]
 npm install
 \end{commandbox}
 
 \paragraph{3. Install Frontend Dependencies} The frontend dependencies must be installed to run the React user interface utilising the required packages. 
 
-\begin{commandbox}
-cd ../frontend \\
+\begin{commandbox}[/frontend]
 npm install
 \end{commandbox}
 
-\paragraph{4. Configure Environment Variables} The backend functionality requires environment variables to be configured to provide access to the database and admin account settings. A \texttt{.env} file must be created in the backend directory containing the configuration settings. 
+\paragraph{4. Configure Environment Variables} 
+Backend functionality requires environment variables to access the database and admin account. Create a \texttt{.env} file in the backend directory containing these settings. The port will default to 5001 if not specified. The remaining values are set during database configuration and initial account setup, (Sections~\ref{sec:deployment} and~\ref{sec:launching}).
 
 \begin{commandbox}
 DATABASE\_URL=\textless postgresql\_database\_url\textgreater \\
 ADMIN\_PASSWORD\_HASH=\textless hashed\_admin\_password\textgreater \\
 PORT=\textless selected\_port\textgreater
 \end{commandbox}
-The port can be chosen by the user, however, will default to 5001 if not included. The remaining values will be defined during the database configuration and initial account setup, described in Section~\ref{sec:deployment} and Section~\ref{sec:launching}.
+
 
 \subsection{Deployment (5\%)}
 \label{sec:deployment}
@@ -95,41 +93,32 @@ The port can be chosen by the user, however, will default to 5001 if not include
 
 Once installed, the application must be configured and deployed before users can interact with the system. 
 
-\paragraph{1. Create PostgreSQL Database} The system requires a PostgreSQL database to store the data collected from UCAS and individual institution websites in a structured format. 
+\paragraph{1. Create PostgreSQL Database} The system requires a PostgreSQL database to store the data collected from UCAS and individual institution websites in a structured format. Database name must match the \texttt{DATABASE\_URL} environment variable.
 
 \begin{commandbox}
 createdb spio\_course\_db
 \end{commandbox}
 
-The database name must correspond with the value specified in the \texttt{DATABASE\_URL} environment variable configured. 
-
-\paragraph{2. Generate Administrator Password Hash} An account is required to access the frontend due to the protected routes. The administrator account must be created, with the password stored in a secure hashed format. A script is provided to accept the desired admin password, and outputs the bcrypt password hash. This ensures that unauthorised users that could possibly access the website cannot access the protected data. 
+\paragraph{2. Generate Administrator Password Hash} An account is required to access the protected frontend routes. A script is provided to generate a secure bcrypt hash for the admin password. The output hash must be set as the \texttt{ADMIN\_PASSWORD\_HASH} envirnment variable. 
 
 \begin{commandbox}
 npx ts-node backend/src/scripts/createPassword.ts \textless password\textgreater
 \end{commandbox}
 
-The output hashed password value must be inserted as the \texttt{ADMIN\_PASSWORD\_HASH} environment variable.
+\paragraph{3. Initialise Prisma Database Schema} 
+Prisma manages database access and schema, creating the required tables and backend client. These commands generate the prisma client and apply database migrations. 
 
-\paragraph{4. Initialise Prisma Database Schema} The Prisma ORM manages the backend database access and schema. These commands generate the Prisma client and apply the required database migrations.
-
-\begin{commandbox}
-cd backend \\
+\begin{commandbox}[/backend]
 npx prisma generate \\
 npx prisma migrate deploy
 \end{commandbox}
 
-This creates the database tables for the collected data to be inserted into and generate client for the backend server to interact with the database. 
+\paragraph{4. Start Application Services} \label{start_app_services} Once the database is created, start the backend and frontend services to provide the system interface and API.
 
-\paragraph{5. Start Application Services} Once the database has been created, the backend and frontend can be started to provide the system interface.
-
-\begin{commandbox}
-cd backend \\
+\begin{commandbox}[/backend]
 npm run build \\
 npm run start
 \end{commandbox}
-
-This command initiates the backend API server to receive the frontend requests, and the frontend server providing web browser access to the system. 
 
 \subsection{Launching (5\%)}
 \label{sec:launching}
@@ -138,26 +127,79 @@ This command initiates the backend API server to receive the frontend requests, 
 Once the application services have been started during deployment, the system can be accessed through a web browser. The following steps describe how to access and perform the initial setup required to use the platform. 
 
 \paragraph{1. Access Web Application}
-During deployment, the frontend and backend services are initialised, allowing the system to be accessed through a browser. 
+
+Once the application services are running, open the system in a browser to access the login page and protected routes. Routing to a sub-page will redirect to the login, then the requested protected route. 
 
 \begin{commandbox}
 http://localhost:PORT
 \end{commandbox}
 
-Navigating to this URL loads the login page, which when authenticated provides access to the protected routes. Any attempt to navigate to a sub-page will redirect to this login page until authenticated. 
-
 \paragraph{2. Authenticate with Administrator Account}
-The administrator account was initialised during deployment due to its required backend configuration. On login, the system authenticates the password attempt against the hash, once verified, provides access to the protected routes. 
+Log in using the administrator account created during deployment. Upon authentication, user is redirected to dashboard, or specific sub-page routed to in the URL. Authentication provides access to course data pages, scraping tools and export functionality, and is managed using a session-based token. 
 
 \begin{commandbox}
 Username: admin \\
 Password: \textless ADMIN\_PASSWORD\textgreater
 \end{commandbox}
 
-Once authenticated, the users is redirected to the system dashboard, or specific sub-page routed to in the URL. Access to permitted to the protected routes, including course data pages, scraping tools and export functionality. Authentication is maintained through a session-based token, ensuring only authorised users can access the system. 
-
 \paragraph{3. Initial Data Scrape}
-On launch, the database is empty, therefore the competitor course data must be collected before the features become available. From the dashboard page, the user can initialise the collection process by clicking the \texttt{Quick Fetch} button. The dashboard interface updates to indicate the stage of the process, in progress or completed.
+On launch, the database is empty, so competitor course data must be collected. From the dashboard, the user can initialise the collection process by clicking the \texttt{Quick Fetch} button, with the interface indicating 'in progress' or 'completed'.
 
 \subsection{Troubleshooting (5\%)}
 % Common error messages, solutions, log locations.
+This section outlines common issues that may occur, hindering system functionality or usability during installation, deployment or at runtime, in addition to recommended solutions and available diagnostic tools.
+
+\subsubsection{Installation Issues}
+
+The following table outlines common issues that can occur during installation, preventing system use, and the steps to resolve them. 
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{@{} p{2.5cm} p{5cm} X @{}}
+\toprule
+\textbf{Issue} & \textbf{Cause} & \textbf{Resolution} \\
+\midrule
+
+\texttt{Git} not recognised & Git dependency not installed or not added to system PATH. & Install git using official documentation \cite{git}, verify using \texttt{git --version} in destination folder. \\
+
+\texttt{node} not recognised & Node.js not installed or not added to system PATH. & Install Node.js, version 18 +, using official documentation \cite{nodejs}, and verify \texttt{node -v} in the project directory. \\
+
+\texttt{npm install} failure & Missing, incompatible or interrupted Node.js installation. & Ensure Node.js installed, version 18 +, delete \texttt{node\_modules} folder and retry \texttt{npm install}. \\
+
+Database connection error & PostgreSQL not initialised or incorrect connection string. & Ensure PostgreSQL installed using official documentation \cite{postgresql}, and running. Verify \texttt{DATABASE\_URL} in \texttt{.env} file. \\
+
+Database does not exist & PostgreSQL database not created before deployment. & Create database using command \texttt{createdb spio\_course\_db}. \\
+
+Prisma migration fails & Database connection is invalid or migrations not generated. & Verify database connection and run \texttt{npx prisma migrate reset}. \\
+
+\bottomrule
+\end{tabularx}
+\caption{Common installation issues and recommended fixes}
+\end{table}
+%\vspace{-20pt}
+
+\subsubsection{Application Issues}
+The following section outlines issues that can occur during normal usage of the system through the web interface. 
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{@{} p{2.5cm} p{5cm} X @{}}
+\toprule
+\textbf{Issue} & \textbf{Cause} & \textbf{Resolution} \\
+\midrule
+
+App not available in browser & Backend server not running or incorrect port used. & Ensure the backend server is running (Section \ref{start_app_services}), and verify the correct port is used in browser. \\
+
+Login failure & Incorrect admin password or password hash not configured. & Regenerate password hash using provided script and update \texttt{ADMIN\_PASSWORD\_HASH} in the \texttt{.env} file. \\
+
+No course data visible & Database not populated with scraped data. & Navigate to dashboard page and run \texttt{Quick Fetch}. Data will be populated as process executes. \\
+
+\bottomrule
+\end{tabularx}
+\caption{Common application issues and recommended fixes}
+\end{table}
+%\vspace{-20pt}
+
+\subsubsection{Logs and Diagnostics}
+
+Diagnostic information can be found in the terminal used to initialise the backend server, with runtime errors and database issues are displayed in the console output. Scraping diagnostics are written to the \texttt{logs} directory for further inspection if required. Any frontend errors will appear on the respective pages and also in the browser development tools (F12), where JavaScript errors and network requests can be investigated. 
