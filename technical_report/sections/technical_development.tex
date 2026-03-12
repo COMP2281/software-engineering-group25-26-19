@@ -3,7 +3,7 @@
 % ==========================================
 \section{Technical Development}
 
-\subsection{Source Materials (5\%)}
+\subsection{Source Materials}
 The conceptualisation and development of the Competitor Benchmarking System were grounded in three primary categories of source materials:
 
 \begin{itemize}
@@ -12,7 +12,7 @@ The conceptualisation and development of the Competitor Benchmarking System were
     \item \textbf{API Documentation:} The UCAS Open Data API served as the authoritative source for course titles and entry requirements. This documentation allowed us to design a "Hybrid Ingestion Pipeline," reducing the load on custom web scrapers by only scraping data (like specific fees) that is not available via UCAS.
 \end{itemize}
 
-\subsection{Technical Description (30\%)}
+\subsection{Technical Description}
 
 \subsubsection{System Architecture Overview}
 The system follows a classic \textbf{Three-Tier Client-Server Architecture}. This separation allows for independent scaling of the scraping logic and the user interface.
@@ -116,7 +116,7 @@ This structure allows the system to store multiple years of data for the same co
         % -----------------------
         % 4. Scrape Node
         % -----------------------
-        \node[draw, thick, inner sep=0pt, align=left] (scrape) at (0, -6) {
+        \node[draw, thick, inner sep=0pt, align=left] (scrape) at (0, -4) {
             \begin{tabular}{l}
                 \textbf{Scrape} \\
                 \hline
@@ -132,7 +132,7 @@ This structure allows the system to store multiple years of data for the same co
         % -----------------------
         % 5. ScrapeIssue Node
         % -----------------------
-        \node[draw, thick, inner sep=0pt, align=left] (issue) at (6, -6) {
+        \node[draw, thick, inner sep=0pt, align=left] (issue) at (6, -4) {
             \begin{tabular}{l}
                 \textbf{ScrapeIssue} \\
                 \hline
@@ -149,7 +149,7 @@ This structure allows the system to store multiple years of data for the same co
         % -----------------------
         % 6. Session Node (Standalone)
         % -----------------------
-        \node[draw, thick, inner sep=0pt, align=left] (session) at (0, -10.5) {
+        \node[draw, thick, inner sep=0pt, align=left] (session) at (0, -7.5) {
             \begin{tabular}{l}
                 \textbf{Session} \\
                 \hline
@@ -242,35 +242,46 @@ This polymorphic design ensures that adding a new university only requires writi
 \end{figure}
 
 \subsubsection{Technologies and Platforms}
-We selected a unified \textbf{TypeScript} stack for both backend and frontend. This decision directly addresses the feedback regarding a "coherent technical stack":
+We selected a unified \textbf{TypeScript} stack for both backend and frontend. This decision directly addresses the feedback regarding a "coherent technical stack", allowing us to share data models across the entire application:
 
 \begin{itemize}
-    \item \textbf{Type Safety:} Sharing TypeScript interfaces (DTOs) between the Backend and Frontend ensures that if the database schema changes, the frontend build will fail immediately, preventing runtime errors in production.
-    \item \textbf{Backend (Node.js/Express):} Chosen over Python (originally considered) because it allows for non-blocking I/O, which is essential when scraping multiple websites concurrently.
-    \item \textbf{Database (PostgreSQL \& Prisma):} PostgreSQL was chosen for its strict schema enforcement compared to NoSQL alternatives. Prisma acts as the bridge, generating type-safe database clients automatically.
+    \item \textbf{Type Safety:} Sharing TypeScript interfaces between the backend and frontend ensures that if the database schema changes, the frontend build will fail immediately, catching integration bugs at compile-time rather than runtime.
+    \item \textbf{Backend (Node.js \& Express):} Node.js was chosen over Python (originally considered) because its event-driven architecture handles non-blocking I/O exceptionally well, which is essential when launching dozens of concurrent network requests to competitor websites.
+    \item \textbf{Scraping Ecosystem (Cheerio \& Puppeteer):} For the data extraction itself, we utilised \textbf{Cheerio} for high-performance parsing of static HTML DOMs. For complex university sites relying on Single Page Application (SPA) frameworks, we implemented \textbf{Puppeteer} to launch a headless Chrome instance, allowing us to execute JavaScript and intercept dynamic network payloads.
+    \item \textbf{Frontend (React \& Vite):} The user interface was built using \textbf{React 18} and bundled with \textbf{Vite} for rapid development. To handle the complex, data-heavy views required by SPIO analysts.
+    \item \textbf{Database (PostgreSQL \& Prisma):} PostgreSQL was chosen for its strict schema enforcement and advanced querying capabilities, which are necessary for historical fee comparisons. \textbf{Prisma} acts as the ORM bridge, automatically generating type-safe database clients from our schema definitions.
 \end{itemize}
 
+\subsubsection{Software Development Process}
+As established in our initial project management plan, we adopted a \textbf{Hybrid Development Model ("Plan-Driven Iterations")}. We chose this approach to handle the project's "dual certainty profile", balancing the need for a strict internal database with the chaotic nature of external web scraping.
+
+\begin{itemize}
+    \item \textbf{Phase 1: Structured Planning (Waterfall Elements):} For stable, well-defined requirements such as the relational database schema, session authentication mechanisms, and the Excel export format, we performed comprehensive upfront design. This ensured architectural consistency and provided a solid foundation before any coding began.
+    \item \textbf{Phase 2: Iterative Development (Agile Sprints):} Because web scraping is inherently unpredictable (due to dynamic website layouts and anti-bot measures), the scraper engine and individual university adapters were developed in 1-to-2 week iterative cycles. Each cycle focused on a small batch of universities, allowing us to build, test, integrate, and adapt our parsing logic quickly without derailing the core system.
+\end{itemize}
+This hybrid process provided the structural stability needed for the backend API, while maintaining the flexibility required to tackle 35 volatile external data sources.
+
 \subsubsection{Role of Behaviour-Driven Development (BDD)}
-Behaviour-Driven Development (BDD) served as the core foundation of our software engineering process, providing a shared language that connected the SPIO stakeholders' business needs with our technical work. Rather than treating BDD simply as a way to write tests, we used it as our main design approach to guarantee clear tracking from the initial requirements gathering all the way through to deployment.
+Within our hybrid process, Behaviour-Driven Development (BDD) served as the shared language that connected SPIO's business needs with our technical implementation. Rather than treating BDD simply as a way to write tests, we used it as our main design approach.
 
 \textbf{From Elicitation to Specification:} 
-Following our initial client meetings, we structured our workflow to translate broad requirements (e.g., "compare university courses") into clear, testable specifications. We applied the MoSCoW method for prioritisation and the INVEST checklist to validate our User Stories. These stories were then expanded into precise Gherkin scenarios (Given-When-Then). As documented in our initial report, this step was vital for removing confusion. By writing concrete examples of how the system should behave, we prevented scope creep and ensured both the client and the developers shared the exact same definition of "done."
+During our planning phase, we applied the MoSCoW method and the INVEST checklist to validate our User Stories. These were then expanded into precise Gherkin scenarios (Given-When-Then). By writing concrete examples of how the system should behave, we prevented scope creep and ensured both the client and developers shared the exact same definition of "done."
 
 \textbf{Guiding Architectural Decisions:} 
 The Gherkin scenarios acted as direct blueprints for our system architecture. For example, \texttt{Feature 2: Fetching Data} directly guided the structure of our backend API and scraping engine:
 \begin{itemize}
     \item The \texttt{Given} preconditions (e.g., \textit{"Given I am a logged-in user"}) required us to implement the \texttt{requireAuth} middleware across all protected Express routes.
     \item The \texttt{When} actions mapped directly to specific backend controllers, such as the \texttt{ScraperController} receiving a POST request and passing the data to the \texttt{ScraperManager}.
-    \item The \texttt{Then} outcomes defined the exact HTTP responses and the resulting React UI updates (e.g., triggering a polling mechanism to display the scraping progress).
+    \item The \texttt{Then} outcomes defined the exact HTTP responses and the resulting React UI updates.
 \end{itemize}
 
 \textbf{Defining Complex UI and Background Processes:} 
-BDD was particularly helpful for defining the User Experience around long background tasks. Because the actual web scraping happens invisibly on the server, we deliberately wrote our scenarios to describe only what the user can see on the screen, rather than the internal scraping code. Scenarios like \texttt{BR 2.2: Attempting to start a fetch while one is already in progress} forced us to build reliable frontend state management (like disabling buttons and showing specific error messages) and backend database checks (using the \texttt{ScrapeStatus} enum) to deliver the expected behaviour.
+BDD was particularly helpful for defining the User Experience around long background tasks. Because the actual web scraping happens invisibly on the server, we deliberately wrote our scenarios to describe only what the user can see on the screen. Scenarios like \texttt{BR 2.2: Attempting to start a fetch while one is already in progress} forced us to build reliable frontend state management (like disabling buttons) and backend database checks (using the \texttt{ScrapeStatus} enum) to deliver the expected behaviour.
 
 \textbf{Test Oracles and Validation:} 
-Finally, these behavioural specifications served as our absolute Test Oracles for both System Testing and User Acceptance Testing. If a specific piece of code—such as the \texttt{Excel.api.ts} service or the \texttt{EdinburghAdapter}—failed to meet the exact \texttt{Then} conditions outlined in the Requirements Document, that sprint's work was not accepted. This strict use of BDD ensured that every line of code written contributed directly to a confirmed client requirement.
+Finally, these behavioural specifications served as our absolute Test Oracles for both System Testing and User Acceptance Testing (UAT). If a specific piece of code, such as the \texttt{Excel.api.ts} service or the \texttt{EdinburghAdapter}, failed to meet the exact \texttt{Then} conditions outlined in the Requirements Document, that sprint's work was not accepted. This strict use of BDD ensured every line of code contributed directly to a confirmed client requirement.
 
-\subsection{Usability and User Experience (5\%)}
+\subsection{Usability and User Experience}
 As an internal enterprise tool replacing a manual workflow, our User Experience strategy prioritised \textbf{efficiency, data trust, and cognitive load reduction}. We addressed usability through the following key sub-features and design decisions:
 
 \begin{enumerate}
