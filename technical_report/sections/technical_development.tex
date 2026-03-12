@@ -279,7 +279,7 @@ The Gherkin scenarios acted as direct blueprints for our system architecture. Fo
 BDD was particularly helpful for defining the User Experience around long background tasks. Because the actual web scraping happens invisibly on the server, we deliberately wrote our scenarios to describe only what the user can see on the screen. Scenarios like \texttt{BR 2.2: Attempting to start a fetch while one is already in progress} forced us to build reliable frontend state management (like disabling buttons) and backend database checks (using the \texttt{ScrapeStatus} enum) to deliver the expected behaviour.
 
 \textbf{Test Oracles and Validation:} 
-Finally, these behavioural specifications served as our absolute Test Oracles for both System Testing and User Acceptance Testing (UAT). If a specific piece of code, such as the \texttt{Excel.api.ts} service or the \texttt{EdinburghAdapter}, failed to meet the exact \texttt{Then} conditions outlined in the Requirements Document, that sprint's work was not accepted. This strict use of BDD ensured every line of code contributed directly to a confirmed client requirement.
+Finally, these behavioural specifications served as our absolute Test Oracles for both System Testing and User Acceptance Testing. If a specific piece of code, such as the \texttt{Excel.api.ts} service or the \texttt{EdinburghAdapter}, failed to meet the exact \texttt{Then} conditions outlined in the Requirements Document, that sprint's work was not accepted. This strict use of BDD ensured every line of code contributed directly to a confirmed client requirement.
 
 \subsection{Usability and User Experience}
 As an internal enterprise tool replacing a manual workflow, our User Experience strategy prioritised \textbf{efficiency, data trust, and cognitive load reduction}. We addressed usability through the following key sub-features and design decisions:
@@ -295,7 +295,7 @@ As an internal enterprise tool replacing a manual workflow, our User Experience 
         \item \textbf{Multi-criteria Filtering:} Stackable filters (fee ranges, study modes, competitor brackets) to narrow down 10,000+ courses to a target segment in seconds.
     \end{itemize}
 
-    \item \textbf{Contextual Drill-Down:} Clicking any course row opens a comprehensive "Detailed View". This isolates the course to present historical fee comparisons, granular entry requirements, and crucially, a direct hyperlink to the \textit{original source URL}. Providing this source link builds absolute trust, allowing analysts to manually verify the scraped data if an anomaly appears.
+    \item \textbf{Contextual Drill-Down:} Clicking any course row opens a comprehensive "Detailed View". This isolates the course to present historical fee comparisons, granular entry requirements, and crucially, a direct hyperlink to the \textit{original source URL}. Providing this source link allows analysts to manually verify the scraped data if an anomaly appears.
     
     \item \textbf{Familiarity and Reduced Learning Curve:} To ensure high user adoption, dashboards and data tables were explicitly styled to mimic SPIO's existing market intelligence tools. Familiar iconography, standard pagination, and an "Export to Excel" pipeline that matches their current workflows ensure staff can transition to this application with near-zero onboarding time.
 \end{enumerate}
