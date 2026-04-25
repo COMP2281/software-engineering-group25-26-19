@@ -346,20 +346,39 @@ export class OxfordAdapter extends GenericHtmlAdapter {
 
     private extractOxfordAnnualFeeTable(html: string): ScrapedFees {
         const $ = cheerio.load(html);
-        const table = $('#feetable').first();
-        if (table.length === 0) {
-            return { homeFee: null, internationalFee: null };
+
+        const fromTables = this.extractOxfordFeesFromTables($);
+        if (fromTables.homeFee !== null || fromTables.internationalFee !== null) {
+            return fromTables;
         }
 
+        return this.extractOxfordFeesFromText($('body').text());
+    }
+
+    private extractOxfordFeesFromTables($: cheerio.CheerioAPI): ScrapedFees {
         let homeFee: number | null = null;
         let internationalFee: number | null = null;
 
-        table.find('tr').each((_idx: number, tr: Element) => {
-            const cells = $(tr).find('td');
+        $('table').each((_tableIdx: number, table: Element) => {
+            const tableText = this.normalizeText($(table).text());
+            const isOxfordFeeTable =
+                $(table).attr('id') === 'feetable' ||
+                (
+                    tableText.includes('annual course fees') &&
+                    tableText.includes('home') &&
+                    (tableText.includes('overseas') || tableText.includes('international'))
+                ) ||
+                (
+                    tableText.includes('fee status') &&
+                    (tableText.includes('course fees') || tableText.includes('annual'))
+                );
 
-            // Primary path for Oxford fees table rows:
-            // [Fee status label] [Annual Course fees value]
-            if (cells.length >= 2) {
+            if (!isOxfordFeeTable) return;
+
+            $(table).find('tr').each((_rowIdx: number, tr: Element) => {
+                const cells = $(tr).find('td, th');
+                if (cells.length < 2) return;
+
                 const label = this.normalizeText(cells.eq(0).text());
                 const valueText = `${cells.eq(1).text()} ${cells.eq(1).html() || ''}`;
                 const price = this.extractMoneyFromText(valueText);
@@ -373,21 +392,59 @@ export class OxfordAdapter extends GenericHtmlAdapter {
                     internationalFee = price;
                     return;
                 }
-            }
-
-            // Fallback for unexpected row structures
-            const rowText = this.normalizeText($(tr).text());
-            const price = this.extractMoneyFromText(rowText);
-            if (price === null) return;
-
-            if (/\bhome\b|\buk\b/.test(rowText)) {
-                homeFee = price;
-            } else if (/\binternational\b|\boverseas\b/.test(rowText)) {
-                internationalFee = price;
-            }
+            });
         });
 
         return { homeFee, internationalFee };
+    }
+
+    private extractOxfordFeesFromText(text: string): ScrapedFees {
+        const normalized = text.replace(/\s+/g, ' ').trim();
+        const feeSection = this.extractCourseFeeSection(normalized);
+
+        return {
+            homeFee: this.extractMoneyAfterLabel(feeSection, ['Home', 'Home / UK', 'UK']),
+            internationalFee: this.extractMoneyAfterLabel(feeSection, ['Overseas', 'International'])
+        };
+    }
+
+    private extractCourseFeeSection(text: string): string {
+        const lower = text.toLowerCase();
+        const annualCourseFeesIndex = lower.indexOf('annual course fees');
+        const courseFeesIndex = lower.indexOf('course fees');
+
+        if (annualCourseFeesIndex < 0 && courseFeesIndex < 0) return text;
+
+        const start = annualCourseFeesIndex >= 0 ? annualCourseFeesIndex : courseFeesIndex;
+        const remaining = lower.slice(start);
+        const stopCandidates = [
+            remaining.indexOf('what do course fees cover?'),
+            remaining.indexOf('additional course costs'),
+            remaining.indexOf('living costs'),
+            remaining.indexOf('back to top')
+        ].filter(index => index > 0);
+
+        const end = stopCandidates.length > 0
+            ? start + Math.min(...stopCandidates)
+            : Math.min(text.length, start + 1500);
+
+        return text.slice(start, end);
+    }
+
+    private extractMoneyAfterLabel(text: string, labels: string[]): number | null {
+        for (const label of labels) {
+            const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`${escapedLabel}\\s*(?:/\\s*[A-Z]{2})?\\s*(?:fee status)?\\s*(?:£|&pound;)\\s?([0-9]{1,3}(?:,[0-9]{3})*)`, 'i');
+            const match = regex.exec(text);
+            if (!match || !match[1]) continue;
+
+            const value = parseInt(match[1].replace(/,/g, ''), 10);
+            if (!Number.isNaN(value) && value >= 1000 && value <= 100000) {
+                return value;
+            }
+        }
+
+        return null;
     }
 
     private extractMoneyFromText(text: string): number | null {

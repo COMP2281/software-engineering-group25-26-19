@@ -81,7 +81,11 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 rawHtml = response.data.toString('utf-8');
                 const $ = cheerio.load(rawHtml!);
                 const bodyText = $('body').text().trim();
-                if (bodyText.length < 500 && !rawHtml!.includes('£')) {
+                const blockedPage = this.describeBlockedPage(rawHtml!);
+                if (blockedPage) {
+                    rawHtml = null;
+                    Logger.debug(`Axios returned blocked/challenge page. ${blockedPage}. Switching to Puppeteer...`);
+                } else if (bodyText.length < 500 && !rawHtml!.includes('£')) {
                     rawHtml = null;
                     Logger.debug("Axios returned empty shell. Switching to Puppeteer...");
                 }
@@ -105,15 +109,27 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 
                 await page.goto(courseUrl, { waitUntil: 'networkidle2', timeout: TIMEOUT });
 
+                let foundContentCue = true;
                 try {
                     await page.waitForFunction(
                         'document.body.innerText.includes("£") || document.querySelector("table")',
                         { timeout: 5000 }
                     );
-                } catch (e) { /* ignore timeout */ }
+                } catch (e) {
+                    foundContentCue = false;
+                }
 
                 rawHtml = await page.content();
-                Logger.debug("Puppeteer render complete.");
+                const title = await page.title().catch(() => '');
+                const bodyText = await page.evaluate(() => document.body?.innerText || '').catch(() => '');
+                const blockedPage = this.describeBlockedPage(rawHtml!, title, bodyText);
+                if (blockedPage) {
+                    Logger.debug(`Puppeteer rendered blocked/challenge page for ${courseUrl}. ${blockedPage}`);
+                    rawHtml = null;
+                } else {
+                    const cueSuffix = foundContentCue ? '' : ' without fee/table cue';
+                    Logger.debug(`Puppeteer render complete${cueSuffix}. title="${this.truncateForLog(title, 100)}"`);
+                }
 
             } catch (error) {
                 Logger.debug(`Puppeteer failed: ${error instanceof Error ? error.message : error}`);
@@ -144,6 +160,34 @@ export class GenericHtmlAdapter implements IScraperAdapter {
         }
 
         return results;
+    }
+
+    private describeBlockedPage(html: string, titleOverride?: string, bodyTextOverride?: string): string | null {
+        const $ = cheerio.load(html);
+        const title = titleOverride ?? $('title').text();
+        const bodyText = bodyTextOverride ?? $('body').text();
+        const probe = `${title} ${bodyText} ${html.slice(0, 5000)}`.toLowerCase();
+
+        const isBlocked = [
+            'just a moment',
+            'enable javascript and cookies',
+            'performing security verification',
+            'challenges.cloudflare.com',
+            '_cf_chl_opt',
+            'cf-chl',
+            'cloudflare'
+        ].some(marker => probe.includes(marker));
+
+        if (!isBlocked) return null;
+
+        const cleanBody = bodyText.replace(/\s+/g, ' ').trim();
+        return `title="${this.truncateForLog(title, 100)}" body="${this.truncateForLog(cleanBody, 180)}"`;
+    }
+
+    private truncateForLog(value: string, maxLength: number): string {
+        const cleaned = value.replace(/\s+/g, ' ').trim();
+        if (cleaned.length <= maxLength) return cleaned;
+        return `${cleaned.slice(0, Math.max(0, maxLength - 3))}...`;
     }
 
     protected sanitizeForStudyMode(html: string, studyMode: string): string {
