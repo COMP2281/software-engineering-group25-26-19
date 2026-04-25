@@ -67,7 +67,10 @@ export class GenericHtmlAdapter implements IScraperAdapter {
                 throw new Error(`Axios blocked with status ${response.status}`);
             }
 
-            const contentType = response.headers['content-type'] || '';
+            const rawContentType = response.headers['content-type'];
+            const contentType = Array.isArray(rawContentType)
+                ? rawContentType.join(';')
+                : String(rawContentType ?? '');
             
             if (courseUrl.toLowerCase().endsWith('.pdf') || contentType.includes('application/pdf')) {
                 const buffer = Buffer.from(response.data);
