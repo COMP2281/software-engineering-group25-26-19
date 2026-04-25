@@ -7,46 +7,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$BACKEND_DIR"
 
-universities=(
-  # "University of Aberdeen"
-  # "University of Bath"
-  # "University of Birmingham"
-  # "University of Bristol"
-  # "University of Cambridge"
-  # "Cardiff University"
-  # "Durham University"
-  # "The University of Edinburgh"
-  # "University of Exeter"
-  # "University of Glasgow"
-  # "Imperial College London"
-  # "King's College London, University of London (KCL)"
-  # "Lancaster University"
-  # "University of Leeds"
-  # "University of Liverpool"
-  # "Loughborough University"
-  # "London School of Economics and Political Science, University of London (LSE)"
-  # "University of Manchester"
-  # "Newcastle University"
-  # "Northumbria University, Newcastle"
-  #"University of Nottingham"
-  "University of Oxford"
-  #"Queen Mary University of London"
-  # "Queen's University Belfast"
-  # "Royal Holloway, University of London"
-  # "University of Sheffield"
-  # "SOAS University of London"
-  # "University of Southampton"
-  # "University of St Andrews"
-  # "University of Sunderland"
-  # "University of Surrey"
-  # "University of Sussex"
-  # "UCL (University College London)"
-  # "University of Warwick"
-  # "University of York"
-)
-
-default_timeout_seconds=1800
-timeout_seconds="${1:-${TIMEOUT_SECONDS:-$default_timeout_seconds}}"
+DEFAULT_TIMEOUT_SECONDS=1800
+TIMEOUT_SECONDS_VALUE="${TIMEOUT_SECONDS:-$DEFAULT_TIMEOUT_SECONDS}"
 
 cyan='\033[0;36m'
 green='\033[0;32m'
@@ -54,6 +16,24 @@ yellow='\033[0;33m'
 red='\033[0;31m'
 nc='\033[0m'
 current_child_pid=0
+
+print_usage() {
+  cat <<USAGE
+Usage:
+  ./src/testing/run_test.sh [timeout_seconds] --universityIds="UNIVERSITY_ID" [manager args...]
+  ./src/testing/run_test.sh --universityIds="UNIVERSITY_ID" [manager args...]
+
+Examples:
+  ./src/testing/run_test.sh --universityIds="1c08965e-a829-483e-9417-3f4f602af357"
+  ./src/testing/run_test.sh --universityIds="1c08965e-a829-483e-9417-3f4f602af357" --q="Advanced Computing"
+  ./src/testing/run_test.sh 900 --universityIds="1c08965e-a829-483e-9417-3f4f602af357" --q="Advanced Computing"
+
+Notes:
+  - Arguments after the optional timeout are passed directly to src/scrapers/manager.ts.
+  - Use npx prisma studio to find university IDs.
+  - Set TIMEOUT_SECONDS=0 to disable timeout.
+USAGE
+}
 
 kill_process_tree() {
   local target_pid="$1"
@@ -79,14 +59,42 @@ handle_interrupt() {
 
 trap 'handle_interrupt' INT TERM
 
-if ! command -v npx >/dev/null 2>&1; then
-  printf "${red}Error:${nc} npx is not installed or not in PATH.\n" >&2
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  print_usage
+  exit 0
+fi
+
+if [[ "${1:-}" =~ ^[0-9]+$ ]]; then
+  TIMEOUT_SECONDS_VALUE="$1"
+  shift
+fi
+
+manager_args=("$@")
+
+if [ "${#manager_args[@]}" -eq 0 ]; then
+  printf "${red}Error:${nc} no manager arguments provided.\n" >&2
+  print_usage >&2
   exit 1
 fi
 
-if ! [[ "$timeout_seconds" =~ ^[0-9]+$ ]]; then
-  printf "${red}Error:${nc} timeout must be a non-negative integer (seconds).\n" >&2
-  printf "${yellow}[!] Got: %s${nc}\n" "$timeout_seconds" >&2
+has_university_ids=false
+for arg in "${manager_args[@]}"; do
+  if [[ "$arg" == --universityIds=* ]]; then
+    has_university_ids=true
+    break
+  fi
+done
+
+if [ "$has_university_ids" = false ]; then
+  printf "${red}Error:${nc} --universityIds is required.\n" >&2
+  printf "${yellow}[!] Use 'npx prisma studio' to find the university ID. ${nc}\n" >&2
+  print_usage >&2
+  exit 1
+fi
+
+if ! [[ "$TIMEOUT_SECONDS_VALUE" =~ ^[0-9]+$ ]]; then
+  printf "${red}Error:${nc} timeout must be a non-negative integer in seconds.\n" >&2
+  printf "${yellow}[!] Got: %s${nc}\n" "$TIMEOUT_SECONDS_VALUE" >&2
   exit 1
 fi
 
@@ -110,8 +118,7 @@ fi
 
 if [ -z "${DATABASE_URL:-}" ] && [ ! -f ".env" ]; then
   printf "${red}Error:${nc} DATABASE_URL is not set.\n" >&2
-  printf "${yellow}[!] Create backend/.env (you can copy .env.example) and set DATABASE_URL.${nc}\n" >&2
-  printf "${yellow}[!] Example: cp .env.example .env${nc}\n" >&2
+  printf "${yellow}[!] Create backend/.env from .env.example and set DATABASE_URL.${nc}\n" >&2
   exit 1
 fi
 
@@ -121,55 +128,58 @@ if ! command -v setsid >/dev/null 2>&1; then
   exit 1
 fi
 
-for uni in "${universities[@]}"; do
-  printf "\n${cyan}======================================================${nc}\n"
-  printf "${cyan}Processing: %s${nc}\n" "$uni"
-  printf "${cyan}======================================================${nc}\n"
-
-  start_secs=$(date +%s)
-  start_precise=$(date +%s.%N)
-  timed_out=false
-
-  if [ -x "./node_modules/.bin/ts-node" ]; then
-    runner=(./node_modules/.bin/ts-node)
-  else
-    runner=(npx ts-node)
+if [ -x "./node_modules/.bin/ts-node" ]; then
+  runner=(./node_modules/.bin/ts-node)
+else
+  if ! command -v npx >/dev/null 2>&1; then
+    printf "${red}Error:${nc} npx is not installed or not in PATH.\n" >&2
+    exit 1
   fi
-
-  # Start in its own session so we can terminate the whole process group on timeout.
-  setsid "${runner[@]}" src/scripts/test.ts "$uni" &
-  pid=$!
-  current_child_pid="$pid"
-
-  while kill -0 "$pid" 2>/dev/null; do
-    elapsed=$(( $(date +%s) - start_secs ))
-    if (( timeout_seconds > 0 && elapsed >= timeout_seconds )); then
-      timed_out=true
-      printf "\n${yellow}[!] Timeout of %ss reached for '%s'. Terminating process tree...${nc}\n" "$timeout_seconds" "$uni"
-      kill_process_tree "$pid"
-      break
-    fi
-    sleep 0.5
-  done
-
-  end_precise=$(date +%s.%N)
-  elapsed_precise=$(awk "BEGIN {printf \"%.2f\", $end_precise - $start_precise}")
-
-  if [ "$timed_out" = false ]; then
-    wait "$pid"
-    exit_code=$?
-    if [ "$exit_code" -eq 0 ]; then
-      printf "\n${green}[+] Finished processing '%s' in %s seconds.${nc}\n" "$uni" "$elapsed_precise"
-    else
-      printf "\n${yellow}[!] Finished '%s' in %s seconds with exit code %s.${nc}\n" "$uni" "$elapsed_precise" "$exit_code"
-    fi
-  fi
-  current_child_pid=0
-
-  # Brief pause between universities to allow sockets/connections to settle.
-  sleep 1
-done
+  runner=(npx ts-node)
+fi
 
 printf "\n${cyan}======================================================${nc}\n"
-printf "${green}All universities processed.${nc}\n"
+printf "${cyan}Running scraper manager${nc}\n"
 printf "${cyan}======================================================${nc}\n"
+printf "Command: %s src/scrapers/manager.ts" "${runner[*]}"
+printf " %q" "${manager_args[@]}"
+printf "\n"
+
+start_secs=$(date +%s)
+start_precise=$(date +%s.%N)
+timed_out=false
+
+setsid "${runner[@]}" src/scrapers/manager.ts "${manager_args[@]}" &
+pid=$!
+current_child_pid="$pid"
+
+while kill -0 "$pid" 2>/dev/null; do
+  elapsed=$(( $(date +%s) - start_secs ))
+  if (( TIMEOUT_SECONDS_VALUE > 0 && elapsed >= TIMEOUT_SECONDS_VALUE )); then
+    timed_out=true
+    printf "\n${yellow}[!] Timeout of %ss reached. Terminating process tree...${nc}\n" "$TIMEOUT_SECONDS_VALUE"
+    kill_process_tree "$pid"
+    break
+  fi
+  sleep 0.5
+done
+
+end_precise=$(date +%s.%N)
+elapsed_precise=$(awk "BEGIN {printf \"%.2f\", $end_precise - $start_precise}")
+
+if [ "$timed_out" = false ]; then
+  wait "$pid"
+  exit_code=$?
+else
+  exit_code=124
+fi
+
+current_child_pid=0
+
+if [ "$exit_code" -eq 0 ]; then
+  printf "\n${green}[+] Scraper finished in %s seconds.${nc}\n" "$elapsed_precise"
+else
+  printf "\n${yellow}[!] Scraper finished in %s seconds with exit code %s.${nc}\n" "$elapsed_precise" "$exit_code"
+fi
+
+exit "$exit_code"
