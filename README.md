@@ -4,6 +4,8 @@
 
 Welcome to the technical documentation for the University Course & Fee Scraper application. This documentation is structured to help you understand the architecture, maintain the codebase, and extend its functionality.
 
+**Product handover:** The completed handover confirmation document is available here: [Product_Handover_Confirmation.pdf](./Product_Handover_Confirmation.pdf).
+
 ## 📚 Documentation Structure
 
 The documentation is split into three main layers:
